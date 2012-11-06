@@ -69,6 +69,8 @@ sub declare
 sub init
 {
   my ($self, $version, %h) = @_;
+
+  ($self->{script_name} = $0) =~ s/.*?[\/\\]//;
   $self->{version} = $version;
   $self->m_init_defaults;
 
@@ -95,18 +97,75 @@ sub parse
   my @args = @_ ? split(/\s/, $_[0]) : @ARGV;
 
   ## parse ##
-  my @iters = map { [$_, [@{$self->{use_cases}{$_}{sequence}}]] } keys %{$self->{use_cases}};
-  while (@args && @iters){
-    my $atom = $self->m_get_atom(\@args);
-    @iters = grep { $self->m_fwd_iter($atom, $_->[1]) } @iters;
-    @iters || die "wrong arguments";
+  eval{
+    my @iters = map { [$_, [@{$self->{use_cases}{$_}{sequence}}]] } keys %{$self->{use_cases}};
+    while (@args && @iters){
+      my $atom = $self->m_get_atom(\@args);
+      @iters = grep { $self->m_fwd_iter($atom, $_->[1]) } @iters;
+      @iters || die "wrong arguments";
+    }
+    @iters = grep { $self->m_fwd_iter(['end'], $_->[1]) } @iters;
+    $#iters < 0 && die "wrong arguments";
+    $#iters > 0 && die "internal error: more then one use cases are suitable\n";
+    $self->m_set_arg_names($iters[0][0]);
+  };
+  if ($@){
+    print $@;
+    $self->print_usage_and_exit;
   }
-  use Data::Dumper;
-  print Dumper(\@iters);
-  @iters = grep { $self->m_fwd_iter(['end'], $_->[1]) } @iters;
-  $#iters < 0 && die "wrong arguments";
-  $#iters > 0 && die "internal error: more then one use cases are suitable\n";
-  $self->m_set_arg_names($iters[0][0]);
+
+  if ($self->is_opt('HELP')){ $self->print_help; exit; }
+  if ($self->is_opt('VERSION')){ $self->print_version; exit; }
+}
+
+sub print_help
+{
+  my $self = shift;
+  print $self->m_version_message;
+  print $self->m_help_message;
+}
+
+sub print_usage_and_exit
+{
+  my $self = shift;
+  print $self->m_usage_message;
+  exit -1;
+}
+
+sub print_version
+{
+  my $self = shift;
+  print $self->m_version_message;
+}
+
+
+
+sub m_usage_message
+{
+  my $self = shift;
+  "usage:\n".join '', map "  $self->{script_name} $_->{use_case}\n", values %{$self->{use_cases}};
+}
+
+sub m_help_message
+{
+  my $self = shift;
+  my $msg = "usage:\n";
+  my @ucs = values %{$self->{use_cases}};
+  $msg .= join '', map '  '.($_+1).": $self->{script_name} $ucs[$_]{use_case}\n", 0..$#ucs;
+  $msg .= join '', map +($_+1).": $ucs[$_]{descr}\n", 0..$#ucs;
+  while (my ($gr_name, $gr_cont) = each %{$self->{groups}}){
+    $msg .= "$gr_name:\n";
+    for my $opt (map $self->{options}{$_}, @$gr_cont){
+      $msg .= "\t".join(' ', @{$opt->{keys}})."\t$opt->{descr}\n";
+    }
+  }
+  $msg
+}
+
+sub m_version_message
+{
+  my $self = shift;
+  "version $self->{version}\n";
 }
 
 sub m_init_defaults
@@ -260,7 +319,7 @@ sub m_check_type
 sub m_check_arg
 {
   my ($self, $arg, $type) = @_;
-  !$type || "CmdArgs::Types::$type"->check($arg) || die "wrong argument $arg\n";
+  !$type || "CmdArgs::Types::$type"->check($arg) || die "'$arg' is not $type\n";
 }
 
 sub m_get_atom
