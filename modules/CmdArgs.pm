@@ -51,6 +51,12 @@ our $VERSION = '0.2.0';
 
 =cut
 
+sub arg { $_[0]{parsed}{args}{$_[1]} }
+sub opt { $_[0]{parsed}{options}{$_[1]} }
+sub is_opt { exists $_[0]{parsed}{options}{$_[1]} }
+sub args { %{$_[0]{parsed}{args}} }
+sub opts { %{$_[0]{parsed}{options}} }
+
 sub declare
 {
   my $class = shift;
