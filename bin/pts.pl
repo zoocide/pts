@@ -18,10 +18,17 @@ my $args = CmdArgs->declare(
 );
 $args->parse;
 
-print "everything is ok ;)\n";
+my %parsed_args = $args->args;
+my %parsed_opts = $args->opts;
 
 use Data::Dumper;
-print Dumper($args);
+print Dumper(\%parsed_opts);
+print Dumper(\%parsed_args);
+
+print "everything is ok ;)\n";
+
+#use Data::Dumper;
+#print Dumper($args);
 
 __END__
 my $args2 = CmdArgs->new(
