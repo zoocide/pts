@@ -56,6 +56,7 @@ sub opt { $_[0]{parsed}{options}{$_[1]} }
 sub is_opt { exists $_[0]{parsed}{options}{$_[1]} }
 sub args { %{$_[0]{parsed}{args}} }
 sub opts { %{$_[0]{parsed}{options}} }
+sub use_case { $_[0]{parsed}{use_case} }
 
 sub declare
 {
@@ -102,20 +103,18 @@ sub parse
     while (@args && @iters){
       my $atom = $self->m_get_atom(\@args);
       @iters = grep { $self->m_fwd_iter($atom, $_->[1]) } @iters;
-      @iters || die "wrong arguments";
+      @iters || die "wrong ".($atom->[0] eq 'opt' ? 'option' : 'argument')." '$atom->[1]'\n";
     }
     @iters = grep { $self->m_fwd_iter(['end'], $_->[1]) } @iters;
     $#iters < 0 && die "wrong arguments";
     $#iters > 0 && die "internal error: more then one use cases are suitable\n";
     $self->m_set_arg_names($iters[0][0]);
+    $self->{parsed}{use_case} = $iters[0][0];
   };
   if ($@){
     print $@;
     $self->print_usage_and_exit;
   }
-
-  if ($self->is_opt('HELP')){ $self->print_help; exit; }
-  if ($self->is_opt('VERSION')){ $self->print_version; exit; }
 }
 
 sub print_help
@@ -255,11 +254,11 @@ sub m_option
 
   ## parse the first key ##
   my $type = undef;
-	if ($keys[0] =~ /(.*?):(.*)/){
+  if ($keys[0] =~ /(.*?):(.*)/){
     $keys[0] = $1;
     $type = $2;
     $self->m_check_type($type);
-	}
+  }
 
   ## check all keys ##
   foreach (@keys){
@@ -338,28 +337,31 @@ sub m_get_atom
     }
 
     ## get option ##
-		my $add_sub = 0;
-		if ($cur =~ /^\-[^\-]/ && length $cur > 2){
-		# split one-char options #
-		  unshift @$args, substr($cur, 2);
-		  $add_sub = 1;
-		  $cur = substr $cur, 0, 2;
-		}
-		exists $self->{keys}{$cur} || die "unknown option '$cur'\n";
-		my $opt = $self->{keys}{$cur};
-		my $param = 1;
-		if (defined $self->{options}{$opt}{type}){
-		# option with parameter #
-		  my $type = $self->{options}{$opt}{type};
-		  @$args || die "parameter for option '$cur' is not specified\n";
-		  $param = shift @$args;
-		  $add_sub = 0;
-		  $self->m_check_arg($param, $type);
-		}
-		$self->{parsed}{options}{$opt} = $param;
-		$args->[0] = '-'.$args->[0] if $add_sub;
+    my $add_sub = 0;
+    if ($cur =~ /^\-[^\-]/ && length $cur > 2){
+    # split one-char options #
+      unshift @$args, substr($cur, 2);
+      $add_sub = 1;
+      $cur = substr $cur, 0, 2;
+    }
+    exists $self->{keys}{$cur} || die "unknown option '$cur'\n";
+    my $opt = $self->{keys}{$cur};
+    my $param = 1;
+    if (defined $self->{options}{$opt}{type}){
+    # option with parameter #
+      my $type = $self->{options}{$opt}{type};
+      @$args || die "parameter for option '$cur' is not specified\n";
+      $param = shift @$args;
+      $add_sub = 0;
+      $self->m_check_arg($param, $type);
+    }
+    $self->{parsed}{options}{$opt} = $param;
+    $args->[0] = '-'.$args->[0] if $add_sub;
 
-		return ['opt', $opt];
+    if ($opt eq 'HELP'){ $self->print_help; exit; }
+    if ($opt eq 'VERSION'){ $self->print_version; exit; }
+
+    return ['opt', $opt];
   }
 
   ## get argument ##
@@ -375,7 +377,13 @@ sub m_fwd_iter
   # option #
     @$iter || return 0;
     my $cur = $iter->[0];
-    (ref $cur && grep {$atom->[1] eq $_} @{$self->{groups}{$cur->[0]}}) || return 0;
+    while (ref $cur){
+      (grep {$atom->[1] eq $_} @{$self->{groups}{$cur->[0]}}) && return 1;
+      shift @$iter;
+      @$iter || return 0;
+      $cur = $iter->[0];
+    }
+    return 0;
   }
   elsif ($atom->[0] eq 'arg'){
   # argument #
@@ -385,7 +393,8 @@ sub m_fwd_iter
 
     $cur =~ /^(.+?):(.*?)(\+?)(\??)$/ || die "internal error (can`t parse '$cur')";
     my ($name, $type, $rep, $opt) = ($1, $2, $3, $4);
-    $self->m_check_arg($atom->[1], $type);
+    eval { $self->m_check_arg($atom->[1], $type) };
+    $@ && return 0;
     shift @$iter;
   }
   elsif ($atom->[0] eq 'end'){
