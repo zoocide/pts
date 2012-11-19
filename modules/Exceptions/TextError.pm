@@ -1,5 +1,5 @@
 package Exceptions::TextError;
-use base qw(Exception);
+use base qw(Exceptions::Exception);
 
 sub init
 {

@@ -1,7 +1,10 @@
 package Exceptions;
 use base qw(Exporter);
+use Exceptions::Exception;
 our @EXPORT;
 @EXPORT = qw(try throw catch);
+
+our $VERSION = '0.2.0';
 
 =head1 SYNOPSIS
 
@@ -10,22 +13,19 @@ our @EXPORT;
   try {
     ## do something ##
     ...
-    # throw exception of 'Exception' type
-    throw Exception "message";
+    # throw exception of 'Exceptions::Exception' type
+    throw 'Exceptions::Exception' => "message";
     ...
     # throw exception of 'MyException' type
     throw MyException => $arg1, $arg2, $arg3;
-  };
-
+  }
   catch {
     ## catch exception of 'MyException' type ##
-  } 'MyException';
-
+  } 'MyException',
   catch {
-    ## catch exception of 'Exception' type ##
+    ## catch exception of 'Exceptions::Exception' type ##
     my $msg = $_[0]->msg;    ##< obtain message from exception
-  } 'Exception';
-
+  } 'Exceptions::Exception',
   catch {
     ## catch all exceptions ##
   };
@@ -38,42 +38,29 @@ sub throw
   die +(shift)->new(@_);
 }
 
-sub try (&)
+sub try (&;$)
 {
-  eval { &{$_[0]} };
+  my $ret = eval { &{$_[0]} };
+  if ($@){
+    my $arr = $_[1];
+    if ($arr){
+      while (@$arr){
+        my ($t, $s) = @{ shift @$arr };
+        return &$s($@) if (!$t || $@->isa($t));
+      }
+    }
+    die $@;
+  }
+  $ret
 }
 
 sub catch (&;$;$)
 {
-  return unless $@;
-  my ($sub, $type) = @_;
-  return unless !$type || $@->isa($type);
-  &$sub($@);
-  $@ = undef;
-}
+  my $type = ($_[1] && !ref $_[1]) ? $_[1] : '';
+  my $ret  = ref $_[1] ? $_[1] : (ref $_[2] ? $_[2] : []);
 
-
-
-package Exception;
-
-=head1 DESCRIPTION
-
-It is the base class for exceptions.
-
-=cut
-
-sub new
-{
-  my $self = bless {}, shift;
-  $self->init(@_);
-  $self
-}
-
-sub msg { $_[0]{msg} }
-
-sub init
-{
-  $_[0]{msg} = $_[1];
+  unshift @$ret, [$type, $_[0]];
+  $ret
 }
 
 1;

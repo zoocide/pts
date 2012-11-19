@@ -1,5 +1,6 @@
-package OpenFileError;
-use base qw(Exception);
+package Exceptions::OpenFileError;
+use strict;
+use base qw(Exceptions::Exception);
 
 sub init
 {
