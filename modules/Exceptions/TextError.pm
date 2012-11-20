@@ -9,6 +9,8 @@ sub init
 }
 
 sub line { $_[0]{line} }
+sub msg  { $_[0]{line}.': '.$_[0]->SUPER::msg }
+sub info { $_[0]->SUPER::msg }
 
 1;
 
