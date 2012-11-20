@@ -23,6 +23,7 @@ my @tasks = map $db->get_tasks(load_task_id_set($_)), $args->arg('taskset');
 #print Dumper(\@tasks);
 
 use lib '..';
+my @failed;
 for my $task (@tasks){
   print $task->name, ":\n";
   my $res;
@@ -37,7 +38,18 @@ for my $task (@tasks){
     $res = 0;
   };
   print "task '", $task->name, "' ", ($res ? 'complete' : 'failed'), "\n";
+  push @failed, $task if !$res;
 }
+
+my $num_total  = @tasks;
+my $num_failed = @failed;
+my $num_ok     = $num_total - $num_failed;
+
+print "\nstatistics:"
+     ,"\nnum total    = ", $num_total
+     ,"\nnum complete = ", $num_ok
+     ,"\nnum failed   = ", $num_failed
+     ,"\n";
 
 }
 exception2string;
