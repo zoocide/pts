@@ -2,45 +2,75 @@
 use strict;
 use lib '../modules';
 use CmdArgs;
+use Exceptions;
+use TaskDB;
 
-{package CmdArgs::Types::Filename; sub check{ -f $_[1] } }
-{package CmdArgs::Types::Dir;      sub check{ -d $_[1] } }
+try{
+
+my $db = TaskDB->new('../tasks');
+CmdArgs::Types::TaskSet->set_db($db);
 
 my $args = CmdArgs->declare(
-  '0.1',
-  options => {
-    org  => ['-o --org', 'descr...'],
-    sil  => ['-s --silent', 'silent mode'],
-    file => ['-f:Filename --filename', 'specify filename'],
-    dir  => ['-d:Dir --dest', 'specify destination directory'],
+  '0.0.1',
+  use_cases => {
+    main => ['taskset:TaskSet', 'Process a set of tasks'],
   },
-  use_cases => { prime => ['OPTIONS arg1', ''] },
 );
 $args->parse;
 
-my %parsed_args = $args->args;
-my %parsed_opts = $args->opts;
-
-use Data::Dumper;
-print Dumper(\%parsed_opts);
-print Dumper(\%parsed_args);
-
-print "everything is ok ;)\n";
-
+my @tasks = map $db->get_tasks(load_task_id_set($_)), $args->arg('taskset');
 #use Data::Dumper;
-#print Dumper($args);
+#print Dumper(\@tasks);
 
-__END__
-my $args2 = CmdArgs->new(
-  '0.1',
-  opts => { cp    => CmdArgs::Flag(['-c', 'cp'], 'copy files'),
-            mv    => CmdArgs::Flag(['-m', 'mv'], 'move files'),
-            files => CmdArgs::Args('FILE', 'files'),
-          },
-  use_cases => { main => ['OPTIONS files', 'do something with files'] },
-);
+use lib '..';
+for my $task (@tasks){
+  print $task->name, ":\n";
+  my $res;
+  try{
+    eval 'use Plugins::'.$task->plugin.';';
+    $@ && throw 'Exceptions::Exception' => "plugin '".$task->plugin."' is not exist";
+    $res = ('Plugins::'.$task->plugin)->process($task);
+  }
+  exception2string
+  catch{
+    print $@;
+    $res = 0;
+  };
+  print "task '", $task->name, "' ", ($res ? 'complete' : 'failed'), "\n";
+}
 
-my $args = CmdArgs->new(
-  '0.1',
-  use_cases => { main => ['file_1 file_2', 'do something with files' },
-);
+}
+exception2string;
+
+
+sub load_task_id_set
+{
+  my $filename = shift;
+  open(my $f, '<', $filename) || die "can not open file '$filename': $!\n";
+  ### rules ###
+  #1)  # comment
+  #2)  \#name  => '#name'
+  #3)  \\#name => '\#name'
+  my @lines = map { s/^\s+//; s/^#.*//; s/^\\#/#/; s/^\\\\/\\/; s/\s+$//; $_ ? $_ : () } <$f>;
+  close $f;
+  @lines
+}
+
+
+
+package CmdArgs::Types::TaskSet;
+
+our $db;
+
+sub set_db { $db = $_[1] }
+
+sub check
+{
+  my ($class, $filename) = @_;
+  if (!-f $filename){
+    print "file '$filename' is not exists\n";
+    return 0;
+  };
+  1
+}
+
