@@ -1,6 +1,7 @@
 package Task;
 use strict;
 use ConfigFile;
+use Exceptions;
 
 =head1 SYNOPSIS
 
@@ -15,9 +16,11 @@ sub new
   $self
 }
 
-sub id   { $_[0]{id} }
-sub name { $_[0]{name} }
+sub id     { $_[0]{id} }
+sub name   { $_[0]{name} }
+sub plugin { $_[0]{plugin} }
 
+# throws: Exceptions::List
 sub init
 {
   my ($self, $id, $filename) = @_;
@@ -25,19 +28,20 @@ sub init
   $self->{name} = $id;
   $self->{filename} = $filename;
   my $conf;
-  eval {
+  try{
     $conf = ConfigFile->new($filename);
     $conf->load;
-    $self->{conf} = $conf->get_all;
-  };
-  if ($@){
-    chomp $@;
-    die "$@\nCan not create new task\n";
-  }
+    $conf->is_set('', 'plugin') || throw 'Exceptions::Exception' => "plugin is not specified in '$filename'";
 
-  if ($conf->is_set('', 'name')){
-    $self->{name} = $conf->get_var('', 'name');
+    $self->{ conf } = $conf->get_all;
+    $self->{plugin} = $conf->get_var('', 'plugin');
+    $self->{ name } = $conf->get_var('', 'name') if $conf->is_set('', 'name');
   }
+  make_exlist
+  catch{
+    push @{$@}, Exceptions::Exception->new("Can not create task '$id'");
+    throw;
+  };
 }
 
 1;
