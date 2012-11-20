@@ -2,6 +2,7 @@ package Exceptions;
 use base qw(Exporter);
 use Carp;
 use Exceptions::Exception;
+use Exceptions::List;
 our @EXPORT;
 @EXPORT = qw(try throw catch exception2string string2exception make_exlist);
 
