@@ -1,6 +1,8 @@
 package ConfigFile;
 use strict;
 use Exceptions;
+use Exceptions::TextFileError;
+use Exceptions::OpenFileError;
 
 =head1 SYNOPSIS
 
@@ -8,26 +10,22 @@ use Exceptions;
 
   try{
     $cf->load;
-  };
+  }
   catch{
-    print
-  } 'ConfigFileException';
+    print map "warning: $_\n", @{$@};
+  } 'Exceptions::List';
 
+  my $gr = $cf->get_all;
+  $gr->{'group'}{'var'};
+
+  $cf->set_group('group');
+  $cf->set_var('var_name', 'value');
+  $cf->save;
 
 =cut
 
-#my $cf = ConfigFile->new($file_name);
-#
-#$cf->load;
-#
-#my $gr = $cf->get_all;
-#$gr->{'group'}{'var'};
-#
-#$cf->set_group('group');
-#$cf->set_var('var_name', 'value');
-#$cf->save;
 
-
+# throws: -
 sub new
 {
   my $class = shift;
@@ -40,13 +38,16 @@ sub new
   $self
 }
 
+# throws: Exceptions::OpenFileError, [Exceptions::TextFileError]
 sub load
 {
   my $self = shift;
-  open(my $f, '<', $self->{fname}) || die "can`t open file '$self->{fname}': $!\n";
+  open(my $f, '<', $self->{fname}) || throw 'Exceptions::OpenFileError' => $self->{fname};
   my $l = 0;
   my @lines = map {s/^\s+|^#.*|\s+$//g; $l++; $_ ? ($l, $_) : () } <$f>;
   close $f;
+
+  my @errors;
   for (my $i = 0; $i < @lines; $i += 2 ){
     ($l, $_) = @lines[$i, $i+1];
     if    (/^\[(\w+)\]$/){
@@ -58,15 +59,20 @@ sub load
       $self->set_var($var, $val);
     }
     else{
-      print "error: unrecognized line $l in config file '$self->{fname}'\n";
+      push @errors, Exceptions::TextFileError->new($self->{fname}, $l, 'unrecognized line');
     }
+  }
+  if (@errors){
+    return @errors if wantarray;
+    throw 'Exceptions::List' => @errors;
   }
 }
 
+# throws: Exceptions::OpenFileError
 sub save
 {
   my $self = shift;
-  open(my $f, '>', $self->{fname}) || die "can`t open file '$self->{fname}': $!\n";
+  open(my $f, '>', $self->{fname}) || throw 'Exceptions::OpenFileError' => $self->{fname};
   for my $gr_name (sort keys %{$self->{content}}){
     my $gr = $self->{content}{$gr_name};
     print $f "\n[$gr_name]\n" if $gr_name;
@@ -86,6 +92,7 @@ sub is_set    { defined $_[0]{content}{$_[1]}{$_[2]} }
 sub set_group { $_[0]{cur_group} = $#_ < 1 ? '' : $_[1] }
 sub set_var   { $_[0]{content}{$_[0]{cur_group}}{$_[1]} = $_[2] }
 sub set_var_if_not_exists { $_[0]{content}{$_[0]{cur_group}}{$_[1]} = $_[2] if !exists $_[0]{content}{$_[0]{cur_group}}{$_[1]} }
+
 
 1;
 
