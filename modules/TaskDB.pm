@@ -20,30 +20,33 @@ sub new
   }, $class;
 }
 
+# throws: string
 sub get_tasks
 {
   my $self = shift;
   my @wrong_ids = grep !exists $self->{tasks}{$_}, @_;
-  @wrong_ids && die "unknown tasks:\n".(map "  $_\n", @wrong_ids);
+  @wrong_ids && die (join '', map "unknown task '$_'\n", @wrong_ids);
   map $self->{tasks}{$_}, @_
 }
 
+# throws: string
 sub m_load_tasks
 {
   my ($dir) = @_;
-  -d $dir || die "'$dir' is not a direcorty\n";
+  -d $dir || die "'$dir' is not a directory\n";
   my @tasks;
   opendir (my $d, $dir) || die "can not read directory '$dir': $!\n";
+
   for my $tname (readdir $d){
     my $file_name = catfile($dir, $tname);
     next if $tname !~ s/\.conf$//i;
     try{
       my $task = Task->new($tname, $file_name);
       push @tasks, $task;
-    };
+    }
     catch{
-      chomp $@; print "can not read '$tname' test: $@\n";
-    };
+      print $@->msg, "\n";
+    } 'Exceptions::List';
   }
   closedir $d;
   @tasks
