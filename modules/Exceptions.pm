@@ -1,8 +1,9 @@
 package Exceptions;
 use base qw(Exporter);
+use Carp;
 use Exceptions::Exception;
 our @EXPORT;
-@EXPORT = qw(try throw catch exception2string string2exception);
+@EXPORT = qw(try throw catch exception2string string2exception make_exlist);
 
 our $VERSION = '0.2.0';
 
@@ -30,10 +31,19 @@ our $VERSION = '0.2.0';
     ## catch all exceptions ##
   };
 
+  try{
+    ## do something ##
+  }
+  exception2string   ##< convert Exceptions::Exception object to string exception.
+  catch{
+    print $_[0];     ##< all exceptions prints normally
+  };
+
 =cut
 
 sub throw
 {
+  croak $@  if !@_;
   die $_[0] if ref $_[0];
   die +(shift)->new(@_);
 }
@@ -50,7 +60,7 @@ sub try (&;$)
           &$s($@);
           next;
         }
-        return &$s($@) if (!$t || $@->isa($t));
+        return &$s($@) if (!$t || (ref $@ && $@->isa($t)));
       }
     }
     die $@;
@@ -72,7 +82,7 @@ sub exception2string (;$)
   my $ret = ref $_[0] ? $_[0] : [];
 
   my $s = sub {
-    if ($_[0] && $@->isa('Exceptions::Exception')){
+    if ($_[0] && (ref $@ && $@->isa('Exceptions::Exception'))){
       chomp (my $msg = $_[0]->msg);
       $_[0] = $msg."\n";
     }
@@ -90,6 +100,18 @@ sub string2exception (;$)
       chomp($_[0]);
       $_[0] = Exceptions::Exception->new($_[0]);
     }
+  };
+  unshift @$ret, [undef, $s];
+  $ret
+}
+
+sub make_exlist (;$)
+{
+  my $ret = ref $_[0] ? $_[0] : [];
+
+  my $s = sub {
+    return if (ref $_[0] && $_[0]->isa('Exceptions::List'));
+    $_[0] = Exceptions::List->new($_[0]);
   };
   unshift @$ret, [undef, $s];
   $ret
