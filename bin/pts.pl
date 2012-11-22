@@ -11,7 +11,7 @@ my $db = TaskDB->new('../tasks');
 CmdArgs::Types::TaskSet->set_db($db);
 
 my $args = CmdArgs->declare(
-  '0.0.1',
+  '0.1.0',
   use_cases => {
     main => ['taskset:TaskSet', 'Process a set of tasks'],
   },
