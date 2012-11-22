@@ -6,7 +6,7 @@ use Exceptions::List;
 our @EXPORT;
 @EXPORT = qw(try throw catch exception2string string2exception make_exlist);
 
-our $VERSION = '0.2.0';
+our $VERSION = '0.3.0';
 
 =head1 SYNOPSIS
 
@@ -16,14 +16,14 @@ our $VERSION = '0.2.0';
     ## do something ##
     ...
     # throw exception of 'Exceptions::Exception' type
-    throw 'Exceptions::Exception' => "message";
+    throw Exception => "message";
     ...
-    # throw exception of 'MyException' type
+    # throw exception of 'Exceptions::MyException' type
     throw MyException => $arg1, $arg2, $arg3;
   }
   catch {
-    ## catch exception of 'MyException' type ##
-  } 'MyException',
+    ## catch exception of 'Exceptions::MyException' type ##
+  } 'Exceptions::MyException',
   catch {
     ## catch exception of 'Exceptions::Exception' type ##
     my $msg = $_[0]->msg;    ##< obtain message from exception
@@ -46,7 +46,7 @@ sub throw
 {
   croak $@  if !@_;
   die $_[0] if ref $_[0];
-  die +(shift)->new(@_);
+  die +('Exceptions::'.(shift))->new(@_);
 }
 
 sub try (&;$)
@@ -84,8 +84,7 @@ sub exception2string (;$)
 
   my $s = sub {
     if ($_[0] && (ref $@ && $@->isa('Exceptions::Exception'))){
-      chomp (my $msg = $_[0]->msg);
-      $_[0] = $msg."\n";
+      $_[0] = $_[0]->msg."\n";
     }
   };
   unshift @$ret, [undef, $s];
