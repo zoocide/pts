@@ -42,7 +42,7 @@ sub new
 sub load
 {
   my $self = shift;
-  open(my $f, '<', $self->{fname}) || throw 'Exceptions::OpenFileError' => $self->{fname};
+  open(my $f, '<', $self->{fname}) || throw OpenFileError => $self->{fname};
   my $l = 0;
   my @lines = map {s/^\s+|^#.*|\s+$//g; $l++; $_ ? ($l, $_) : () } <$f>;
   close $f;
@@ -64,7 +64,7 @@ sub load
   }
   if (@errors){
     return @errors if wantarray;
-    throw 'Exceptions::List' => @errors;
+    throw List => @errors;
   }
 }
 
@@ -72,7 +72,7 @@ sub load
 sub save
 {
   my $self = shift;
-  open(my $f, '>', $self->{fname}) || throw 'Exceptions::OpenFileError' => $self->{fname};
+  open(my $f, '>', $self->{fname}) || throw OpenFileError => $self->{fname};
   for my $gr_name (sort keys %{$self->{content}}){
     my $gr = $self->{content}{$gr_name};
     print $f "\n[$gr_name]\n" if $gr_name;

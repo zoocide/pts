@@ -18,9 +18,8 @@ my $args = CmdArgs->declare(
 );
 $args->parse;
 
+# it is assumed to use list of files in future
 my @tasks = map $db->get_tasks(load_task_id_set($_)), $args->arg('taskset');
-#use Data::Dumper;
-#print Dumper(\@tasks);
 
 use lib '..';
 my @failed;
@@ -29,7 +28,7 @@ for my $task (@tasks){
   my $res;
   try{
     eval 'use Plugins::'.$task->plugin.';';
-    $@ && throw 'Exceptions::Exception' => "plugin '".$task->plugin."' is not exist";
+    $@ && throw Exception => "plugin '".$task->plugin."' is not exist";
     $res = ('Plugins::'.$task->plugin)->process($task);
   }
   exception2string
@@ -37,7 +36,7 @@ for my $task (@tasks){
     print $@;
     $res = 0;
   };
-  print "task '", $task->name, "' ", ($res ? 'complete' : 'failed'), "\n";
+  print $task->name, ' ', ($res ? 'complete' : 'failed ['.$task->id.']'), "\n";
   push @failed, $task if !$res;
 }
 

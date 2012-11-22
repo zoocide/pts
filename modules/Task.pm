@@ -19,6 +19,33 @@ sub new
 sub id     { $_[0]{id} }
 sub name   { $_[0]{name} }
 sub plugin { $_[0]{plugin} }
+sub conf   { $_[0]{conf} }
+
+# my $var = $task->get_var('group_name', 'var_name');
+# throws: Exceptions::Exception
+sub get_var
+{
+  if (!exists $_[0]{conf}{$_[1]}{$_[2]}){
+    my $fname = $_[0]->{filename};
+    throw Exception => "$fname: variable '".($_[1] ? "$_[1]::" : '')."$_[2]' is not set";
+  }
+  $_[0]{conf}{$_[1]}{$_[2]}
+}
+
+# my @vars = $task->get_vars('group_name', @var_names);
+# throws: Exceptions::List
+sub get_vars
+{
+  my $self = shift;
+  my $gr   = shift;
+  my @missed = grep !exists $self->{conf}{$gr}{$_}, @_;
+  if (@missed){
+    $gr .= '::' if $gr;
+    my $fname = $self->{filename};
+    throw List => map Exceptions::Exception->new("$fname: variable '$gr$_' is not set"), @missed;
+  }
+  map $self->{conf}{$gr}{$_}, @_;
+}
 
 # throws: Exceptions::List
 sub init
@@ -31,7 +58,7 @@ sub init
   try{
     $conf = ConfigFile->new($filename);
     $conf->load;
-    $conf->is_set('', 'plugin') || throw 'Exceptions::Exception' => "plugin is not specified in '$filename'";
+    $conf->is_set('', 'plugin') || throw Exception => "plugin is not specified in '$filename'";
 
     $self->{ conf } = $conf->get_all;
     $self->{plugin} = $conf->get_var('', 'plugin');
