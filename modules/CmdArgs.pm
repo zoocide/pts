@@ -106,7 +106,7 @@ sub parse
       @iters || die "wrong ".($atom->[0] eq 'opt' ? 'option' : 'argument')." '$atom->[1]'\n";
     }
     @iters = grep { $self->m_fwd_iter(['end'], $_->[1]) } @iters;
-    $#iters < 0 && die "wrong arguments";
+    $#iters < 0 && die "wrong arguments\n";
     $#iters > 0 && die "internal error: more then one use cases are suitable\n";
     $self->m_set_arg_names($iters[0][0]);
     $self->{parsed}{use_case} = $iters[0][0];
