@@ -45,7 +45,7 @@ our $VERSION = '0.2.0';
 
   my $args->declare(
     '0.0.1',
-    use_cases => { main => ['OPTIONS arg] },
+    use_cases => { main => ['OPTIONS arg', 'description...'] },
     options => { verbose => ['-v --verbose', 'print more information'], }
   );
 
