@@ -1,4 +1,5 @@
 package Exceptions::Exception;
+use overload '""' => sub{ $_[0]->msg."\n" };
 
 =head1 DESCRIPTION
 
