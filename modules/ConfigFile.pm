@@ -10,8 +10,12 @@ $VERSION = '0.2.0';
 
 =head1 SYNOPSIS
 
-  my $decl = ConfigFileScheme->new(...);
+  my $decl = ConfigFileScheme->new( multiline => 1,... );
   my $cf   = ConfigFile->new($file_name, $decl);
+  # <=>
+  my $cf = ConfigFile->new($file_name, { multiline => 1,... });
+  # <=>
+  my $cf = ConfigFile->new($file_name,   multiline => 1,...  );
   # or
   my $cf = ConfigFile->new($file_name);
 
@@ -47,12 +51,16 @@ sub new
 
 sub init
 {
-  my $self = shift;
-  my ($fname, $decl) = @_;
+  my $self  = shift;
+  my $fname = shift;
+  my $decl  = !@_                  ? ConfigFileScheme->new
+            : !ref $_[0]           ? ConfigFileScheme->new(@_)
+            :  ref $_[0] eq 'HASH' ? ConfigFileScheme->new(%{$_[0]})
+                                   : $_[0];
   $self->{fname}     = $fname;
   $self->{content}   = {};
   $self->{cur_group} = '';
-  $self->{decl}      = defined $decl ? $decl : ConfigFileScheme->new;
+  $self->{decl}      = $decl;
 }
 
 
@@ -206,7 +214,7 @@ sub check_required
   $decl->check_required($self->{content});
 }
 
-# throws: Exceptions::OpenFileError
+# throws: string, Exceptions::OpenFileError
 sub save
 {
   my $self = shift;
@@ -215,7 +223,9 @@ sub save
     my $gr = $self->{content}{$gr_name};
     print $f "\n[$gr_name]\n" if $gr_name;
     for (sort keys %$gr){
-      print $f "$_ = $gr->{$_}\n";
+      print $f "$_ = ", (ref $gr->{$_} ? (map "\n  ".m_shield_str($_), @{$gr->{$_}})
+                                       : m_shield_str($gr->{$_})
+                        ), "\n";
     }
   }
   close $f;
@@ -263,6 +273,14 @@ sub m_normalize_str
 {
   my $ret = shift;
   $ret =~ s/\\(\\|\')/$1/g;
+  $ret
+}
+
+sub m_shield_str
+{
+  my $ret = shift;
+  $ret =~ s/(\\|\')/\\$1/g;
+  $ret = '\''.$ret.'\'' if $ret =~ /\s/;
   $ret
 }
 
