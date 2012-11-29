@@ -92,7 +92,7 @@ sub check_required
   if ($self->{required}){
     while (my ($gr, $vars) = each %{$self->{required}}){
       for (keys %$vars){
-        push @errors, Exceptions::Exception->new("$gr::$_ is not specified") if !exists $conf->{$gr}{$_};
+        push @errors, Exceptions::Exception->new("${gr}::$_ is not specified") if !exists $conf->{$gr}{$_};
       }
     }
   }
