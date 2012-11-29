@@ -21,7 +21,8 @@ my $args = CmdArgs->declare(
 $args->parse;
 
 # it is assumed to use list of files in future
-my @tasks = map $db->get_tasks(load_task_id_set($_)), $args->arg('taskset');
+my @tasks = map { -f $_ ? $db->get_tasks(load_task_id_set($_)) : $db->get_task($_) }
+                $args->arg('taskset');
 
 use lib "$FindBin::Bin/..";
 my @failed;
@@ -30,7 +31,7 @@ for my $task (@tasks){
   my $res;
   try{
     eval 'use Plugins::'.$task->plugin.';';
-    $@ && throw Exception => "plugin '".$task->plugin."' is not exist";
+    $@ && throw Exception => "plugin '".$task->plugin."' is not exist";#."\n$@\n";
     $res = ('Plugins::'.$task->plugin)->process($task, $db);
   }
   exception2string
@@ -76,7 +77,7 @@ sub set_db { $db = $_[1] }
 sub check
 {
   my ($class, $filename) = @_;
-  if (!-f $filename){
+  if (!-f $filename && !$db->task_exists($filename)){
     print "file '$filename' is not exists\n";
     return 0;
   };

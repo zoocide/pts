@@ -24,6 +24,9 @@ sub new
   }, $class;
 }
 
+# throws: -
+sub task_exists{ exists $_[0]{tasks}{$_[1]} }
+
 # throws: Exceptions::Exception
 sub get_task
 {
