@@ -91,7 +91,7 @@ sub load
   open(my $f, '<', $self->{fname}) || throw OpenFileError => $self->{fname};
 
   my $state = 1; # 0 - read string; 1 - read scalar; 2 - read array
-  my ($var, $buf, @arr, $l, $is_multiline, $is_join_lines);
+  my ($var, $buf, @arr, $l, $is_multiline, $is_join_lines, $str_bl);
   for($l = 1; <$f>; $l++){
     if ($state){
       if    (/^\s*(#|\r?\n?$)/){
@@ -112,6 +112,7 @@ sub load
         }
         @arr = m_split_buf($buf);
 
+        $str_bl = 0;
         $is_multiline  = $decl->is_multiline ($self->{cur_group}, $var);
         $is_join_lines = $decl->is_join_lines($self->{cur_group}, $var);
 
@@ -139,6 +140,7 @@ sub load
 
       if (@arr % 2 == 0){
         # string not closed
+        $str_bl = $l if !$str_bl;
         $state = 0;
         next;
       }
@@ -178,7 +180,7 @@ sub load
   }
 
   if (!$state){
-    push @errors, Exceptions::TextFileError->new($self->{fname}, $l-1, 'unclosed string variable');
+    push @errors, Exceptions::TextFileError->new($self->{fname}, $l-1, "unclosed string (see from line $str_bl)");
   }
   close $f;
 
@@ -247,14 +249,22 @@ sub m_split_buf
   my $buf = shift;
   my @ret;
   while((my $i = m_q_ind($buf)) >= 0){
-    push @ret, substr($buf, 0, $i);
+    push @ret, m_normalize_str(substr($buf, 0, $i));
     $buf = substr $buf, $i + 1;
   }
-  push @ret, $buf;
+  push @ret, m_normalize_str($buf);
   @ret
 }
 
 sub m_empty_end { !$_[0] || $_[0] =~ /^\s*\r?\n?$/ }
+
+# convert '\'' to ''' and '\\' to '\'
+sub m_normalize_str
+{
+  my $ret = shift;
+  $ret =~ s/\\(\\|\')/$1/g;
+  $ret
+}
 
 1;
 
