@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
+use lib '..';
 use Exceptions;
 
 use Test::More tests => 97;
