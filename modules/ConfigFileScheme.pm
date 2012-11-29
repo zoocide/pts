@@ -108,9 +108,11 @@ sub m_parse_decl_section
     ## check hash ##
     (!ref $decl->{$name} || ref $decl->{$name} eq 'HASH')
       or throw Exception => "wrong ConfigFileScheme declaration for section '$name'";
-    for(keys %{$decl->{$name}}){
-      (!ref $decl->{$name}{$_} || ref $decl->{$name}{$_} eq 'ARRAY')
-         or throw Exception => "wrong ConfigFileScheme declaration for section '$name'";
+    if (ref $decl->{$name}){
+      for(keys %{$decl->{$name}}){
+        (!ref $decl->{$name}{$_} || ref $decl->{$name}{$_} eq 'ARRAY')
+           or throw Exception => "wrong ConfigFileScheme declaration for section '$name'";
+      }
     }
 
     ## set declaration section ##
