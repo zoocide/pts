@@ -29,6 +29,11 @@ $VERSION = '0.2.0';
   $cf->set_var('var_name', 'value');
   $cf->save;
 
+  --------
+  $cf->check_required;         ##< according to declaration
+  $cf->check_required($hash);  ##< according to $hash, defining required variables
+  $cf->check_required('gr' => [@vars],...); ##< hash constructor
+
 =cut
 
 
@@ -165,10 +170,26 @@ sub load
   }
   close $f;
 
+  try{
+    $self->check_required;
+  }
+  catch{
+    push @errors, @{$@};
+  } 'Exceptions::List';
+
   if (@errors){
     return @errors if wantarray;
     throw List => @errors;
   }
+}
+
+# throws: Exceptions::List
+sub check_required
+{
+  my $self = shift;
+  my $decl = @_ ? ConfigFileScheme->new(required => (ref $_[0] ? $_[0] : {@_}))
+                : $self->{decl};
+  $decl->check_required($self->{content});
 }
 
 # throws: Exceptions::OpenFileError
