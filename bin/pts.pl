@@ -14,8 +14,11 @@ CmdArgs::Types::TaskSet->set_db($db);
 
 my $args = CmdArgs->declare(
   '0.1.0',
+  options => {
+    'quiet' => ['-q --quiet', 'dont print statistics and task name'],
+  },
   use_cases => {
-    main => ['taskset:TaskSet', 'Process a set of tasks'],
+    main => ['OPTIONS taskset:TaskSet', 'Process a set of tasks'],
   },
 );
 $args->parse;
@@ -24,10 +27,12 @@ $args->parse;
 my @tasks = map { -f $_ ? $db->get_tasks(load_task_id_set($_)) : $db->get_task($_) }
                 $args->arg('taskset');
 
+my $quiet = $args->is_opt('quiet');
+
 use lib "$FindBin::Bin/..";
 my @failed;
 for my $task (@tasks){
-  print $task->name, ":\n";
+  print $task->name, ":\n" if !$quiet;
   my $res;
   try{
     eval 'use Plugins::'.$task->plugin.';';
@@ -39,7 +44,7 @@ for my $task (@tasks){
     print $@;
     $res = 0;
   };
-  print $task->name, ' ', ($res ? 'complete' : 'failed ['.$task->id.']'), "\n";
+  print $task->name, ' ', ($res ? 'complete' : 'failed ['.$task->id.']'), "\n" if !$res || !$quiet;
   push @failed, $task if !$res;
 }
 
@@ -51,7 +56,8 @@ print "\nstatistics:"
      ,"\nnum total    = ", $num_total
      ,"\nnum complete = ", $num_ok
      ,"\nnum failed   = ", $num_failed
-     ,"\n";
+     ,"\n"
+     if !$quiet;
 
 
 
