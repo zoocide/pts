@@ -1,13 +1,15 @@
 #!/usr/bin/perl -w
 use strict;
-use lib '../modules';
+use FindBin;
+use lib "$FindBin::Bin/../modules";
 use CmdArgs;
 use Exceptions;
 use TaskDB;
 
-try{
-
-my $db = TaskDB->new('../tasks');
+## load TaskDB ##
+my $db;
+try{ $db = TaskDB->new("$FindBin::Bin/../tasks") } string2exception make_exlist
+catch{ push @{$@}, Exceptions::Exception->new('can not load tasks database'); throw };
 CmdArgs::Types::TaskSet->set_db($db);
 
 my $args = CmdArgs->declare(
@@ -21,7 +23,7 @@ $args->parse;
 # it is assumed to use list of files in future
 my @tasks = map $db->get_tasks(load_task_id_set($_)), $args->arg('taskset');
 
-use lib '..';
+use lib "$FindBin::Bin/..";
 my @failed;
 for my $task (@tasks){
   print $task->name, ":\n";
@@ -29,7 +31,7 @@ for my $task (@tasks){
   try{
     eval 'use Plugins::'.$task->plugin.';';
     $@ && throw Exception => "plugin '".$task->plugin."' is not exist";
-    $res = ('Plugins::'.$task->plugin)->process($task);
+    $res = ('Plugins::'.$task->plugin)->process($task, $db);
   }
   exception2string
   catch{
@@ -50,8 +52,6 @@ print "\nstatistics:"
      ,"\nnum failed   = ", $num_failed
      ,"\n";
 
-}
-exception2string;
 
 
 sub load_task_id_set
@@ -70,8 +70,6 @@ sub load_task_id_set
 
 
 package CmdArgs::Types::TaskSet;
-
-our $db;
 
 sub set_db { $db = $_[1] }
 

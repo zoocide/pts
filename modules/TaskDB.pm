@@ -1,5 +1,6 @@
 package TaskDB;
 use strict;
+use Cwd qw(realpath);
 use File::Spec::Functions qw(catfile);
 use Exceptions;
 use Task;
@@ -11,16 +12,27 @@ use Task;
 
 =cut
 
+# throws: Exceptions::Exception
 sub new
 {
-  my ($class, $dir) = @_;
+  my ($class, $tasks_dir) = @_;
+  my $dir = realpath($tasks_dir);
+  $dir || throw Exception => "path '$tasks_dir' not exists";
   my $self = bless {
     dirname => $dir,
     tasks   => { map +($_->id, $_), m_load_tasks($dir) },
   }, $class;
 }
 
-# throws: string
+# throws: Exceptions::Exception
+sub get_task
+{
+  my $self = shift;
+  exists $self->{tasks}{$_[0]} || throw Exception => "unknown task '$_[0]'";
+  $self->{tasks}{$_[0]}
+}
+
+# throws: Exceptions::List
 sub get_tasks
 {
   my $self = shift;
@@ -29,19 +41,19 @@ sub get_tasks
   map $self->{tasks}{$_}, @_
 }
 
-# throws: string
+# throws: Exceptions::Exception
 sub m_load_tasks
 {
   my ($dir) = @_;
-  -d $dir || die "'$dir' is not a directory\n";
+  -d $dir || throw Exception => "'$dir' is not a directory";
   my @tasks;
-  opendir (my $d, $dir) || die "can not read directory '$dir': $!\n";
+  opendir (my $d, $dir) || throw Exception => "can not read directory '$dir': $!\n";
 
   for my $tname (readdir $d){
     my $file_name = catfile($dir, $tname);
     next if $tname !~ s/\.conf$//i;
     try{
-      my $task = Task->new($tname, $file_name);
+      my $task = Task->new($tname, $file_name, catfile($dir,'data',$tname));
       push @tasks, $task;
     }
     catch{
