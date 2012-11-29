@@ -91,7 +91,7 @@ sub load
   open(my $f, '<', $self->{fname}) || throw OpenFileError => $self->{fname};
 
   my $state = 1; # 0 - read string; 1 - read scalar; 2 - read array
-  my ($var, $buf, @arr, $l);
+  my ($var, $buf, @arr, $l, $is_multiline, $is_join_lines);
   for($l = 1; <$f>; $l++){
     if ($state){
       if    (/^\s*(#|\r?\n?$)/){
@@ -112,12 +112,16 @@ sub load
         }
         @arr = m_split_buf($buf);
 
-        if ($decl->is_multiline($self->{cur_group}, $var)){
+        $is_multiline  = $decl->is_multiline ($self->{cur_group}, $var);
+        $is_join_lines = $decl->is_join_lines($self->{cur_group}, $var);
+
+        if ($is_multiline){
           $state = 2;
+          $self->{content}{$self->{cur_group}}{$var} = '' if $is_join_lines;
         }
         else{
           $state = 1;
-          $arr[0] =~ s/(\r|\n)//g if @arr == 1;
+          $arr[0] =~ s/\s*(\r|\n)$//g if @arr == 1;
           if (@arr > 1 && ($arr[0] || (@arr > 2 && $arr[2] !~ /^\s*$/) || @arr > 3 )){
             push @errors, Exceptions::TextFileError->new($self->{fname}, $l, 'wrong value of scalar variable');
             next;
@@ -126,6 +130,7 @@ sub load
       }
       elsif ($state == 2){
         @arr = m_split_buf($_);
+        $buf = $_ if $is_join_lines;
       }
       else{
         push @errors, Exceptions::TextFileError->new($self->{fname}, $l, 'unrecognized line');
@@ -140,11 +145,12 @@ sub load
     }
     else{
     ## read string ##
+      $buf .= $_ if $is_join_lines;
       my @t = m_split_buf($_);
       $arr[-1] .= shift @t;
       next if !@t;
 
-      if (!$decl->is_multiline($self->{cur_group}, $var) && (!m_empty_end($t[0]) || @t > 1)){
+      if (!$is_multiline && (!m_empty_end($t[0]) || @t > 1)){
         push @errors, Exceptions::TextFileError->new($self->{fname}, $l, 'wrong value of scalar variable');
         $state = 1;
         next;
@@ -152,16 +158,22 @@ sub load
 
       push @arr, @t;
       next if (@t % 2 == 0);
-      $state = $decl->is_multiline($self->{cur_group}, $var) ? 2 : 1;
+      $state = $is_multiline ? 2 : 1;
     }
 
-    ## add
+    ## add ##
     if    ($state == 1){
       shift @arr if @arr == 3;
       $self->set_var($var, $arr[0]);
     }
     else{
-      push @{$self->{content}{$self->{cur_group}}{$var}}, map { $_ % 2 ? $arr[$_] : grep $_, split /\s+/, $arr[$_] } 0..$#arr;
+      if ($is_join_lines){
+        $self->{content}{$self->{cur_group}}{$var} .= $buf;
+      }
+      else{
+        push @{$self->{content}{$self->{cur_group}}{$var}}
+             , map { $_ % 2 ? $arr[$_] : grep $_, split /\s+/, $arr[$_] } 0..$#arr;
+      }
     }
   }
 
