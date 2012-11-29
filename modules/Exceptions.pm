@@ -1,6 +1,5 @@
 package Exceptions;
 use base qw(Exporter);
-use Carp;
 use Exceptions::Exception;
 use Exceptions::List;
 our @EXPORT;
@@ -44,7 +43,7 @@ our $VERSION = '0.3.0';
 
 sub throw
 {
-  croak $@  if !@_;
+  die $@  if !@_;
   die $_[0] if ref $_[0];
   die +('Exceptions::'.(shift))->new(@_);
 }
