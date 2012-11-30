@@ -1,12 +1,16 @@
 package CmdArgs;
 use strict;
-use base qw(Exporter); # nothing to export
+use warnings;
+use Exceptions;
+use Exceptions::InternalError;
 
 use Carp;
 
-our $VERSION = '0.2.0';
+our $VERSION = '0.2.1';
 
 =head1 SYNOPSIS
+
+  NOTE: restrictions are not implemented yet!!!
 
   use CmdArgs;
 
@@ -58,6 +62,7 @@ sub args { %{$_[0]{parsed}{args}} }
 sub opts { %{$_[0]{parsed}{options}} }
 sub use_case { $_[0]{parsed}{use_case} }
 
+# throws: string, Exceptions::Exception
 sub declare
 {
   my $class = shift;
@@ -78,43 +83,53 @@ sub init
   foreach my $sect (qw(options groups use_cases restrictions)){
     exists $h{$sect} || next;
     my $func = "m_$sect";
-    $h{$sect} || die "wrong $sect specification\n";
+    $h{$sect} || throw Exception => "wrong $sect specification";
     $self->$func($h{$sect});
     delete $h{$sect};
   }
 
-  scalar keys %h == 0 || die "unknown options: ".join(', ', keys %h)."\n";
+  scalar keys %h == 0 || throw Exception => 'unknown options: '.join(', ', keys %h);
 }
 
+# throws: Exceptions::List
 sub parse
 {
   my $self = shift;
 
   ## initialize ##
-  $self->{parsed} = { options => {}, args => {} };
+  $self->{parsed} = { options => {}, args => {}, args_arr => [] };
   $self->{options_end} = 0;
 
   ## obtain @args array ##
-  my @args = @_ ? split(/\s/, $_[0]) : @ARGV;
+  my @args = @_ ? split(/\s+/, $_[0]) : @ARGV;
 
   ## parse ##
-  eval{
-    my @iters = map { [$_, [@{$self->{use_cases}{$_}{sequence}}]] } keys %{$self->{use_cases}};
-    while (@args && @iters){
+  try{
+    my @wrp_iters = map { [$_, [$self->{use_cases}{$_}{sequence}, []]] }
+                        keys %{$self->{use_cases}};
+    while (@args && @wrp_iters){
       my $atom = $self->m_get_atom(\@args);
-      @iters = grep { $self->m_fwd_iter($atom, $_->[1]) } @iters;
-      @iters || die "wrong ".($atom->[0] eq 'opt' ? 'option' : 'argument')." '$atom->[1]'\n";
+      @wrp_iters = map {
+        my $u = $_->[0];
+        map [$u, $_], $self->m_fwd_iter($atom, $_->[1])
+      } @wrp_iters;
+      @wrp_iters || throw Exception => 'wrong '.(  $atom->[0] eq 'opt' ? 'option' : 'argument')
+                                               ." '$atom->[1]'";
     }
-    @iters = grep { $self->m_fwd_iter(['end'], $_->[1]) } @iters;
-    $#iters < 0 && die "wrong arguments\n";
-    $#iters > 0 && die "internal error: more then one use cases are suitable\n";
-    $self->m_set_arg_names($iters[0][0]);
-    $self->{parsed}{use_case} = $iters[0][0];
-  };
-  if ($@){
-    print $@;
-    $self->print_usage_and_exit;
+    @wrp_iters = map {
+      my $u = $_->[0];
+      map [$u, $_], $self->m_fwd_iter(['end'], $_->[1])
+    } @wrp_iters;
+    $#wrp_iters < 0 && throw Exception => 'wrong arguments';
+    $#wrp_iters > 0 && throw Exception => 'internal error: more then one use cases are suitable';
+    $self->m_set_arg_names($wrp_iters[0][1]);
+    $self->{parsed}{use_case} = $wrp_iters[0][0];
   }
+  make_exlist
+  catch{
+    push @{$@}, Exceptions::Exception->new($self->m_usage_message);
+    throw;
+  };
 }
 
 sub print_help
@@ -167,6 +182,7 @@ sub m_version_message
   "version $self->{version}\n";
 }
 
+# throws: -
 sub m_init_defaults
 {
   my $self = shift;
@@ -175,14 +191,19 @@ sub m_init_defaults
   $self->{options}{HELP}    = { keys  => ['--help'   ], type  => undef, descr => 'print help' };
   $self->{options}{VERSION} = { keys  => ['--version'], type  => undef, descr => 'print version' };
   $self->{groups}{OPTIONS}  = [qw(HELP VERSION)];
-  $self->{use_cases}{main} = { use_case => 'OPTIONS args...', sequence => [['OPTIONS'], 'args+'], descr => ''}
+  $self->{use_cases}{main} = { use_case => 'OPTIONS args...',
+                               sequence => [['group', 'OPTIONS'],
+                                           [['arg','args','','','...'],
+                                           []]],
+                               descr => ''};
 }
 
+# throws: Exceptions::Exception
 sub m_options
 {
   my ($self, $opts) = @_;
 
-  ref $opts eq 'HASH' || die "wrong options specification: hash should be used\n";
+  ref $opts eq 'HASH' || throw Exception => 'wrong options specification: hash should be used';
 
   while (my ($name, $val) = each %$opts){
     $self->{options}{$name} = $self->m_option($name, $val);
@@ -191,18 +212,21 @@ sub m_options
   @{$self->{groups}{OPTIONS}} = keys %{$self->{options}};
 }
 
+# throws: Exceptions::Exception
 sub m_groups
 {
   my ($self, $groups) = @_;
 
   ## check correctness of the specification ##
-  ref $groups eq 'HASH' || die "wrong groups specification: hash should be used\n";
+  ref $groups eq 'HASH' || throw Exception => 'wrong groups specification: hash should be used';
 
   while (my ($name, $opts) = each %$groups){
-    ref $opts eq 'ARRAY' || die "worng group '$name' specification: group is an array of options\n";
+    ref $opts eq 'ARRAY' || throw Exception => "worng group '$name' specification: "
+                                              .'group is an array of options';
 
     foreach (@$opts){
-      exists $self->{options}{$_} || die "unknown option '$_' specified for group '$name'\n";
+      exists $self->{options}{$_}
+        || throw Exception => "unknown option '$_' specified for group '$name'";
     }
   }
 
@@ -210,6 +234,7 @@ sub m_groups
   $self->{groups} = $groups;
 }
 
+# throws: Exceptions::Exception
 sub m_use_cases
 {
   my ($self, $use_cases) = @_;
@@ -217,24 +242,28 @@ sub m_use_cases
   # remove default main use_case
   delete $self->{use_cases}{main};
 
-  ref $use_cases eq 'HASH' || die "wrong use cases specification: hash should be used\n";
+  ref $use_cases eq 'HASH'
+    || throw Exception => 'wrong use cases specification: hash should be used';
 
   while (my ($name, $val) = each %$use_cases){
     $self->{use_cases}{$name} = $self->m_use_case($name, $val);
   }
 }
 
+# throws: Exceptions::Exception
 sub m_restrictions
 {
   my ($self, $restrs) = @_;
 
   ## unpack restrictions ##
   my @res;
-  ref $restrs eq 'ARRAY' || die "wrong restrictions specification: array must be used\n";
+  ref $restrs eq 'ARRAY'
+    || throw Exception => 'wrong restrictions specification: array must be used';
   for (@$restrs){
     my @opts = split /|/;
     for (@opts){
-      exists $self->{options}{$_} || die "unknow option '$_' is specified in restriction\n";
+      exists $self->{options}{$_}
+        || throw Exception => "unknow option '$_' is specified in restriction";
     }
     push @res, [@opts];
   }
@@ -243,14 +272,20 @@ sub m_restrictions
   $self->{restrictions} = [@res];
 }
 
+# on result:
+#   $self->{keys}{@keys_of_option} = $option_name
+#   return { keys  => [@keys_of_option],
+#            type  => $type_of_the_first_key,
+#            descr => $opt_value->[1] }
+# throws: Exceptions::Exception
 sub m_option
 {
   my ($self, $name, $opt_value) = @_;
 
   ## unpack $opt_value ##
-  $#$opt_value < 0 && die "wrong option '$name' specification\n";
+  $#$opt_value < 0 && throw Exception => "wrong option '$name' specification";
   my @keys  = split /\s+/, $opt_value->[0];
-  $#keys < 0 && die "no keys specified for option '$name'\n";
+  $#keys < 0 && throw Exception => "no keys specified for option '$name'";
 
   ## parse the first key ##
   my $type = undef;
@@ -262,8 +297,8 @@ sub m_option
 
   ## check all keys ##
   foreach (@keys){
-    /[^\w_-]/ && die "worong option '$name' specification: '$_'\n";
-    exists $self->{keys}{$_} && die "key '$_' duplicate\n";
+    /[^\w_-]/ && throw Exception => "worong option '$name' specification: '$_'";
+    exists $self->{keys}{$_} && throw Exception => "key '$_' duplicate";
     $self->{keys}{$_} = $name;
   }
 
@@ -276,51 +311,72 @@ sub m_option
   $ret
 }
 
+# throws: Exceptions::Exception
 sub m_use_case
 {
   my ($self, $name, $use_case) = @_;
 
   ## unpack $use_case ##
-  ref $use_case eq 'ARRAY' || die "wrong use case '$name' specification: array should be used\n";
-  $#$use_case < 0 && die "worng use case '$name' specification: use case sequence is not specified\n";
+  ref $use_case eq 'ARRAY' || throw Exception => "wrong use case '$name' specification: "
+                                                .'array should be used';
+  $#$use_case < 0 && throw Exception => "worng use case '$name' specification: "
+                                       .'use case sequence is not specified';
   my @seq = split /\s+/, $use_case->[0];
 
   ## parse sequence ##
   for my $i (0..$#seq){
     my $w = $seq[$i];
     if (exists $self->{groups}{$w}){
-      $seq[$i] = [$w];
+    ## options group ##
+      $seq[$i] = ['group', $w]; #< [type, group_name]
     }
     elsif ($w =~ /^(\w+)(:(.*?))?(\.\.\.)?(\?)?$/){
-      my ($n, $t, $mult, $q) = ($1, ($3 ? $3 : ''), ($4 ? '+' : ''), ($5 ? '?' : ''));
-      $self->m_check_type($t);
-      $seq[$i] = $n.':'.$t.$mult.$q;
+      my ($n, $t, $mult, $q) = ($1, $3, $4, $5);
+      if (exists $self->{options}{$n}){
+      ## mandatory option ##
+        ($t || $mult) && throw Exception => "wrong use case '$name' specification: "
+                                           ."syntax error in option '$n' specification";
+        $seq[$i] = ['mopt', $n, $q]; #< [type, option_name, can_absent]
+      }
+      else{
+      ## argument ##
+        $self->m_check_type($t);
+        $seq[$i] = ['arg', $n, $t, $q, $mult]; #<[type, arg_name, arg_type, can_absent, array]
+      }
     }
     else{
-      die "wrong use case '$name' spceification: syntax error in '$w'\n";
+      throw Exception => "wrong use case '$name' spceification: syntax error in '$w'";
     }
   }
+
+  my $p_seq = [];
+  $p_seq = m_p_add($p_seq, $seq[-$_]) for 1..@seq;
 
   ## return new use_case ##
   my $ret = {
     use_case => $use_case->[0],
-    sequence => [@seq], ##< ([group_name_1], 'name1:type1', [group_name_2], 'name3:+?', 'name4:type3')
+    sequence => $p_seq,
     descr    => $#$use_case > 0 ? $use_case->[1] : '',
   };
   $ret
 }
 
+# throws: Exceptions::Exception
 sub m_check_type
 {
   my ($self, $type) = @_;
+  eval{ "CmdArgs::Types::$type"->can('check') || die };
+  $@ && throw Exception => "wrong type specified '$type'";
 }
 
+# throws: Exceptions::Exception, ...
 sub m_check_arg
 {
   my ($self, $arg, $type) = @_;
-  !$type || "CmdArgs::Types::$type"->check($arg) || die "'$arg' is not $type\n";
+  !$type || "CmdArgs::Types::$type"->check($arg) || throw Exception => "'$arg' is not $type";
 }
 
+# throws: Exceptions::Exception, ...
 sub m_get_atom
 {
   my ($self, $args) = @_;
@@ -330,9 +386,10 @@ sub m_get_atom
 
   if (!$self->{options_end} && (substr($cur,0,1) eq '-' || exists $self->{keys}{$cur}))
   {
+  ## option ##
     if ($cur eq '--'){
     # case '--' #
-      $self->{options_end} = 1;
+      $self->{options_end} = 1; ##< enable arguments only mode
       return $self->m_get_atom($args);
     }
 
@@ -344,22 +401,23 @@ sub m_get_atom
       $add_sub = 1;
       $cur = substr $cur, 0, 2;
     }
-    exists $self->{keys}{$cur} || die "unknown option '$cur'\n";
+    exists $self->{keys}{$cur} || throw Exception => "unknown option '$cur'";
     my $opt = $self->{keys}{$cur};
     my $param = 1;
     if (defined $self->{options}{$opt}{type}){
     # option with parameter #
       my $type = $self->{options}{$opt}{type};
-      @$args || die "parameter for option '$cur' is not specified\n";
+      @$args || throw Exception => "parameter for option '$cur' is not specified";
       $param = shift @$args;
       $add_sub = 0;
-      $self->m_check_arg($param, $type);
+      $self->m_check_arg($param, $type)
+        || throw Exception => "wrong parameter '$param' for option '$cur'";
     }
     $self->{parsed}{options}{$opt} = $param;
     $args->[0] = '-'.$args->[0] if $add_sub;
 
-    if ($opt eq 'HELP'){ $self->print_help; exit; }
-    if ($opt eq 'VERSION'){ $self->print_version; exit; }
+    $opt eq 'HELP'    && throw Exception => $self->m_help_message;
+    $opt eq 'VERSION' && throw Exception => $self->m_version_message;
 
     return ['opt', $opt];
   }
@@ -369,52 +427,136 @@ sub m_get_atom
   ['arg', $cur]
 }
 
+# iter: [sequence, parsed_arguments]
+# sequence         = [] | [elm1, []] | [elm1, [elm2, []]] | ...
+# parsed_arguments = [] | [arg1, []] | [arg1, [arg2, []]] | ...
+# returns: (@fwd_iters)
+# throws: Exceptions::Exception, Exceptions::InternalError
 sub m_fwd_iter
 {
   my ($self, $atom, $iter) = @_;
+  my @ret;
 
   if ($atom->[0] eq 'opt'){
   # option #
-    @$iter || return 0;
-    my $cur = $iter->[0];
-    while (ref $cur){
-      (grep {$atom->[1] eq $_} @{$self->{groups}{$cur->[0]}}) && return 1;
-      shift @$iter;
-      @$iter || return 0;
-      $cur = $iter->[0];
+    for(my $seq = $iter->[0]; !m_is_p_empty($seq); m_move_next_p($seq)){
+      my $cur = m_value_p($seq);
+      if    ($cur->[0] eq 'group'){
+        if (grep $atom->[1] eq $_, @{$self->{groups}{$cur->[1]}}){
+        # group contains current option
+          push @ret, [$seq, $iter->[1]];
+        }
+        next;
+      }
+      elsif ($cur->[0] eq 'mopt'){
+        push @ret, [m_get_next_p($seq), $iter->[1]] if $atom->[1] eq $cur->[1];
+        next if $cur->[2]; #< '?' is present
+        last;
+      }
+      elsif ($cur->[0] eq 'arg'){
+        next if $cur->[3]; #< '?' is present
+        last;
+      }
+      else{
+        throw InternalError => "wrong type '$cur->[0]' of sequence";
+      }
     }
-    return 0;
   }
   elsif ($atom->[0] eq 'arg'){
   # argument #
-    shift @$iter while @$iter && ref $iter->[0];
-    @$iter || return 0;
-    my $cur = $iter->[0];
-
-    $cur =~ /^(.+?):(.*?)(\+?)(\??)$/ || die "internal error (can`t parse '$cur')";
-    my ($name, $type, $rep, $opt) = ($1, $2, $3, $4);
-    eval { $self->m_check_arg($atom->[1], $type) };
-    $@ && return 0;
-    shift @$iter;
+    for(my $seq = $iter->[0]; !m_is_p_empty($seq); m_move_next_p($seq)){
+      my $cur = m_value_p($seq);
+      if    ($cur->[0] eq 'group'){
+        next;
+      }
+      elsif ($cur->[0] eq 'mopt'){
+        next if $cur->[2]; #< '?' is present
+        last;
+      }
+      elsif ($cur->[0] eq 'arg'){
+        my $present = !m_is_p_empty($iter->[1]) && m_value_p($iter->[1]) eq $cur->[1];
+        if (!$cur->[2] || eval{$self->m_check_arg($atom->[1], $cur->[2])}){
+          push @ret, [$cur->[4] ? $seq : m_get_next_p($seq), m_p_add($iter->[1], $cur)];
+        }
+        elsif($cur->[2] && $@){
+          # m_check_arg failed
+          #
+          # INSERT MESSAGE PROCESSING HERE
+          #
+        }
+        next if $cur->[3] || ($cur->[4] && $present);
+        last;
+      }
+      else{
+        throw InternalError => "wrong type '$cur->[0]' of sequence";
+      }
+    }
   }
   elsif ($atom->[0] eq 'end'){
   # end of parse #
-    shift @$iter while @$iter && ref $iter->[0];
-    @$iter && return 0;
+    m_is_iter_empty($iter) && return $iter;
+    for(my $seq = $iter->[0]; !m_is_p_empty($seq); m_move_next_p($seq)){
+      my $cur = m_value_p($seq);
+      if    ($cur->[0] eq 'group'){
+        next;
+      }
+      elsif ($cur->[0] eq 'mopt'){
+        next if $cur->[2]; #< '?' is present
+        return ();
+      }
+      elsif ($cur->[0] eq 'arg'){
+        my $present = !m_is_p_empty($iter->[1]) && m_value_p($iter->[1]) eq $cur->[1];
+        next if $cur->[3] || ($cur->[4] && $present);
+        return ();
+      }
+      else{
+        throw InternalError => "wrong type '$cur->[0]' of sequence";
+      }
+    }
+    return [[], $iter->[1]]; #< return empty sequence
   }
   else{
-    die "internal error: wrong atom type ($atom->[0])";
+    throw InternalError => "wrong atom type ($atom->[0])";
   }
 
-  1
+  @ret
 }
 
+sub m_is_p_empty  { @{$_[0]} == 0 }                   #< $bool = m_is_p_empty($p);
+sub m_move_next_p { $_[0] = $_[0][1] }                #< m_move_next_p($p);
+sub m_get_next_p  { $_[0][1] }                        #< $next = m_get_next_p($p);
+sub m_value_p     { $_[0][0] }                        #< $value = m_value_p($p);
+sub m_p_add       { [$_[1], $_[0]] }                  #< $new_p = m_p_add($p, $value)
+
+# m_dbg($condition, caller_depth);
+sub m_dbg
+{
+  if ($_[0]){
+    my (undef, $cf, $cl) = caller;
+    my (undef, $f, $l) = caller($_[1]);
+    print "DEBUG: assert $cf:$cl. Called from $f:$l\n";
+  }
+}
+
+sub m_is_iter_empty { @{$_[0][0]} == 0 } #< $bool = m_is_iter_empty($iter);
+
+# throws: Exceptions::Exception
 sub m_set_arg_names
 {
-  my ($self, $use_case) = @_;
-  my @names = map { ref $_ ? () : (/(.+?):/ && $1) } @{$self->{use_cases}{$use_case}{sequence}};
-  $#names == $#{$self->{parsed}{args_arr}} || die "internal error: can`t set names for arguments";
-  $self->{parsed}{args} = { map { ($names[$_], $self->{parsed}{args_arr}[$_]) } 0..$#names };
+  my ($self, $iter) = @_;
+  my @args = @{$self->{parsed}{args_arr}};
+  for (my $p = $iter->[1]; !m_is_p_empty($p); m_move_next_p($p)){
+    my $cur = m_value_p($p);
+    $cur->[0] eq 'arg' || throw InternalError => "wrong type '$cur->[0]' of arguments sequence";
+    if ($cur->[4]){
+    # array #
+      push @{$self->{parsed}{args}{$cur->[1]}}, pop @args;
+    }
+    else{
+      $self->{parsed}{args}{$cur->[1]} = pop @args;
+    }
+  }
+  @args && throw InternalError => 'parsed arguments mismatch ['.scalar(@args).']';
 }
 
 1;
