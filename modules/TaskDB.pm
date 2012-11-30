@@ -26,6 +26,7 @@ sub new
 
 # throws: -
 sub task_exists{ exists $_[0]{tasks}{$_[1]} }
+sub all_task_ids { keys %{$_[0]{tasks}} }
 
 # throws: Exceptions::Exception
 sub get_task
