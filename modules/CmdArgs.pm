@@ -125,9 +125,10 @@ sub parse
     $self->m_set_arg_names($wrp_iters[0][1]);
     $self->{parsed}{use_case} = $wrp_iters[0][0];
   }
+  catch{ throw } 'Exceptions::CmdArgsInfo',
   make_exlist
   catch{
-    push @{$@}, Exceptions::Exception->new($self->m_usage_message);
+    push @{$@}, Exceptions::CmdArgsInfo->new($self->m_usage_message);
     throw;
   };
 }
@@ -376,7 +377,7 @@ sub m_check_arg
   !$type || "CmdArgs::Types::$type"->check($arg) || throw Exception => "'$arg' is not $type";
 }
 
-# throws: Exceptions::Exception, ...
+# throws: Exceptions::Exception, Exceptions::CmdArgsInfo, ...
 sub m_get_atom
 {
   my ($self, $args) = @_;
@@ -416,8 +417,8 @@ sub m_get_atom
     $self->{parsed}{options}{$opt} = $param;
     $args->[0] = '-'.$args->[0] if $add_sub;
 
-    $opt eq 'HELP'    && throw Exception => $self->m_help_message;
-    $opt eq 'VERSION' && throw Exception => $self->m_version_message;
+    $opt eq 'HELP'    && throw CmdArgsInfo => $self->m_help_message;
+    $opt eq 'VERSION' && throw CmdArgsInfo => $self->m_version_message;
 
     return ['opt', $opt];
   }
@@ -558,6 +559,12 @@ sub m_set_arg_names
   }
   @args && throw InternalError => 'parsed arguments mismatch ['.scalar(@args).']';
 }
+
+
+package Exceptions::CmdArgsInfo;
+use base qw(Exceptions::Exception);
+
+sub init { (my $self = shift)->SUPER::init(@_); chomp($self->{msg}); }
 
 1;
 
