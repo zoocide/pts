@@ -10,13 +10,15 @@ use TaskDB;
 my $db;
 try{ $db = TaskDB->new("$FindBin::Bin/../tasks") } string2exception make_exlist
 catch{ push @{$@}, Exceptions::Exception->new('can not load tasks database'); throw };
-CmdArgs::Types::TaskSet->set_db($db);
 
 my $args = CmdArgs->declare(
   '0.1.0',
   options => {
     'quiet' => ['-q --quiet', 'dont print statistics and task name'],
     'list'  => ['-l --list',  'print all tasks in database'],
+  },
+  groups => {
+    OPTIONS => [qw(quiet)],
   },
   use_cases => {
     main => ['OPTIONS taskset:TaskSet', 'Process a set of tasks'],
@@ -86,8 +88,6 @@ sub load_task_id_set
 
 package CmdArgs::Types::TaskSet;
 use Exceptions;
-
-sub set_db { $db = $_[1] }
 
 sub check
 {
