@@ -3,7 +3,6 @@ use strict;
 use base qw(Plugins::Base);
 use File::Find;
 use File::Spec::Functions qw(catfile rel2abs);
-BEGIN{ eval{ use Time::HiRes qw(time) } } ##< used only for debug
 use Exceptions;
 use Exceptions::OpenFileError;
 use ConfigFile;
@@ -23,12 +22,10 @@ use ConfigFile;
 
 =cut
 
-my ($_debug_, $_t_) = (1); ##< print debug info
-
 sub process
 {
   my ($class, $task, $taskDB) = @_;
-  m_reset_time();
+  $task->DEBUG_RESET(1);
 
   my $type = $task->get_var('' => 'type');
   (grep $type eq $_, qw(init check)) || throw Exception => "wrong type '$type'";
@@ -52,7 +49,7 @@ sub process
   );
   # get files in working directory
   my @found = sort(m_files_in_dir($work_dir));
-  m_debug(scalar(@found)," files found");
+  $task->DEBUG_TR(1, scalar(@found), " files found");
 
   if ($type eq 'init'){
   ## 'init' case ##
@@ -67,13 +64,13 @@ sub process
   else{
   ## 'check' case ##
     $conf->load;
-    m_debug("saved data (", scalar @{$conf->get_var('' => 'files')}, ") loaded");
+    $task->DEBUG_TR(1, "saved data (", scalar @{$conf->get_var('' => 'files')}, ") loaded");
     my @files = sort grep $work_dir eq substr($_, 0, $l), @{$conf->get_var('' => 'files')};
-    m_debug("files are filtered for current dir");
+    $task->DEBUG_TR(1, "files are filtered for current dir");
     my @new_files = grep !m_arr_contains(\@files, $_), @found;
-    m_debug("new files found");
+    $task->DEBUG_TR(1, "new files found");
     my @mis_files = grep !m_arr_contains(\@found, $_), @files;
-    m_debug("removed files found");
+    $task->DEBUG_TR(1, "removed files found");
     @new_files && print "new files:\n"    , map "  $_\n", @new_files;
     @mis_files && print "removed files:\n", map "  $_\n", @mis_files;
   }
@@ -106,14 +103,6 @@ sub m_arr_contains
     else{ $e = $i }
   }
   $arr->[$b] eq $elem || $arr->[$e] eq $elem
-}
-
-sub m_reset_time{ $_t_ = time }
-sub m_debug
-{
-  $_t_ = sprintf '%.6f',time() - $_t_;
-  $_debug_ && print "DEBUG [${_t_}s]: ", @_, "\n";
-  $_t_ = time;
 }
 
 1;
