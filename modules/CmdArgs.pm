@@ -122,8 +122,8 @@ sub parse
     } @wrp_iters;
     $#wrp_iters < 0 && throw Exception => 'wrong arguments';
     $#wrp_iters > 0 && throw Exception => 'internal error: more then one use cases are suitable';
-    $self->m_set_arg_names($wrp_iters[0][1]);
     $self->{parsed}{use_case} = $wrp_iters[0][0];
+    $self->m_set_arg_names($wrp_iters[0][1]);
   }
   catch{ throw } 'Exceptions::CmdArgsInfo',
   make_exlist
@@ -580,6 +580,15 @@ sub m_set_arg_names
 {
   my ($self, $iter) = @_;
   my @args = @{$self->{parsed}{args_arr}};
+
+  ## init all arrays arguments ##
+  my $uc = $self->{use_cases}{$self->{parsed}{use_case}};
+  for (my $s = $uc->{sequence}; !m_is_p_empty($s); m_move_next_p($s)){
+    my $cur = m_value_p($s);
+    $self->{parsed}{args}{$cur->[1]} = [] if $cur->[0] eq 'arg' && $cur->[4];
+  }
+
+  ## set arguments values ##
   for (my $p = $iter->[1]; !m_is_p_empty($p); m_move_next_p($p)){
     my $cur = m_value_p($p);
     $cur->[0] eq 'arg' || throw InternalError => "wrong type '$cur->[0]' of arguments sequence";
