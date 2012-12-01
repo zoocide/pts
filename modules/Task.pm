@@ -1,5 +1,6 @@
 package Task;
 use strict;
+BEGIN{ eval{ use Time::HiRes qw(time) } } ##< used only for debug
 use ConfigFile;
 use Exceptions;
 use File::Path qw(make_path);
@@ -8,6 +9,11 @@ use File::Path qw(make_path);
 
   my $task = Task->new($id, 'task.conf');
 
+  ======== DEBUG ========
+  $task->DEBUG(@messages_to_print);      ##< print debug messages
+  $task->DEBUG_RESET(1, 2, 3);           ##< reset timers 1, 2, 3
+  $task->DEBUG_T(2, @messages);          ##< print messages and time of timer 2
+  $task->DEBUG_TR(2, @messages);         ##< print messages and time of timer 2; reset timer 2
 =cut
 
 sub new
@@ -22,8 +28,19 @@ sub name   { $_[0]{name} }
 sub plugin { $_[0]{plugin} }
 sub conf   { $_[0]{conf} }
 sub data_dir { $_[0]{data_dir} }
+sub set_debug { $_[0]{debug} = $_[1] }
 
 sub make_data_dir { make_path($_[0]{data_dir}) }
+
+sub DEBUG   { $_[0]->{debug} && print 'DEBUG: ', @_, "\n" }
+sub DEBUG_T
+{
+  return if !$_[0]->{debug};
+  my $t = sprintf '%.6f', time - $_[0]->{debug_time}{$_[1]};
+  print "DEBUG [${t}s]: ", @_[2..$#_], "\n";
+}
+sub DEBUG_RESET{ my $t = time; $_[0]->{debug_time}{$_} = $t for @_[1..$#_] }
+sub DEBUG_TR{ $_[0]->DEBUG_T(@_[1..$#_]); $_[0]->DEBUG_RESET($_[1]) }
 
 # my $var = $task->get_var('group_name', 'var_name');
 # throws: Exceptions::Exception
@@ -57,6 +74,7 @@ sub init
   my ($self, $id, $filename, $data_dir) = @_;
   $self->{id} = $id;
   $self->{name} = $id;
+  $self->{debug} = 0;
   $self->{filename} = $filename;
   $self->{data_dir} = $data_dir;
   my $conf;
