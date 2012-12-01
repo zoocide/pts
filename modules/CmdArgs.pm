@@ -72,11 +72,12 @@ sub declare
   $self
 }
 
+# throws: Exceptions::Exception
 sub init
 {
   my ($self, $version, %h) = @_;
 
-  ($self->{script_name} = $0) =~ s/.*?[\/\\]//;
+  ($self->{script_name} = $0) =~ s/.*[\/\\]//;
   $self->{version} = $version;
   $self->m_init_defaults;
 
