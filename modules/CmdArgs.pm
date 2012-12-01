@@ -155,26 +155,59 @@ sub print_version
 
 
 
+sub m_use_case_msg
+{
+  my ($self, $uc) = @_;
+  my $ret = $self->{script_name};
+  for(my $seq = $uc->{sequence}; !m_is_p_empty($seq); m_move_next_p($seq)){
+    my $cur = m_value_p($seq);
+    if    ($cur->[0] eq 'group'){
+      $ret.= ' '.$cur->[1];
+    }
+    elsif ($cur->[0] eq 'mopt' ){
+      my @keys = @{$self->{options}{$cur->[1]}{keys}};
+      my $s = join '|', @keys;
+      $s  = '('.$s.')'       if @keys > 1;
+      $s .= ' '.$cur->[1].'_arg' if defined $self->{options}{$cur->[1]}{type};
+      $s  = '['.$s.']'       if $cur->[2];
+      $ret.= ' '.$s;
+    }
+    elsif ($cur->[0] eq 'arg'){
+      my $s = $cur->[1];
+      $s .= '...'      if $cur->[4];
+      $s  = '['.$s.']' if $cur->[3];
+      $ret .= ' '.$s;
+    }
+  }
+  $ret
+}
+
 sub m_usage_message
 {
   my $self = shift;
-  "usage:\n".join '', map "  $self->{script_name} $_->{use_case}\n", values %{$self->{use_cases}};
+  my $ret = "usage:\n";
+  while(my ($uc_name, $uc) = each %{$self->{use_cases}}){
+    $ret .= '  '.$self->m_use_case_msg($uc)."\n";
+  }
+  $ret
 }
 
 sub m_help_message
 {
   my $self = shift;
-  my $msg = "usage:\n";
+  my $ret = "usage:\n";
   my @ucs = values %{$self->{use_cases}};
-  $msg .= join '', map '  '.($_+1).": $self->{script_name} $ucs[$_]{use_case}\n", 0..$#ucs;
-  $msg .= join '', map +($_+1).": $ucs[$_]{descr}\n", 0..$#ucs;
+  $ret .= join '', map '  '.($_+1).': '.$self->m_use_case_msg($ucs[$_])."\n", 0..$#ucs;
+  $ret .= join '', map +($_+1).": $ucs[$_]{descr}\n", 0..$#ucs;
   while (my ($gr_name, $gr_cont) = each %{$self->{groups}}){
-    $msg .= "$gr_name:\n";
+    $ret .= "$gr_name:\n";
     for my $opt (map $self->{options}{$_}, @$gr_cont){
-      $msg .= "\t".join(' ', @{$opt->{keys}})."\t$opt->{descr}\n";
+      $ret .= "\t".join(', ', @{$opt->{keys}});
+      $ret .= ' <arg>' if defined $opt->{type};
+      $ret .= "\t$opt->{descr}\n";
     }
   }
-  $msg
+  $ret
 }
 
 sub m_version_message
@@ -366,6 +399,7 @@ sub m_use_case
 sub m_check_type
 {
   my ($self, $type) = @_;
+  return if !$type;
   eval{ "CmdArgs::Types::$type"->can('check') || die };
   $@ && throw Exception => "wrong type specified '$type'";
 }
@@ -475,7 +509,7 @@ sub m_fwd_iter
         last;
       }
       elsif ($cur->[0] eq 'arg'){
-        my $present = !m_is_p_empty($iter->[1]) && m_value_p($iter->[1]) eq $cur->[1];
+        my $present = !m_is_p_empty($iter->[1]) && m_value_p($iter->[1]) eq $cur;
         if (!$cur->[2] || eval{$self->m_check_arg($atom->[1], $cur->[2])}){
           push @ret, [$cur->[4] ? $seq : m_get_next_p($seq), m_p_add($iter->[1], $cur)];
         }
@@ -506,7 +540,7 @@ sub m_fwd_iter
         return ();
       }
       elsif ($cur->[0] eq 'arg'){
-        my $present = !m_is_p_empty($iter->[1]) && m_value_p($iter->[1]) eq $cur->[1];
+        my $present = !m_is_p_empty($iter->[1]) && m_value_p($iter->[1]) eq $cur;
         next if $cur->[3] || ($cur->[4] && $present);
         return ();
       }
@@ -551,7 +585,7 @@ sub m_set_arg_names
     $cur->[0] eq 'arg' || throw InternalError => "wrong type '$cur->[0]' of arguments sequence";
     if ($cur->[4]){
     # array #
-      push @{$self->{parsed}{args}{$cur->[1]}}, pop @args;
+      unshift @{$self->{parsed}{args}{$cur->[1]}}, pop @args;
     }
     else{
       $self->{parsed}{args}{$cur->[1]} = pop @args;
