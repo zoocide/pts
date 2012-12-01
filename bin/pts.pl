@@ -14,11 +14,13 @@ catch{ push @{$@}, Exceptions::Exception->new('can not load tasks database'); th
 my $args = CmdArgs->declare(
   '0.1.0',
   options => {
-    'quiet' => ['-q --quiet', 'dont print statistics and task name'],
+    'quiet' => ['-q --quiet', 'do not print statistics and task name'],
+    'debug' => ['-D --debug', 'print debug information'],
     'list'  => ['-l --list',  'print all tasks in database'],
+    'stat'  => ['-s --stat',  'force to print statistics even for one task'],
   },
   groups => {
-    OPTIONS => [qw(quiet)],
+    OPTIONS => [qw(quiet stat debug)],
   },
   use_cases => {
     main => ['OPTIONS taskset:TaskSet...', 'Process a set of tasks'],
@@ -43,6 +45,8 @@ use lib "$FindBin::Bin/..";
 my @failed;
 for my $task (@tasks){
   print $task->name, ":\n" if !$quiet;
+  $task->set_debug(1) if $args->is_opt('debug');
+  $task->DEBUG_RESET('main_task_timer');
   my $res;
   try{
     eval 'use Plugins::'.$task->plugin.';';
@@ -54,6 +58,7 @@ for my $task (@tasks){
     print $@;
     $res = 0;
   };
+  $task->DEBUG_T('main_task_timer', 'task \''.$task->name.'\' finished');
   print $task->name, ' ', ($res ? 'complete' : 'failed ['.$task->id.']'), "\n" if !$res || !$quiet;
   push @failed, $task if !$res;
 }
@@ -67,7 +72,7 @@ print "\nstatistics:"
      ,"\nnum complete = ", $num_ok
      ,"\nnum failed   = ", $num_failed
      ,"\n"
-     if !$quiet;
+     if $args->is_opt('stat') || (!$quiet && @tasks > 1);
 
 
 
