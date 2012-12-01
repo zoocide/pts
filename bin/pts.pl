@@ -21,21 +21,21 @@ my $args = CmdArgs->declare(
     OPTIONS => [qw(quiet)],
   },
   use_cases => {
-    main => ['OPTIONS taskset:TaskSet', 'Process a set of tasks'],
-    list => ['list', 'print all tasks in database'],
+    main => ['OPTIONS taskset:TaskSet...', 'Process a set of tasks'],
+    list => ['list', 'Print all tasks in database'],
   },
 );
 $args->parse;
 
 ## list tasks ##
 if ($args->use_case eq 'list'){
-  print $_, "\n" for $db->all_task_ids;
+  print $_, "\n" for sort $db->all_task_ids;
   exit 0;
 }
 
 # it is assumed to use list of files in future
 my @tasks = map { -f $_ ? $db->get_tasks(load_task_id_set($_)) : $db->get_task($_) }
-                $args->arg('taskset');
+                @{$args->arg('taskset')};
 
 my $quiet = $args->is_opt('quiet');
 
