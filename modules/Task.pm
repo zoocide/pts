@@ -32,7 +32,7 @@ sub set_debug { $_[0]{debug} = $_[1] }
 
 sub make_data_dir { make_path($_[0]{data_dir}) }
 
-sub DEBUG   { $_[0]->{debug} && print 'DEBUG: ', @_, "\n" }
+sub DEBUG   { $_[0]->{debug} && print 'DEBUG: ', @_[1..$#_], "\n" }
 sub DEBUG_T
 {
   return if !$_[0]->{debug};

@@ -50,7 +50,10 @@ for my $task (@tasks){
   my $res;
   try{
     eval 'use Plugins::'.$task->plugin.';';
-    $@ && throw Exception => "plugin '".$task->plugin."' is not exist";#."\n$@\n";
+    if ($@){
+      $task->DEBUG($@);
+      throw Exception => "plugin '".$task->plugin."' is not exist";
+    }
     $res = ('Plugins::'.$task->plugin)->process($task, $db);
   }
   exception2string
