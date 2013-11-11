@@ -3,7 +3,7 @@ use Task;
 
 =head1 SYNOPSIS
 
-  my $result = Plugins::PluginName->process($task);
+  my $result = Plugins::PluginName->process($task, $task_database);
   print 'task ', ($result ? 'complete' : 'failed'), "\n";
 
 =head1 DESCRIPTION
