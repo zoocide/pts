@@ -28,6 +28,24 @@ use Exceptions;
     ...
   } 'Exceptions::List';
 
+=head1 DESCRIPTION
+
+  Config file structure:
+  -------------------------------
+  |
+  |# comment is the line starting from '#'
+  |    # another comment
+  |# Variables before any group declaration are placed in '' group (general group).
+  |var_from_general_group = value
+  |[group_1]
+  |var_form_gorup_1 = value
+  |multiline_variable = elem1 elem2
+  |   elem3 elem4
+  | # comment
+  | elem5 #this_is_not
+  |[group_2]
+  |var_from_group_2 = value
+
 =cut
 
 # throws: string, Exceptions::Exception

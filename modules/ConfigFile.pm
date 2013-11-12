@@ -67,6 +67,7 @@ sub init
 ## config file rules ##
 # error: [complex group]
 # ok   : [group]
+# error: var name with spaces = value
 # ok   : var_1 = a complex value
 # ok   :   # comment string
 # ok   : var_2 = '  a complex value  '
