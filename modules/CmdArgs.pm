@@ -1,4 +1,5 @@
 package CmdArgs;
+use 5.00008;
 use strict;
 use warnings;
 use Exceptions;
@@ -8,6 +9,10 @@ use Carp;
 
 our $VERSION = '0.2.1';
 
+=head1 NAME
+
+CmdArgs - Parse command line arguments and automate help message creation.
+
 =head1 SYNOPSIS
 
   NOTE: restrictions are not implemented yet!!!
@@ -16,7 +21,7 @@ our $VERSION = '0.2.1';
 
   {package CmdArgs::Types::Filename; sub check{my $arg = shift; -f $arg}}
 
-  my $args->declare(
+  my $args = CmdArgs->declare(
     $version,
     use_cases => { ##< 'main' is the default use case: ['OPTIONS args...', '']
       main   => ['OPTIONS arg1:Filename arg2:Testset', 'the main use case'],
@@ -47,11 +52,13 @@ our $VERSION = '0.2.1';
 
   ===========================
 
-  my $args->declare(
-    '0.0.1',
+  ## simple expamle ##
+  my $args = CmdArgs->declare(
+    '0.1.0',
     use_cases => { main => ['OPTIONS arg', 'description...'] },
     options => { verbose => ['-v --verbose', 'print more information'], }
   );
+  $args->parse;
 
 =cut
 
@@ -108,7 +115,7 @@ sub parse
   try{
     my @wrp_iters = map { [$_, [$self->{use_cases}{$_}{sequence}, []]] }
                         keys %{$self->{use_cases}};
-    while (@args && @wrp_iters){
+    while (@args){
       my $atom = $self->m_get_atom(\@args);
       @wrp_iters = map {
         my $u = $_->[0];
@@ -117,6 +124,7 @@ sub parse
       @wrp_iters || throw Exception => 'wrong '.(  $atom->[0] eq 'opt' ? 'option' : 'argument')
                                                ." '$atom->[1]'";
     }
+    # finish with 'end' atom
     @wrp_iters = map {
       my $u = $_->[0];
       map [$u, $_], $self->m_fwd_iter(['end'], $_->[1])
@@ -190,6 +198,7 @@ sub m_usage_message
   while(my ($uc_name, $uc) = each %{$self->{use_cases}}){
     $ret .= '  '.$self->m_use_case_msg($uc)."\n";
   }
+  $ret .= "Try --help option for help.\n";
   $ret
 }
 
@@ -198,8 +207,15 @@ sub m_help_message
   my $self = shift;
   my $ret = "usage:\n";
   my @ucs = values %{$self->{use_cases}};
-  $ret .= join '', map '  '.($_+1).': '.$self->m_use_case_msg($ucs[$_])."\n", 0..$#ucs;
-  $ret .= join '', map +($_+1).": $ucs[$_]{descr}\n", 0..$#ucs;
+  if (@ucs == 1){
+    # do not print number before use case
+    $ret .= '  '.$self->m_use_case_msg($ucs[0])."\n";
+    $ret .= "$ucs[0]{descr}\n";
+  }
+  else{
+    $ret .= join '', map '  '.($_+1).': '.$self->m_use_case_msg($ucs[$_])."\n", 0..$#ucs;
+    $ret .= join '', map +($_+1).": $ucs[$_]{descr}\n", 0..$#ucs;
+  }
   while (my ($gr_name, $gr_cont) = each %{$self->{groups}}){
     $ret .= "$gr_name:\n";
     for my $opt (map $self->{options}{$_}, @$gr_cont){
@@ -611,4 +627,116 @@ use base qw(Exceptions::Exception);
 sub init { (my $self = shift)->SUPER::init(@_); chomp($self->{msg}); }
 
 1;
+__END__
+
+=head1 METHODS
+
+=over
+
+=item declare($version, section => value, ...)
+
+throws: string, Exceptions::Exception
+
+$version is a string, for example, '1.0.1'.
+
+SECTIONS:
+
+=over
+
+=item options
+
+  options => { opt_name => ['opt_declaration', 'option help message'], ...}
+  opt_name - is the user-defined name of the option.
+  opt_declaration:
+    'key' - switch option (no arguments) 'key'.
+    'key key_2 key_3' - the same. 'key', 'key_2', 'key_3' are synonims.
+    'key:' - option with an argument of any type.
+    'key:type' - option with an argument of 'type' type.
+    'key:type key_2 key_3' - the same. 'key', 'key_2', 'key_3' are synonims.
+
+Options '--help' and '--version' are automatically generated.
+
+=item groups
+
+Named groups of options.
+  groups => { group_name => [qw(opt_1 opt_2 ...], ... }
+
+By default there is 'OPTIONS' group contained all options.
+
+=item use_cases
+
+It declares use cases, that is alternate sequences of options and arguments.
+  use_cases => { use_case_name => ['atoms_list', 'use case help message'], ... }
+where
+  'atoms_list' = list of space separated atoms.
+  'atom' = group_name | opt_name | arg_name
+  group_name - means that at this place an options from specified group can appear.
+  opt_name - option 'opt_name' must be placed here.
+  arg_name - an argument named 'arg_name'.
+  arg_name: - an argument with value of any type.
+  arg_name:type - an argument with value of the specified type
+  arg_name... - array of arguments
+  arg_name? - optional argument
+
+By default there is 'main' use case declared as ['OPTIONS args...', ''].
+
+=item restrictions
+
+NOT IMPLEMENTED YET!
+restrictions => ['opt_1|opt_2|opt_3', ...]
+That is, opt_1, opt_2 and opt_3 can not appear simultaneously.
+
+=back
+
+=item parse($string)
+
+throws: Exceptions::List
+
+Parse $string or @ARGV array if $string is not specified.
+
+=item arg($name)
+
+Get argument with name '$name'.
+If argument is specified as 'name...' returns a reference to the array.
+
+=item opt($name)
+
+Get value of the '$name' option.
+
+=item is_opt($name)
+
+Check whether the '$name' option is appeared.
+
+=item args
+
+Returns a hash contained all parsed arguments.
+
+=item opts
+
+Return a hash contained all parsed options.
+
+=item use_case
+
+Return name of parsed use case.
+
+=back
+
+=head1 TYPES
+
+To declare a new type, a package with some methods should be defined.
+For example:
+  {
+    package CmdArgs::Types::MyTypeName;
+    sub check
+    {
+      my $arg = shift;
+      -f $arg
+    }
+  }
+
+=head1 AUTHOR
+
+  Alexander Smirnov <zoocide@gmail.com>
+
+=cut
 
