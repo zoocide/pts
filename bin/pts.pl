@@ -52,7 +52,7 @@ for my $task (@tasks){
     eval 'use Plugins::'.$task->plugin.';';
     if ($@){
       $task->DEBUG($@);
-      throw Exception => "plugin '".$task->plugin."' is not exist";
+      throw Exception => "plugin '".$task->plugin."' disabled";
     }
     $res = ('Plugins::'.$task->plugin)->process($task, $db);
   }
