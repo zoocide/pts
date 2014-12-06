@@ -19,6 +19,11 @@ $VERSION = '0.2.0';
   # or
   my $cf = ConfigFile->new($file_name);
 
+  # Ignoring unrecognized lines is useful when you want to read some scalar
+  # varibles, but there can be multiline variables and you are not interested
+  # in these values.
+  $cf->skip_unrecognized_lines(1);
+
   try{
     $cf->load;
   }
@@ -61,6 +66,7 @@ sub init
   $self->{content}   = {};
   $self->{cur_group} = '';
   $self->{decl}      = $decl;
+  $self->{skip_unrecognized_lines} = 0;
 }
 
 
@@ -103,15 +109,15 @@ sub load
   my ($var, $buf, @arr, $l, $is_multiline, $is_join_lines, $str_bl);
   for($l = 1; <$f>; $l++){
     if ($state){
-      if    (/^\s*(#|\r?\n?$)/){
+      if    (/^\s*(#|\r?\n?$)/){ #< is comment
         next;
       }
-      elsif (/^\s*\[(\w+)\]\s*$/){
+      elsif (/^\s*\[(\w+)\]\s*$/){ #< is group
         $self->set_group($1);
         $state = 1;
         next;
       }
-      elsif (/^\s*(\w+)\s*=\s*(.*\r?\n?)$/){
+      elsif (/^\s*(\w+)\s*=\s*(.*\r?\n?)$/){ #< is assignment
         $var = $1;
         $buf = $2;
         if (!$decl->is_valid($self->{cur_group}, $var)){
@@ -143,7 +149,9 @@ sub load
         $buf = $_ if $is_join_lines;
       }
       else{
-        push @errors, Exceptions::TextFileError->new($self->{fname}, $l, 'unrecognized line');
+        $self->{skip_unrecognized_lines} ||
+            push @errors, Exceptions::TextFileError->new($self->{fname}
+                        , $l, 'unrecognized line');
         next;
       }
 
@@ -243,6 +251,13 @@ sub set_var   { $_[0]{content}{$_[0]{cur_group}}{$_[1]} = $_[2] }
 sub set_var_if_not_exists
 {
   $_[0]{content}{$_[0]{cur_group}}{$_[1]} = $_[2] if !exists $_[0]{content}{$_[0]{cur_group}}{$_[1]}
+}
+sub skip_unrecognized_lines
+{
+  my $self = shift;
+  my $ret = $self->{skip_unrecognized_lines};
+  $self->{skip_unrecognized_lines} = 1 if @_ && $_[0];
+  $ret
 }
 
 sub m_q_ind
