@@ -2,12 +2,22 @@ package Task;
 use strict;
 BEGIN{ eval{ use Time::HiRes qw(time) } } ##< used only for debug
 use ConfigFile;
+use ConfigFileScheme;
 use Exceptions;
 use File::Path qw(make_path);
 
 =head1 SYNOPSIS
 
   my $task = Task->new($id, 'task.conf');
+
+  # reload config file of the task using your scheme.
+  $task->reload_config(multiline => 1, ...);
+
+  $task->make_data_dir($task_dir);
+
+  chdir $task->data_dir;
+
+  my ($var1, $var2) = $task->get_vars('group', 'var1', 'var2');
 
   ======== DEBUG ========
   $task->DEBUG(@messages_to_print);      ##< print debug messages
@@ -80,6 +90,7 @@ sub init
   my $conf;
   try{
     $conf = ConfigFile->new($filename, required => {'' => ['plugin']});
+    $conf->skip_unrecognized_lines(1);
     $conf->load;
 
     $self->{ conf } = $conf->get_all;
@@ -91,6 +102,20 @@ sub init
     push @{$@}, Exceptions::Exception->new("Can not create task '$id'");
     throw;
   };
+}
+
+# $task->reload_config(ConfigFileScheme_obj);
+# or
+# $task->reload_config(multiline => 1, ...);
+sub reload_config
+{
+  my $self = shift;
+  my $scheme = ($_[0] && eval {$_[0]->isa('ConfigFileScheme')})
+             ? shift
+             : ConfigFileScheme->new(@_);
+  my $conf = ConfigFile->new($self->{filename}, $scheme);
+  $conf->load;
+  $self->{ conf } = $conf->get_all;
 }
 
 1;
