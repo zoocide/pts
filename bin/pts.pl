@@ -2,6 +2,7 @@
 use strict;
 use FindBin;
 use lib "$FindBin::Bin/../modules";
+use PtsConfig;
 use CmdArgs;
 use Exceptions;
 use TaskDB;
@@ -10,7 +11,7 @@ BEGIN{ eval{ require 'Time/HiRes.pm'; Time::HiRes->import('time') } }
 
 ## load TaskDB ##
 my $db;
-try{ $db = TaskDB->new("$FindBin::Bin/../tasks") } string2exception make_exlist
+try{ $db = TaskDB->new(PtsConfig->tasks_dir) } string2exception make_exlist
 catch{ push @{$@}, Exceptions::Exception->new('can not load tasks database'); throw };
 
 my $args = CmdArgs->declare(
@@ -46,7 +47,7 @@ my $quiet = $args->is_opt('quiet');
 my $start_time;
 $start_time = time if $args->is_opt('debug');
 
-use lib "$FindBin::Bin/..";
+use lib PtsConfig->plugins_parent_dir;
 my @failed;
 for my $task (@tasks){
   print $task->name, ":\n" if !$quiet;
