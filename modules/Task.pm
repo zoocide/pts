@@ -1,10 +1,15 @@
 package Task;
 use strict;
-BEGIN{ eval{ use Time::HiRes qw(time) } } ##< used only for debug
 use ConfigFile;
 use ConfigFileScheme;
 use Exceptions;
 use File::Path qw(make_path);
+BEGIN{
+  eval {
+    require 'Time/HiRes.pm';
+    Time::HiRes->import('time');
+  };
+}
 
 =head1 SYNOPSIS
 
