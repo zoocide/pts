@@ -6,6 +6,8 @@ use CmdArgs;
 use Exceptions;
 use TaskDB;
 
+BEGIN{ eval{ require 'Time/HiRes.pm'; Time::HiRes->import('time') } }
+
 ## load TaskDB ##
 my $db;
 try{ $db = TaskDB->new("$FindBin::Bin/../tasks") } string2exception make_exlist
@@ -41,6 +43,9 @@ my @tasks = map { -f $_ ? $db->get_tasks(load_task_id_set($_)) : $db->get_task($
 
 my $quiet = $args->is_opt('quiet');
 
+my $start_time;
+$start_time = time if $args->is_opt('debug');
+
 use lib "$FindBin::Bin/..";
 my @failed;
 for my $task (@tasks){
@@ -65,6 +70,9 @@ for my $task (@tasks){
   print $task->name, ' ', ($res ? 'complete' : 'failed ['.$task->id.']'), "\n" if !$res || !$quiet;
   push @failed, $task if !$res;
 }
+
+print "\nDEBUG: total execution time = ", time - $start_time, "\n"
+  if $args->is_opt('debug');
 
 my $num_total  = @tasks;
 my $num_failed = @failed;
