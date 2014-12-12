@@ -7,7 +7,9 @@ use Exceptions::InternalError;
 
 use Carp;
 
-our $VERSION = '0.2.1';
+our $VERSION = '0.3.0';
+
+## TODO: Add method 'convert' for types.
 
 =head1 NAME
 
@@ -15,14 +17,13 @@ CmdArgs - Parse command line arguments and automate help message creation.
 
 =head1 SYNOPSIS
 
-  NOTE: restrictions are not implemented yet!!!
-
   use CmdArgs;
 
-  {package CmdArgs::Types::Filename; sub check{my $arg = shift; -f $arg}}
+  {package CmdArgs::Types::Filename; sub check{my $arg = $_[1]; -f $arg}}
 
   my $args = CmdArgs->declare(
     $version,
+    ## You can use [] instead of {} if use_cases order is important ##
     use_cases => { ##< 'main' is the default use case: ['OPTIONS args...', '']
       main   => ['OPTIONS arg1:Filename arg2:Testset', 'the main use case'],
       second => ['OPTS_GROUP_1 arg_1 OPTS_GROUP_2 arg_2', 'the second usage'],
@@ -33,10 +34,12 @@ CmdArgs - Parse command line arguments and automate help message creation.
     },
     options => {
       opt_1  => ['-f:Filename --filename', 'specify filename'],
-      opt_2  => ['-i: --input'           , 'specify input filename'],
+      opt_2  => ['-i:<FILE> --input'     , 'read input from FILE'],
       opt_3  => ['-s'                    , 'silent mode'],
       opt_9  => ['-z'                    , 'Zzz'],
       opt_17 => ['-0 --none --bla-bla'   , '0. simply 0'],
+      verbose=> ['-v' , 'more verbose', sub {$verbose++}],
+      name => ['-n:', 'set a name', sub {$name = $_}],
     },
     restrictions => [
       'opt_1|opt_2|opt_3',
@@ -69,13 +72,13 @@ sub args { %{$_[0]{parsed}{args}} }
 sub opts { %{$_[0]{parsed}{options}} }
 sub use_case { $_[0]{parsed}{use_case} }
 
-# throws: string, Exceptions::Exception
+# throws: string
 sub declare
 {
   my $class = shift;
   my $self = bless {}, $class;
   eval { $self->init(@_) };
-  croak $@ if $@;
+  croak "$@" if $@;
   $self
 }
 
@@ -117,13 +120,30 @@ sub parse
                         keys %{$self->{use_cases}};
     while (@args){
       my $atom = $self->m_get_atom(\@args);
+
+      ## for error handling ##
+      $self->{parse}{failed_arg_checks} = [];
+
       @wrp_iters = map {
         my $u = $_->[0];
         map [$u, $_], $self->m_fwd_iter($atom, $_->[1])
       } @wrp_iters;
-      @wrp_iters || throw Exception => 'wrong '.(  $atom->[0] eq 'opt' ? 'option' : 'argument')
-                                               ." '$atom->[1]'";
+
+      ## handle errors ##
+      if (!@wrp_iters){
+        if (@{$self->{parse}{failed_arg_checks}}){
+          my @uniq_errors;
+          for my $e (@{$self->{parse}{failed_arg_checks}}){
+            push @uniq_errors, $e if !grep "$e" eq "$_", @uniq_errors;
+          }
+          throw List => @uniq_errors;
+        }
+        throw Exception => 'unexpected '.(  $atom->[0] eq 'opt'
+                                        ? "option '$atom->[2]'"
+                                        : "argument '$atom->[1]'");
+      }
     }
+    #TODO: if $#wrp_iters == 0,  say, where it stops.
     # finish with 'end' atom
     @wrp_iters = map {
       my $u = $_->[0];
@@ -174,10 +194,11 @@ sub m_use_case_msg
       $ret.= ' '.$cur->[1];
     }
     elsif ($cur->[0] eq 'mopt' ){
-      my @keys = @{$self->{options}{$cur->[1]}{keys}};
+      my $o = $self->{options}{$cur->[1]};
+      my @keys = @{$o->{keys}};
       my $s = join '|', @keys;
       $s  = '('.$s.')'       if @keys > 1;
-      $s .= ' '.$cur->[1].'_arg' if defined $self->{options}{$cur->[1]}{type};
+      $s .= ' '.$o->{arg_name} if defined $o->{type};
       $s  = '['.$s.']'       if $cur->[2];
       $ret.= ' '.$s;
     }
@@ -195,8 +216,11 @@ sub m_usage_message
 {
   my $self = shift;
   my $ret = "usage:\n";
-  while(my ($uc_name, $uc) = each %{$self->{use_cases}}){
-    $ret .= '  '.$self->m_use_case_msg($uc)."\n";
+  my @uc_names = exists $self->{arrangement}{use_cases}
+               ? @{$self->{arrangement}{use_cases}}
+               : keys $self->{use_cases};
+  for my $uc_name (@uc_names){
+    $ret .= '  '.$self->m_use_case_msg($self->{use_cases}{$uc_name})."\n";
   }
   $ret .= "Try --help option for help.\n";
   $ret
@@ -206,7 +230,10 @@ sub m_help_message
 {
   my $self = shift;
   my $ret = "usage:\n";
-  my @ucs = values %{$self->{use_cases}};
+  my @uc_names = exists $self->{arrangement}{use_cases}
+               ? @{$self->{arrangement}{use_cases}}
+               : keys $self->{use_cases};
+  my @ucs = map $self->{use_cases}{$_}, @uc_names;
   if (@ucs == 1){
     # do not print number before use case
     $ret .= '  '.$self->m_use_case_msg($ucs[0])."\n";
@@ -219,8 +246,9 @@ sub m_help_message
   while (my ($gr_name, $gr_cont) = each %{$self->{groups}}){
     $ret .= "$gr_name:\n";
     for my $opt (map $self->{options}{$_}, @$gr_cont){
+      next if !defined $opt->{descr};
       $ret .= "\t".join(', ', @{$opt->{keys}});
-      $ret .= ' <arg>' if defined $opt->{type};
+      $ret .= " $opt->{arg_name}" if defined $opt->{type};
       $ret .= "\t$opt->{descr}\n";
     }
   }
@@ -242,6 +270,8 @@ sub m_init_defaults
   $self->{options}{HELP}    = { keys  => ['--help'   ], type  => undef, descr => 'print help' };
   $self->{options}{VERSION} = { keys  => ['--version'], type  => undef, descr => 'print version' };
   $self->{groups}{OPTIONS}  = [qw(HELP VERSION)];
+  $self->{arrangement}{first_keys}{'--help'} = 'HELP';
+  $self->{arrangement}{first_keys}{'--version'} = 'VERSION';
   $self->{use_cases}{main} = { use_case => 'OPTIONS args...',
                                sequence => [['group', 'OPTIONS'],
                                            [['arg','args','','','...'],
@@ -260,7 +290,9 @@ sub m_options
     $self->{options}{$name} = $self->m_option($name, $val);
   }
 
-  @{$self->{groups}{OPTIONS}} = keys %{$self->{options}};
+  ## arrange options by the first key ##
+  my @fkeys = sort keys $self->{arrangement}{first_keys};
+  @{$self->{groups}{OPTIONS}} = map $self->{arrangement}{first_keys}{$_}, @fkeys;
 }
 
 # throws: Exceptions::Exception
@@ -293,41 +325,55 @@ sub m_use_cases
   # remove default main use_case
   delete $self->{use_cases}{main};
 
+  if (ref $use_cases eq 'ARRAY'){
+    $self->{arrangement}{use_cases} = [@{$use_cases}[grep {!($_ & 1)} 0..$#$use_cases]];
+    $use_cases = {@$use_cases};
+  }
+
   ref $use_cases eq 'HASH'
-    || throw Exception => 'wrong use cases specification: hash should be used';
+    || throw Exception => 'wrong use cases specification: hash or array should be used';
 
   while (my ($name, $val) = each %$use_cases){
     $self->{use_cases}{$name} = $self->m_use_case($name, $val);
   }
 }
 
+# on result:
+#   for each $opt, specified in restrictions:
+#   $self->{restrictions}{$opt} = [@options_conflicting_with_opt];
 # throws: Exceptions::Exception
 sub m_restrictions
 {
   my ($self, $restrs) = @_;
 
   ## unpack restrictions ##
-  my @res;
+  my %res;
   ref $restrs eq 'ARRAY'
     || throw Exception => 'wrong restrictions specification: array must be used';
   for (@$restrs){
-    my @opts = split /|/;
-    for (@opts){
-      exists $self->{options}{$_}
-        || throw Exception => "unknow option '$_' is specified in restriction";
+    my @opts = split /\|/;
+    for my $o (@opts){
+      exists $self->{options}{$o}
+        || throw Exception => "unknow option '$o' is specified in restriction";
+      $res{$o} ||= [];
+      push $res{$o}, grep {
+        my $a = $_;
+        $a ne $o && !grep {$a eq $_} @{$res{$o}}
+      } @opts;
     }
-    push @res, [@opts];
   }
 
-  ## add restrictions ##
-  $self->{restrictions} = [@res];
+  ## set restrictions ##
+  $self->{restrictions} = \%res;
 }
 
 # on result:
 #   $self->{keys}{@keys_of_option} = $option_name
 #   return { keys  => [@keys_of_option],
 #            type  => $type_of_the_first_key,
-#            descr => $opt_value->[1] }
+#            descr => $opt_value->[1],
+#           (action=> $opt_value->[2] if exists),
+#            arg_name => $argument_name }
 # throws: Exceptions::Exception
 sub m_option
 {
@@ -335,16 +381,23 @@ sub m_option
 
   ## unpack $opt_value ##
   $#$opt_value < 0 && throw Exception => "wrong option '$name' specification";
-  my @keys  = split /\s+/, $opt_value->[0];
-  $#keys < 0 && throw Exception => "no keys specified for option '$name'";
+
+  my $val = $opt_value->[0];
 
   ## parse the first key ##
   my $type = undef;
-  if ($keys[0] =~ /(.*?):(.*)/){
-    $keys[0] = $1;
+  my $arg_name = undef;
+  if ($val =~ s/^\s*(\S+?):(\w*)(<(.+)>)?/$1/){
     $type = $2;
+    $arg_name = $4 || '<arg>';
     $self->m_check_type($type);
   }
+
+  my @keys  = split /\s+/, $val;
+  $#keys < 0 && throw Exception => "no keys specified for option '$name'";
+
+  ## save the first key for options arrangement ##
+  $self->{arrangement}{first_keys}{$keys[0]} = $name;
 
   ## check all keys ##
   foreach (@keys){
@@ -358,6 +411,8 @@ sub m_option
     keys  => [@keys],
     type  => $type,
     descr => ($#$opt_value > 0 ? $opt_value->[1] : ''),
+    $#$opt_value > 1 ? (action => $opt_value->[2]) : (),
+    arg_name => $arg_name,
   };
   $ret
 }
@@ -417,8 +472,13 @@ sub m_check_type
 {
   my ($self, $type) = @_;
   return if !$type;
-  eval{ "CmdArgs::Types::$type"->can('check') || die };
-  $@ && throw Exception => "wrong type specified '$type'";
+  my $package = "CmdArgs::Types::$type";
+  exists $CmdArgs::Types::{$type.'::'}
+    or throw Exception => "wrong type specified '$type'. "
+      ."Type '$type' should be defined by package 'CmdArgs::Types::$type'. "
+	  ."See CmdArgs manual for more details.";
+  eval{ $package->can('check') } || $@
+    or throw Exception => "$package should have subroutine 'check'.";
 }
 
 # throws: Exceptions::Exception, ...
@@ -455,6 +515,16 @@ sub m_get_atom
     }
     exists $self->{keys}{$cur} || throw Exception => "unknown option '$cur'";
     my $opt = $self->{keys}{$cur};
+
+    ## check restrictions ##
+    if (exists $self->{restrictions}{$opt}){
+      for (@{$self->{restrictions}{$opt}}){
+        exists $self->{parsed}{options}{$_}
+            && throw Exception => "option '$cur' can not be used with option "
+                                 ."'$self->{parsed}{option_keys}{$_}'";
+      }
+    }
+
     my $param = 1;
     if (defined $self->{options}{$opt}{type}){
     # option with parameter #
@@ -466,12 +536,18 @@ sub m_get_atom
         || throw Exception => "wrong parameter '$param' for option '$cur'";
     }
     $self->{parsed}{options}{$opt} = $param;
+    $self->{parsed}{option_keys}{$opt} = $cur;
+    # do action
+    if (exists $self->{options}{$opt}{action}){
+      local $_ = $param;
+      &{$self->{options}{$opt}{action}}($param);
+    }
     $args->[0] = '-'.$args->[0] if $add_sub;
 
     $opt eq 'HELP'    && throw CmdArgsInfo => $self->m_help_message;
     $opt eq 'VERSION' && throw CmdArgsInfo => $self->m_version_message;
 
-    return ['opt', $opt];
+    return ['opt', $opt, $cur]; #< $cur here needed only for nicer error message.
   }
 
   ## get argument ##
@@ -532,9 +608,7 @@ sub m_fwd_iter
         }
         elsif($cur->[2] && $@){
           # m_check_arg failed
-          #
-          # INSERT MESSAGE PROCESSING HERE
-          #
+          push @{$self->{parse}{failed_arg_checks}}, $@;
         }
         next if $cur->[3] || ($cur->[4] && $present);
         last;
@@ -635,39 +709,56 @@ __END__
 
 =item declare($version, section => value, ...)
 
-throws: string, Exceptions::Exception
+throws: string
 
 $version is a string, for example, '1.0.1'.
 
-SECTIONS:
+B<SECTIONS:>
 
 =over
 
 =item options
 
-  options => { opt_name => ['opt_declaration', 'option help message'], ...}
+  options => { opt_name => ['opt_declaration', 'option help message', \&action], ...}
   opt_name - is the user-defined name of the option.
   opt_declaration:
     'key' - switch option (no arguments) 'key'.
     'key key_2 key_3' - the same. 'key', 'key_2', 'key_3' are synonims.
     'key:' - option with an argument of any type.
+    'key:<ARG_NAME>' - the same, but use ARG_NAME for argument name in help message.
     'key:type' - option with an argument of 'type' type.
     'key:type key_2 key_3' - the same. 'key', 'key_2', 'key_3' are synonims.
+    'key:type<ARG_NAME> key_2 key_3' - the same, but use ARG_NAME for argument name
+                                       in help message.
+  &action - an action-subroutine.
+
+Action-subroutine will be executed on each occurance of the option.
+Being within action-subroutine you can use given option's argument by accessing
+$_[0] or $_ variables. Their values are identical.
 
 Options '--help' and '--version' are automatically generated.
+
+You can hide an option from the help message,
+by specifying explicit C<undef> value for its description, e.g.:
+
+  options => { hiden_opt => ['--hiden', undef], ... },
 
 =item groups
 
 Named groups of options.
+
   groups => { group_name => [qw(opt_1 opt_2 ...], ... }
 
-By default there is 'OPTIONS' group contained all options.
+If I<groups> section is missed, by default there is I<OPTIONS> group contained all options.
 
 =item use_cases
 
 It declares use cases, that is alternate sequences of options and arguments.
+
   use_cases => { use_case_name => ['atoms_list', 'use case help message'], ... }
-where
+
+where:
+
   'atoms_list' = list of space separated atoms.
   'atom' = group_name | opt_name | arg_name
   group_name - means that at this place an options from specified group can appear.
@@ -675,15 +766,20 @@ where
   arg_name - an argument named 'arg_name'.
   arg_name: - an argument with value of any type.
   arg_name:type - an argument with value of the specified type
-  arg_name... - array of arguments
+  arg_name... - array of arguments. One or more arguments are permitted.
+  arg_name...? - array of arguments. Zero or more arguments are permitted.
   arg_name? - optional argument
 
-By default there is 'main' use case declared as ['OPTIONS args...', ''].
+To preserve use-cases order you should use [] instead of {}:
+
+  use_cases => [ use_case_name => [ ... ], ... ],
+
+If I<use_cases> section is missed, by default there is I<main> use case declared as C<['OPTIONS args...', '']>.
 
 =item restrictions
 
-NOT IMPLEMENTED YET!
-restrictions => ['opt_1|opt_2|opt_3', ...]
+  restrictions => ['opt_1|opt_2|opt_3', ...]
+
 That is, opt_1, opt_2 and opt_3 can not appear simultaneously.
 
 =back
@@ -723,14 +819,18 @@ Return name of parsed use case.
 
 =head1 TYPES
 
-To declare a new type, a package with some methods should be defined.
+To declare a new type, a corresponding package should be defined.
+To define 'MyType' there should be package named 'CmdArgs::Types::MyType',
+that contains subroutine 'check'.
+Subroutine 'check' must validate argument by returning positive boolean value.
 For example:
+
   {
     package CmdArgs::Types::MyTypeName;
     sub check
     {
-      my $arg = shift;
-      -f $arg
+      my ($class, $arg) = @_;
+      -f $arg or die "'$arg' is not a file\n"
     }
   }
 
