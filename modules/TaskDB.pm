@@ -41,7 +41,7 @@ sub get_tasks
 {
   my $self = shift;
   my @wrong_ids = grep !exists $self->{tasks}{$_}, @_;
-  @wrong_ids && die (join '', map "unknown task '$_'\n", @wrong_ids);
+  @wrong_ids && throw List => map "unknown task '$_'", @wrong_ids;
   map $self->{tasks}{$_}, @_
 }
 
