@@ -126,15 +126,18 @@ sub m_run_dvm_test
   my $output = `$cmd`;
   $? && return 0;
 
-  m_analyze_output($output)
+  m_analyze_output($task, $output)
 }
 
 sub m_analyze_output
 {
-  my $o = shift;
+  my ($task, $o) = @_;
   my @lines = split /\s*\r?\n\s*/, $o;
   shift @lines while @lines && $lines[0] !~ /^\s*=+\s*START OF /i;
-  @lines < 2 && return 0;
+  if (@lines < 2){
+    $task->DEBUG('wrong output of the test');
+    return 0;
+  }
 
   my @failed;
   for (shift @lines; $lines[0] !~ /^\s*=+\s*END OF /i; shift @lines){
@@ -145,6 +148,8 @@ sub m_analyze_output
       lc $status eq 'complete' || push @failed, $subtest;
     }
   }
+
+  $task->DEBUG("failed subtests: ", join ', ', @failed);
 
   @failed == 0
 }
