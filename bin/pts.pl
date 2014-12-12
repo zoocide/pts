@@ -110,7 +110,7 @@ sub check
 {
   my ($class, $filename) = @_;
   if (!-f $filename && !$db->task_exists($filename)){
-    throw Exception => "file '$filename' is not exists";
+    throw Exception => "Task '$filename' does not exist";
     return 0;
   };
   1
