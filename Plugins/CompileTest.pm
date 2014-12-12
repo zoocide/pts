@@ -133,23 +133,23 @@ sub m_analyze_output
 {
   my ($task, $o) = @_;
   my @lines = split /\s*\r?\n\s*/, $o;
-  shift @lines while @lines && $lines[0] !~ /^\s*=+\s*START OF /i;
-  if (@lines < 2){
-    $task->DEBUG('wrong output of the test');
-    return 0;
-  }
 
   my @failed;
-  for (shift @lines; $lines[0] !~ /^\s*=+\s*END OF /i; shift @lines){
-    @lines || return 0;
-    if ($lines[0] =~ /^\s*(\w+)\s+-\s+(.*?)\s*$/){
-      my $subtest = $1;
-      my $status = $2;
-      lc $status eq 'complete' || push @failed, $subtest;
+  for (@lines){
+    if (index($_, 'complete')>=0 || index($_, '***error')>=0){
+      if ($lines[0] =~ /^\s*(\w+)\s+-\s+(.*?)\s*$/){
+        my $subtest = $1;
+        my $status = $2;
+        lc $status eq 'complete' || push @failed, $subtest;
+      }
+      elsif (index($_, '***error') >= 0){
+        $task->DEBUG('unrecognized error occured: ', $_);
+        return 0;
+      }
     }
   }
 
-  $task->DEBUG("failed subtests: ", join ', ', @failed);
+  $task->DEBUG("failed subtests: ", join ', ', @failed) if @failed;
 
   @failed == 0
 }
