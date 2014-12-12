@@ -7,7 +7,8 @@ use Task;
 
 =head1 SYNOPSIS
 
-  my $db = TaskDB->new('tasks_directory');
+  my $db = TaskDB->new('tasks_directory', ...);
+  $db->add_tasks_dir('another_directory');
   my @tasks = $db->get_tasks(@task_IDs);
 
 =cut
@@ -15,13 +16,14 @@ use Task;
 # throws: Exceptions::Exception
 sub new
 {
-  my ($class, $tasks_dir) = @_;
-  my $dir = realpath($tasks_dir);
-  $dir || throw Exception => "path '$tasks_dir' not exists";
+  my ($class, @tasks_dirs) = @_;
+  @tasks_dirs = map realpath($_), @tasks_dirs;
   my $self = bless {
-    dirname => $dir,
-    tasks   => { map +($_->id, $_), m_load_tasks($dir) },
+    dirs => [],
+    tasks   => {},
   }, $class;
+  $self->add_tasks_dir($_) for @tasks_dirs;
+  $self
 }
 
 # throws: -
@@ -43,6 +45,17 @@ sub get_tasks
   my @wrong_ids = grep !exists $self->{tasks}{$_}, @_;
   @wrong_ids && throw List => map "unknown task '$_'", @wrong_ids;
   map $self->{tasks}{$_}, @_
+}
+
+# $db->add_tasks_dir($dir);
+# throws: Exceptions::Exception
+sub add_tasks_dir
+{
+  my ($self, $dir) = @_;
+  for my $t (m_load_tasks($dir)){
+    $self->{tasks}{$t->id} = $t;
+  }
+  push $self->{dirs}, $dir;
 }
 
 # throws: Exceptions::Exception

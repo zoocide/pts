@@ -124,4 +124,3 @@ sub reload_config
 }
 
 1;
-
