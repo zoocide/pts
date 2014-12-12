@@ -4,6 +4,7 @@ use FindBin;
 use lib "$FindBin::Bin/../modules";
 use PtsConfig;
 use CmdArgs;
+use CmdArgs::BasicTypes;
 use Exceptions;
 use TaskDB;
 
@@ -15,19 +16,21 @@ try{ $db = TaskDB->new(PtsConfig->tasks_dir) } string2exception make_exlist
 catch{ push @{$@}, Exceptions::Exception->new('can not load tasks database'); throw };
 
 my $args = CmdArgs->declare(
-  '0.1.0',
+  '0.2.0',
   options => {
+    tasks_dir => ['-T:Dir<<tasks_dir>>', 'allow to process tasks from <tasks_dir>',
+                  sub{ $db->add_tasks_dir($_) }],
     'quiet' => ['-q --quiet', 'do not print statistics and task name'],
     'debug' => ['-D --debug', 'print debug information'],
     'list'  => ['-l --list',  'print all tasks in database'],
     'stat'  => ['-s --stat',  'force to print statistics even for one task'],
   },
   groups => {
-    OPTIONS => [qw(quiet stat debug)],
+    OPTIONS => [qw(quiet stat debug tasks_dir)],
   },
   use_cases => {
     main => ['OPTIONS taskset:TaskSet...', 'Process a set of tasks'],
-    list => ['list', 'Print all tasks in database'],
+    list => ['tasks_dir? list', 'Print all tasks in database'],
   },
 );
 $args->parse;
