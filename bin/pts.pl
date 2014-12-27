@@ -89,7 +89,9 @@ print "\nstatistics:"
      ,"\n"
      if $args->is_opt('stat') || (!$quiet && @tasks > 1);
 
+exit 1 if @failed;
 
+##### END #####
 
 sub load_task_id_set
 {
