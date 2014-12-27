@@ -12,7 +12,7 @@ my $cmd_file = 'all.commands';
 my $taskset_file = 'current.set';
 
 my $args = CmdArgs->declare(
-  '0.2',
+  '0.3',
   use_cases => [
     all => ['all', 'Start testing from the beginning.'],
     continue => ['cont', 'Continue testing.'],
@@ -180,9 +180,11 @@ sub generate_tasks
   }
   elsif ($act eq 'run'){
     for my $t (@tests){
+      my $base_task_name = gen_task_name(compile => $t);
+      next if !-f catfile($tasks_dir, $base_task_name.'.conf');
+
       my $task_name = gen_task_name($act, $t);
       my $fname = "$task_name.conf";
-      my $base_task_name = gen_task_name(compile => $t);
       my $task = ConfigFile->new(catfile($tasks_dir, $fname));
       $task->set_var(name => $task_name);
       $task->set_var(plugin => 'CompileTest');
