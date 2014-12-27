@@ -72,7 +72,7 @@ sub parse_command_file
   for (my $l = 1; <$f>; $l++){
     next if /^\s*#/;
     chomp;
-    if (/^compile\s+(\w.+?)\s*$/){
+    if (/^compile\s+(\w.*?)\s*$/){
       push @cmds, [compile => $1];
     }
     elsif (/^(run(\s.*?)?)\s*$/){
