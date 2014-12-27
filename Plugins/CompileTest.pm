@@ -51,6 +51,7 @@ sub process
 
   if    ($action eq 'compile') { $ret = m_compile_dvm_test($task) }
   elsif ($action eq 'run'    ) { $ret = m_run_dvm_test($task, $db) }
+  elsif ($action eq 'skip'   ) { $ret = m_skip_dvm_test($task, $db) }
   else { die "unknown action specified '$action'. Must be 'compile' or 'run'.\n" }
 
   $ret
@@ -109,6 +110,7 @@ sub m_run_dvm_test
 
   ## get compile_task ##
   my $ct = $db->get_task($compile_task);
+  return m_skip_dvm_test($task, $db) if $ct->get_var('', 'action') eq 'skip';
 
   ## get out name and work_dir ##
   my $test_dir = m_normalize_path($ct->get_var('', 'dir'));
@@ -127,6 +129,13 @@ sub m_run_dvm_test
   $? && return 0;
 
   m_analyze_output($task, $output)
+}
+
+sub m_skip_dvm_test
+{
+  my ($task, $db) = @_;
+  $task->DEBUG("Task skipped");
+  'skipped'
 }
 
 sub m_analyze_output
