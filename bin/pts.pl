@@ -16,7 +16,7 @@ try{ $db = TaskDB->new(PtsConfig->tasks_dir) } string2exception make_exlist
 catch{ push @{$@}, Exceptions::Exception->new('can not load tasks database'); throw };
 
 my $args = CmdArgs->declare(
-  '0.2.0',
+  '0.2.1',
   options => {
     tasks_dir => ['-T:Dir<<tasks_dir>>', 'allow to process tasks from <tasks_dir>',
                   sub{ $db->add_tasks_dir($_) }],
