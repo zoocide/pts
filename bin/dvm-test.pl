@@ -96,6 +96,21 @@ sub get_tests
   my $dir = $short_dir ? catfile($start_dir, $short_dir) : $start_dir;
   -d $dir || return ();
   my @ret;
+
+  ## process settings file ##
+  my %settings;
+  my $settings_fname = catfile($dir, 'settings');
+  if (-f $settings_fname){
+    try {
+      my $sf = ConfigFile->new($settings_fname);
+      $sf->load;
+      %settings = %{$sf->get_group('')};
+    } catch {
+      print "Can not process file '$settings_fname'\n";
+    };
+  }
+
+  ## get tests ##
   opendir my $d, $dir or return ();
   my $name;
   while ($name = readdir $d){
@@ -106,7 +121,13 @@ sub get_tests
                                                   : $name);
     }
     elsif ($name =~ /^(.+)\.(f|c)dv$/i){
-      push @ret, {dir => $short_dir, out => $1, src => $name, lang => lc $2};
+      push @ret, {
+        dir => $short_dir,
+        out => $1,
+        src => $name,
+        lang => lc $2,
+        opts => \%settings,
+      };
     }
     else {
       #print "unrecognized filename: $p\n";
@@ -131,7 +152,9 @@ sub generate_tasks
   my ($tasks_dir, $act, $args, @tests) = @_;
   my @ret;
 
+
   if ($act eq 'compile'){
+    my $H = ($args !~ /(^|\s)-noH(\s|$)/);
     ## determine language ##
     my $lang;
     if    ($args =~ /^\s*c/i){ $lang = 'c' }
@@ -146,7 +169,7 @@ sub generate_tasks
       $task->set_var(name => $task_name);
       $task->set_var(plugin => 'CompileTest');
 
-      $task->set_var(action => $act);
+      $task->set_var(action => ($H && $t->{opts}{DVM_ONLY}) ? 'skip' : $act);
       $task->set_var(dir => $t->{dir});
       $task->set_var(src => $t->{src});
       $task->set_var(out => $t->{out});
