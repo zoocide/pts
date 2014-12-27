@@ -52,6 +52,7 @@ $start_time = time if $args->is_opt('debug');
 
 use lib PtsConfig->plugins_parent_dir;
 my @failed;
+my @skipped;
 for my $task (@tasks){
   if ($args->is_opt('debug')){
     $task->set_debug(1);
@@ -74,8 +75,18 @@ for my $task (@tasks){
     $res = 0;
   };
   $task->DEBUG_T('main_task_timer', 'task \''.$task->name.'\' finished');
-  print $task->name, ' ', ($res ? 'complete' : 'failed ['.$task->id.']'), "\n" if !$res || !$quiet;
-  push @failed, $task if !$res;
+
+  my $status;
+  if ($res eq 'skipped'){
+    $status = 'skipped';
+    push @skipped, $task;
+  } elsif ($res){
+    $status = 'complete';
+  } else {
+    $status = 'failed ['.$task->id.']';
+    push @failed, $task;
+  }
+  print $task->name, ' ', $status, "\n" if !$res || !$quiet;
 }
 
 print "\nDEBUG: total execution time = ", time - $start_time, "\n"
@@ -83,11 +94,13 @@ print "\nDEBUG: total execution time = ", time - $start_time, "\n"
 
 my $num_total  = @tasks;
 my $num_failed = @failed;
-my $num_ok     = $num_total - $num_failed;
+my $num_skipped = @skipped;
+my $num_ok     = $num_total - ($num_failed + $num_skipped);
 
 print "\nstatistics:"
      ,"\nnum total    = ", $num_total
      ,"\nnum complete = ", $num_ok
+     ,"\nnum skipped  = ", $num_skipped
      ,"\nnum failed   = ", $num_failed
      ,"\n"
      if $args->is_opt('stat') || (!$quiet && @tasks > 1);
