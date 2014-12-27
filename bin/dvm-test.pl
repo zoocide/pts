@@ -154,6 +154,9 @@ sub generate_tasks
 
 
   if ($act eq 'compile'){
+    ## clean tasks directory ##
+    remove_all_compile_tasks($tasks_dir);
+
     my $H = ($args !~ /(^|\s)-noH(\s|$)/);
     ## determine language ##
     my $lang;
@@ -200,4 +203,29 @@ sub generate_tasks
     die "can not generate tasks for unknown action '$act'";
   }
   @ret
+}
+
+sub get_all_compile_tasks
+{
+  my ($tasks_dir) = @_;
+  my @ret;
+
+  opendir my $d, $tasks_dir
+      or die "can not open directory '$tasks_dir': $!\n";
+  my $fname;
+  while ($fname = readdir $d){
+    push @ret, $fname if index($fname, 'compile') == 0;
+  }
+  closedir $d;
+  @ret
+}
+
+sub remove_all_compile_tasks
+{
+  my ($tasks_dir) = @_;
+
+  for (get_all_compile_tasks($tasks_dir)){
+    my $p = catfile($tasks_dir, $_);
+    unlink $p or die "Can not delete file '$p'\n";
+  }
 }
