@@ -53,8 +53,11 @@ $start_time = time if $args->is_opt('debug');
 use lib PtsConfig->plugins_parent_dir;
 my @failed;
 for my $task (@tasks){
+  if ($args->is_opt('debug')){
+    $task->set_debug(1);
+    print "\n";
+  }
   print $task->name, ":\n" if !$quiet;
-  $task->set_debug(1) if $args->is_opt('debug');
   $task->DEBUG_RESET('main_task_timer');
   my $res;
   try{
