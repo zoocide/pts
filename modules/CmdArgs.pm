@@ -218,7 +218,7 @@ sub m_usage_message
   my $ret = "usage:\n";
   my @uc_names = exists $self->{arrangement}{use_cases}
                ? @{$self->{arrangement}{use_cases}}
-               : keys $self->{use_cases};
+               : keys %{$self->{use_cases}};
   for my $uc_name (@uc_names){
     $ret .= '  '.$self->m_use_case_msg($self->{use_cases}{$uc_name})."\n";
   }
@@ -232,7 +232,7 @@ sub m_help_message
   my $ret = "usage:\n";
   my @uc_names = exists $self->{arrangement}{use_cases}
                ? @{$self->{arrangement}{use_cases}}
-               : keys $self->{use_cases};
+               : keys %{$self->{use_cases}};
   my @ucs = map $self->{use_cases}{$_}, @uc_names;
   if (@ucs == 1){
     # do not print number before use case
@@ -291,7 +291,7 @@ sub m_options
   }
 
   ## arrange options by the first key ##
-  my @fkeys = sort keys $self->{arrangement}{first_keys};
+  my @fkeys = sort keys %{$self->{arrangement}{first_keys}};
   @{$self->{groups}{OPTIONS}} = map $self->{arrangement}{first_keys}{$_}, @fkeys;
 }
 
@@ -356,7 +356,7 @@ sub m_restrictions
       exists $self->{options}{$o}
         || throw Exception => "unknow option '$o' is specified in restriction";
       $res{$o} ||= [];
-      push $res{$o}, grep {
+      push @{$res{$o}}, grep {
         my $a = $_;
         $a ne $o && !grep {$a eq $_} @{$res{$o}}
       } @opts;
