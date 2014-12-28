@@ -15,6 +15,8 @@ my $db;
 try{ $db = TaskDB->new(PtsConfig->tasks_dir) } string2exception make_exlist
 catch{ push @{$@}, Exceptions::Exception->new('can not load tasks database'); throw };
 
+my $failed_fname;
+
 my $args = CmdArgs->declare(
   '0.2.1',
   options => {
@@ -24,9 +26,11 @@ my $args = CmdArgs->declare(
     'debug' => ['-D --debug', 'print debug information'],
     'list'  => ['-l --list',  'print all tasks in database'],
     'stat'  => ['-s --stat',  'force to print statistics even for one task'],
+    failed  => ['--failed:<<file>>', 'put failed tasks into <file>',
+                sub { $failed_fname = $_ }],
   },
   groups => {
-    OPTIONS => [qw(quiet stat debug tasks_dir)],
+    OPTIONS => [qw(quiet stat debug tasks_dir failed)],
   },
   use_cases => {
     main => ['OPTIONS taskset:TaskSet...', 'Process a set of tasks'],
@@ -41,9 +45,16 @@ if ($args->use_case eq 'list'){
   exit 0;
 }
 
-# it is assumed to use list of files in future
+## get tasks from DB ##
 my @tasks = map { -f $_ ? $db->get_tasks(load_task_id_set($_)) : $db->get_task($_) }
                 @{$args->arg('taskset')};
+
+## open file $failed_fname ##
+my $failed_file;
+if ($failed_fname){
+  open $failed_file, '>', $failed_fname
+      or die "Can not write to file '$failed_fname': $!\n";
+}
 
 my $quiet = $args->is_opt('quiet');
 
@@ -89,6 +100,8 @@ for my $task (@tasks){
   print $task->name, ' ', $status, "\n" if !$res || !$quiet;
 }
 
+## print statistics ##
+
 print "\nDEBUG: total execution time = ", time - $start_time, "\n"
   if $args->is_opt('debug');
 
@@ -105,7 +118,14 @@ print "\nstatistics:"
      ,"\n"
      if $args->is_opt('stat') || (!$quiet && @tasks > 1);
 
-exit 1 if @failed;
+## write failed tasks ##
+if (@failed){
+  if ($failed_fname){
+    print $failed_file $_->id."\n" for @failed;
+    close $failed_file;
+  }
+  exit 1
+}
 
 ##### END #####
 
