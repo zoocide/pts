@@ -4,6 +4,7 @@ use ConfigFile;
 use ConfigFileScheme;
 use Exceptions;
 use File::Path qw(make_path);
+use File::Spec::Functions qw(catpath splitpath catdir);
 BEGIN{
   eval {
     require 'Time/HiRes.pm';
@@ -43,6 +44,7 @@ sub name   { $_[0]{name} }
 sub plugin { $_[0]{plugin} }
 sub conf   { $_[0]{conf} }
 sub data_dir { $_[0]{data_dir} }
+sub task_dir { $_[0]{task_dir} }
 sub set_debug { $_[0]{debug} = $_[1] }
 
 sub make_data_dir { make_path($_[0]{data_dir}) }
@@ -92,6 +94,7 @@ sub init
   $self->{debug} = 0;
   $self->{filename} = $filename;
   $self->{data_dir} = $data_dir;
+  $self->{task_dir} = m_dirname($filename);
   my $conf;
   try{
     $conf = ConfigFile->new($filename, required => {'' => ['plugin']});
@@ -121,6 +124,13 @@ sub reload_config
   my $conf = ConfigFile->new($self->{filename}, $scheme);
   $conf->load;
   $self->{ conf } = $conf->get_all;
+}
+
+# $dir_name = m_dirname('dir_name/filename');
+sub m_dirname
+{
+  my ($vol, $dirs) = splitpath($_[0]);
+  catpath($vol, catdir($dirs), '') #< catdir removes trailing /.
 }
 
 1;
