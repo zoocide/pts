@@ -16,25 +16,30 @@ try{ $db = TaskDB->new(PtsConfig->tasks_dir) } string2exception make_exlist
 catch{ push @{$@}, Exceptions::Exception->new('can not load tasks database'); throw };
 
 my $failed_fname;
+my $debug;
+my $quiet;
 
 my $args = CmdArgs->declare(
   '0.2.1',
   options => {
-    tasks_dir => ['-T:Dir<<tasks_dir>>', 'allow to process tasks from <tasks_dir>',
+    tasks_dir => ['-T:Dir<<tasks_dir>>', 'Allow to process tasks from <tasks_dir>.'
+                  .' It extends the tasks database with tasks from this directory.',
                   sub{ $db->add_tasks_dir($_) }],
-    quiet => ['-q --quiet', 'do not print statistics and task name'],
-    debug => ['-D --debug', 'print debug information'],
-    list => ['-l --list', 'print all tasks in database'],
-    stat => ['-s --stat', 'force to print statistics even for one task'],
-    failed  => ['--failed:<<file>>', 'put failed tasks into <file>',
+    quiet => ['-q --quiet', 'Do not print statistics and task name.', \$quiet],
+    debug => ['-D --debug', 'Print debug information.', \$debug],
+    list  => ['-l --list',  'Print all tasks in database.'],
+    stat  => ['-s --stat',  'Force to print statistics even for one task.'],
+    failed  => ['--failed:<<file>>', 'Put failed tasks into <file>.',
                 sub { $failed_fname = $_ }],
   },
   groups => {
     OPTIONS => [qw(quiet stat debug tasks_dir failed)],
   },
   use_cases => {
-    main => ['OPTIONS taskset:TaskSet...', 'Process a set of tasks'],
-    list => ['tasks_dir? list', 'Print all tasks in database'],
+    main => ['OPTIONS taskset:TaskSet...', 'Process a set of tasks.'
+             .' There is a tasks database, from which you can select tasks to execute.'
+             .' Also you can sepcify files, containing tasks names.'],
+    list => ['tasks_dir? list', 'Print all tasks in database.'],
   },
 );
 $args->parse;
@@ -45,7 +50,7 @@ if ($args->use_case eq 'list'){
   exit 0;
 }
 
-## get tasks from DB ##
+## obtain tasks to execute ##
 my @tasks = map { -f $_ ? $db->get_tasks(load_task_id_set($_)) : $db->get_task($_) }
                 @{$args->arg('taskset')};
 
@@ -56,20 +61,16 @@ if ($failed_fname){
       or die "Can not write to file '$failed_fname': $!\n";
 }
 
-my $quiet = $args->is_opt('quiet');
-
 my $start_time;
-$start_time = time if $args->is_opt('debug');
+$start_time = time if $debug;
 
 use lib PtsConfig->plugins_parent_dir;
 my @failed;
 my @skipped;
 for my $task (@tasks){
-  if ($args->is_opt('debug')){
-    $task->set_debug(1);
-    print "\n";
   }
-  print $task->name, ":\n" if !$quiet;
+  print '===== ', $task->name, " =====\n" if !$quiet;
+  $task->set_debug(1) if $debug;
   $task->DEBUG_RESET('main_task_timer');
   my $res;
   try{
@@ -102,8 +103,7 @@ for my $task (@tasks){
 
 ## print statistics ##
 
-print "\nDEBUG: total execution time = ", time - $start_time, "\n"
-  if $args->is_opt('debug');
+debug("total execution time = ", time - $start_time);
 
 my $num_total  = @tasks;
 my $num_failed = @failed;
@@ -128,6 +128,12 @@ if (@failed){
 }
 
 ##### END #####
+
+sub debug
+{
+  return if !$debug;
+  print "DEBUG: $_\n" for split /\n/, join "\n", @_;
+}
 
 sub load_task_id_set
 {

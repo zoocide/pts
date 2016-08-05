@@ -10,6 +10,8 @@ use Task;
   my $db = TaskDB->new('tasks_directory', ...);
   $db->add_tasks_dir('another_directory');
   my @tasks = $db->get_tasks(@task_IDs);
+  my $bool = $db->task_exists($task_ID);
+  my $task = $db->get_task($task_ID);
 
 =cut
 
