@@ -137,8 +137,15 @@ if (@failed){
   if ($failed_fname){
     print $failed_file $_->id."\n" for @failed;
     close $failed_file;
+    debug("Failed tasks were written to file '$failed_fname'.\n");
   }
   exit 1
+}
+
+## remove failed file on success ##
+if ($failed_file){
+  close $failed_file;
+  unlink $failed_fname;
 }
 
 ##### END #####
@@ -146,7 +153,7 @@ if (@failed){
 sub debug
 {
   return if !$debug;
-  print "DEBUG: $_\n" for split /\n/, join "\n", @_;
+  print "DEBUG: $_\n" for split /\n/, join '', @_;
 }
 
 sub load_task_id_set
