@@ -62,7 +62,7 @@ if ($failed_fname){
       or die "Can not write to file '$failed_fname': $!\n";
 }
 
-my $start_time;
+my $start_time = 0;
 $start_time = time if $debug;
 
 ## load plugins ##
