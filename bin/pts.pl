@@ -7,6 +7,7 @@ use CmdArgs;
 use CmdArgs::BasicTypes;
 use Exceptions;
 use TaskDB;
+use File::Spec::Functions qw(catfile);
 
 BEGIN{ eval{ require 'Time/HiRes.pm'; Time::HiRes->import('time') } }
 
@@ -20,7 +21,7 @@ my $debug;
 my $quiet;
 
 my $args = CmdArgs->declare(
-  '0.2.1',
+  '0.2.2',
   options => {
     tasks_dir => ['-T:Dir<<tasks_dir>>', 'Allow to process tasks from <tasks_dir>.'
                   .' It extends the tasks database with tasks from this directory.',
@@ -64,24 +65,37 @@ if ($failed_fname){
 my $start_time;
 $start_time = time if $debug;
 
-use lib PtsConfig->plugins_parent_dir;
+## load plugins ##
+my $plugins_pdir = PtsConfig->plugins_parent_dir;
+eval "use lib '$plugins_pdir'";
+die $@ if $@;
+debug('plugins dir = '.catfile($plugins_pdir, 'Plugins'));
+
 my @failed;
-my @skipped;
+my %plugins;
 for my $task (@tasks){
+  my $pname = $task->plugin;
+  next if exists $plugins{$pname};
+  debug("load plugin $pname");
+  eval { require "Plugins/$pname.pm" };
+  if ($@){
+    print $@;
+    push @failed, $pname;
   }
+  $plugins{$pname} = !$@;
+}
+@failed and die "ERROR! Can not load plugins: ".join(', ', @failed)."\n";
+
+my @skipped;
+## main loop ##
+for my $task (@tasks){
   print '===== ', $task->name, " =====\n" if !$quiet;
   $task->set_debug(1) if $debug;
   $task->DEBUG_RESET('main_task_timer');
   my $res;
   try{
-    eval 'use Plugins::'.$task->plugin.';';
-    if ($@){
-      $task->DEBUG($@);
-      throw Exception => "plugin '".$task->plugin."' disabled";
-    }
     $res = ('Plugins::'.$task->plugin)->process($task, $db);
   }
-  exception2string
   catch{
     print $@;
     $res = 0;
