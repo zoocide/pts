@@ -20,9 +20,9 @@ sub process
   }
   try {
     $task->reload_config(multiline => {'' => [qw(content)]});
-    if (exists $task->conf->{''}{content}){
+    if ($task->has_var('', 'content')){
       print "content = "
-        , join(', ', map "'$_'", @{$task->conf->{''}{content}})
+        , join(', ', map "'$_'", @{$task->get_var('','content')})
         , "\n";
     }
   };

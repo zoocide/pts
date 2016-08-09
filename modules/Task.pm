@@ -24,6 +24,8 @@ BEGIN{
   chdir $task->data_dir;
 
   my ($var1, $var2) = $task->get_vars('group', 'var1', 'var2');
+  my $var3 = 'default_value';
+  $var3 = $task->get_var('', 'var3') if $task->has_var('', 'var3');
 
   ======== DEBUG ========
   $task->DEBUG(@messages_to_print);      ##< print debug messages
@@ -62,6 +64,12 @@ sub DEBUG_T
 }
 sub DEBUG_RESET{ my $t = time; $_[0]->{debug_time}{$_} = $t for @_[1..$#_] }
 sub DEBUG_TR{ $_[0]->DEBUG_T(@_[1..$#_]); $_[0]->DEBUG_RESET($_[1]) }
+
+# my $bool = $task->has_var('group_name', 'var_name');
+sub has_var
+{
+  exists $_[0]{conf}{$_[1]}{$_[2]}
+}
 
 # my $var = $task->get_var('group_name', 'var_name');
 # throws: Exceptions::Exception
