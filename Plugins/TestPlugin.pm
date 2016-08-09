@@ -18,6 +18,14 @@ sub process
   else{
     throw Exception => "task has nothing to say";
   }
+  try {
+    $task->reload_config(multiline => {'' => [qw(content)]});
+    if (exists $task->conf->{''}{content}){
+      print "content = "
+        , join(', ', map "'$_'", @{$task->conf->{''}{content}})
+        , "\n";
+    }
+  };
   1
 }
 
