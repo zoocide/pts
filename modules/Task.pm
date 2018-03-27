@@ -3,7 +3,7 @@ use strict;
 use ConfigFile;
 use ConfigFileScheme;
 use Exceptions;
-use File::Path qw(make_path);
+use File::Path qw(make_path remove_tree);
 use File::Spec::Functions qw(updir catfile);
 BEGIN{
   eval {
@@ -48,6 +48,10 @@ sub task_dir { $_[0]{task_dir} }
 sub set_debug { $_[0]{debug} = $_[1] }
 
 sub make_data_dir { make_path($_[0]{data_dir}) }
+sub clear_data_dir
+{
+  remove_tree( $_[0]{data_dir}, {keep_root => 1} );
+}
 
 sub DEBUG   { $_[0]->{debug} && print 'DEBUG: ', @_[1..$#_], "\n" }
 sub DEBUG_T
