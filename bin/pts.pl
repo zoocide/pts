@@ -21,7 +21,7 @@ my $debug;
 my $quiet;
 
 my $args = CmdArgs->declare(
-  '0.2.2',
+  '0.2.3',
   options => {
     tasks_dir => ['-T:Dir<<tasks_dir>>', 'Allow to process tasks from <tasks_dir>.'
                   .' It extends the tasks database with tasks from this directory.',
@@ -30,11 +30,13 @@ my $args = CmdArgs->declare(
     debug => ['-D --debug', 'Print debug information.', \$debug],
     list  => ['-l --list',  'Print all tasks in database.'],
     stat  => ['-s --stat',  'Force to print statistics even for one task.'],
+    plugins_dir => ['-I:Dir<<plugins_dir>>', 'Include plugins from directory.',
+                    sub{ PtsConfig->add_plugins_parent_dir($_) }],
     failed  => ['--failed:<<file>>', 'Put failed tasks into <file>.',
                 sub { $failed_fname = $_ }],
   },
   groups => {
-    OPTIONS => [qw(quiet stat debug tasks_dir failed)],
+    OPTIONS => [qw(quiet stat debug tasks_dir plugins_dir failed)],
   },
   use_cases => {
     main => ['OPTIONS taskset:TaskSet...', 'Process a set of tasks.'
@@ -66,26 +68,9 @@ my $start_time = 0;
 $start_time = time if $debug;
 
 ## load plugins ##
-my $plugins_pdir = PtsConfig->plugins_parent_dir;
-eval "use lib '$plugins_pdir'";
-die $@ if $@;
-debug('plugins dir = '.catfile($plugins_pdir, 'Plugins'));
+load_plugins(@tasks);
 
 my @failed;
-my %plugins;
-for my $task (@tasks){
-  my $pname = $task->plugin;
-  next if exists $plugins{$pname};
-  debug("load plugin $pname");
-  eval { require "Plugins/$pname.pm" };
-  if ($@){
-    print $@;
-    push @failed, $pname;
-  }
-  $plugins{$pname} = !$@;
-}
-@failed and die "ERROR! Can not load plugins: ".join(', ', @failed)."\n";
-
 my @skipped;
 ## main loop ##
 for my $task (@tasks){
@@ -169,6 +154,31 @@ sub load_task_id_set
   @lines
 }
 
+sub load_plugins
+{
+  my @tasks = @_;
+  for my $plugins_pdir (PtsConfig->plugins_parent_dirs) {
+    eval "use lib '$plugins_pdir'";
+    die $@ if $@;
+    debug('plugins dir = '.catfile($plugins_pdir, 'Plugins'));
+  }
+
+  my @failed;
+  my %plugins;
+  for my $task (@tasks){
+    my $pname = $task->plugin;
+    next if exists $plugins{$pname};
+    debug("load plugin $pname");
+    (my $req_pname = $pname) =~ s#::#/#g;
+      eval { require "Plugins/$req_pname.pm" };
+      if ($@){
+        print $@;
+        push @failed, $pname;
+      }
+      $plugins{$pname} = !$@;
+  }
+  @failed and die "ERROR! Can not load plugins: ".join(', ', @failed)."\n";
+}
 
 
 package CmdArgs::Types::TaskSet;
