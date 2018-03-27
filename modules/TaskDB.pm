@@ -57,7 +57,7 @@ sub add_tasks_dir
   for my $t (m_load_tasks($dir)){
     $self->{tasks}{$t->id} = $t;
   }
-  push $self->{dirs}, $dir;
+  push @{$self->{dirs}}, $dir;
 }
 
 # throws: Exceptions::Exception
