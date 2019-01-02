@@ -4,7 +4,7 @@ use ConfigFile;
 use ConfigFileScheme;
 use Exceptions;
 use File::Path qw(make_path remove_tree);
-use File::Spec::Functions qw(updir catfile);
+use File::Spec::Functions qw(splitdir catdir);
 BEGIN{
   eval {
     require 'Time/HiRes.pm';
@@ -106,7 +106,8 @@ sub init
   $self->{debug} = 0;
   $self->{filename} = $filename;
   $self->{data_dir} = $data_dir;
-  $self->{task_dir} = catfile($filename, updir);
+  my @task_path = splitdir($filename);
+  $self->{task_dir} = catdir(@task_path[0..$#task_path-1]);
   my $conf;
   try{
     $conf = ConfigFile->new($filename, required => {'' => ['plugin']});
