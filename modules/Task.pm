@@ -137,6 +137,95 @@ sub reload_config
   my $conf = ConfigFile->new($self->{filename}, $scheme);
   $conf->load;
   $self->{ conf } = $conf->get_all;
+
+
+package Task::ID;
+use Exceptions;
+
+sub new
+{
+  my $class = shift;
+
+  my $self = bless {
+    # example:
+    # short_id => 'short_id', #corresponding file short_id.conf
+    # id => 'short_id:arg1=value1,arg2=e1 e2',
+    # args => {'' => {arg1 => ['value1'], arg2=['e1', 'e2']}},
+  }, $class;
+  $self->reset(@_);
+  $self
+}
+
+sub short_id { $_[0]{short_id} }
+sub id { $_[0]{id} }
+sub args { %{$_[0]{args}} }
+
+sub reset
+{
+  my ($self, $s) = @_;
+  my ($sid, %args);
+
+  my ($vg, $vn);
+  my $var_name = qr<(\w++)(?{$vn = $^N})>;
+  my $var_group = qr<(\w*)::(?{$vg = $^N})|(?{$vg = ''})>;
+  my $var = qr<$var_group$var_name>;
+  my $arg = qr<\s*+$var\s*+=\s*+
+    (
+      (?:
+        \\. |
+        [^\\,'"]++ |
+        '(?:[^\\']++|\\.)++' |
+        "(?:[^\\"]++|\\.)++"
+      )++
+    )
+    (?{
+      $args{$vg}{$vn} = [$^N];
+    })
+  >x;
+  if (!($s =~ /^\s*([^:]+?) \s* (?: :(?:$arg(?:,$arg)*+)? )?$/x)) {
+    throw Exception => "wrong task specification '$s'";
+  }
+  while (my ($g, $cnt) = each %args) {
+    while (my ($v, $val) = each %$cnt) {
+      $args{$g}{$v} = [m_parse_value($val->[0])];
+    }
+  }
+  $self->{short_id} = $1;
+  $self->{id} = $1.':'.join ',', map {
+    my $gr = $_;
+    join ',', map {
+      my $val = $args{$gr}{$_};
+      "${gr}::$_=".join ' ', map {s/([\\ \$'",])/\\$1/gr =~ s/\n/\\n/gr =~ s/\t/\\t/gr} @$val
+    } sort keys %{$args{$gr}}
+  } sort keys %args;
+  $self->{args} = \%args;
+}
+
+sub m_parse_value
+{
+  my $val_str = shift;
+  my @ret;
+
+  my $do_concat = 0;
+  my $add_word = sub { $do_concat ? $ret[-1] .= $_[0] : push @ret, $_[0]; $do_concat = 1 };
+
+  my $interpolate_str = sub {
+    my $str = shift;
+    $str =~ s/\\(n)|\\(t)|\\(.)/$1 ? "\n" : $2 ? "\t" : $3/ge;
+    $str
+  };
+  my $normalize_str = sub {
+    my $str = shift;
+    $str =~ s/\\([\\\$'" \t])/$1/g;
+    $str
+  };
+  my $space = qr~(?:\s++|#.*|\r?\n)\r?\n?(?{ $do_concat = 0 })~s;
+  my $normal_word = qr~((?:[^\\\'"# \t\n]|\\(?:.|$))++)(?{ &$add_word(&$interpolate_str($^N)) })~s;
+  my $q_str  = qr~'((?:[^\\']|\\.)*+)'(?{ &$add_word(&$normalize_str($^N)) })~s;
+  my $qq_str = qr~"((?:[^\\"]|\\.)*+)"(?{ &$add_word(&$interpolate_str($^N)) })~s;
+  my $value = qr<^(?:$space|$normal_word|$q_str|$qq_str)*+$>;
+  $val_str =~ /$value/ or throw Exception => "syntax error in string '$val_str'";
+  @ret
 }
 
 1;
