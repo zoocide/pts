@@ -71,13 +71,8 @@ sub m_load_tasks
   for my $tname (readdir $d){
     my $file_name = catfile($dir, $tname);
     next if $tname !~ s/\.conf$//i;
-    try{
-      my $task = Task->new($tname, $file_name, catfile($dir,'data',$tname));
-      push @tasks, $task;
-    }
-    catch{
-      print $@->msg, "\n";
-    } 'Exceptions::List';
+    my $task = Task->new($tname, $file_name, catfile($dir,'data',$tname));
+    push @tasks, $task;
   }
   closedir $d;
   @tasks
