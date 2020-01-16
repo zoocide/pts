@@ -12,8 +12,8 @@ sub process
 {
   my ($class, $task) = @_;
   print "task '", $task->name, "' processing...\n";
-  if (exists $task->conf->{''}{content}){
-    print "task says: '", $task->conf->{''}{content}, "'\n";
+  if ($task->has_var('', 'content')){
+    print "task says: '", $task->get_var('', 'content'), "'\n";
   }
   else{
     throw Exception => "task has nothing to say";
