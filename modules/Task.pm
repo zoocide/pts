@@ -191,13 +191,15 @@ sub reset
     }
   }
   $self->{short_id} = $1;
-  $self->{id} = $1.':'.join ',', map {
+  $self->{id} = $1;
+  my $args_str = join ',', map {
     my $gr = $_;
     join ',', map {
       my $val = $args{$gr}{$_};
       "${gr}::$_=".join ' ', map {s/([\\ \$'",])/\\$1/gr =~ s/\n/\\n/gr =~ s/\t/\\t/gr} @$val
     } sort keys %{$args{$gr}}
   } sort keys %args;
+  $self->{id} .= ':'.$args_str if $args_str;
   $self->{args} = \%args;
 }
 

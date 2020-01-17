@@ -11,7 +11,7 @@ BEGIN{ use_ok('Task') }
 my $id = Task::ID->new('task');
 isa_ok($id, 'Task::ID');
 is($id->short_id, 'task');
-is($id->id, 'task:');
+is($id->id, 'task');
 is_deeply({$id->args}, {});
 eval { $id->reset('test : arg1 = v, ::arg2 = a b, gr::arg3 = "hello world" ') };
 is (defined $@ ? "$@" : '', '');
