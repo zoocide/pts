@@ -21,7 +21,9 @@ BEGIN{
   # reload config file of the task using your scheme.
   $task->reload_config(multiline => 1, ...);
 
-  $task->make_data_dir($task_dir);
+  $task->make_data_dir;
+  # or
+  $task->make_data_dir($new_task_dir);
 
   chdir $task->data_dir;
 
@@ -50,7 +52,14 @@ sub data_dir { $_[0]{data_dir} }
 sub task_dir { $_[0]{task_dir} }
 sub set_debug { $_[0]{debug} = $_[1] }
 
-sub make_data_dir { make_path($_[0]{data_dir}) }
+# $task->make_data_dir;
+# # or #
+# $task->make_data_dir('new/data/dir');
+sub make_data_dir
+{
+  $_[0]{data_dir} = $_[1] if defined $_[1];
+  make_path($_[0]{data_dir})
+}
 sub clear_data_dir
 {
   remove_tree( $_[0]{data_dir}, {keep_root => 1} );
