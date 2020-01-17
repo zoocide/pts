@@ -1,10 +1,12 @@
 package Task;
 use strict;
+use Carp qw(croak);
 use ConfigFile;
 use ConfigFileScheme;
 use Exceptions;
 use File::Path qw(make_path remove_tree);
 use File::Spec::Functions qw(splitdir catdir);
+use Scalar::Util qw(blessed);
 BEGIN{
   eval {
     require 'Time/HiRes.pm';
@@ -14,7 +16,7 @@ BEGIN{
 
 =head1 SYNOPSIS
 
-  my $task = Task->new($id, 'task.conf');
+  my $task = Task->new($Task_ID_obj, 'task.conf', 'task/data/dir');
 
   # reload config file of the task using your scheme.
   $task->reload_config(multiline => 1, ...);
@@ -101,8 +103,9 @@ sub get_vars
 sub init
 {
   my ($self, $id, $filename, $data_dir) = @_;
+  croak "$id is not a Task::ID object" if !blessed($id) || !$id->isa('Task::ID');
   $self->{id} = $id;
-  $self->{name} = $id;
+  $self->{name} = $id->short_id;
   $self->{debug} = 0;
   $self->{filename} = $filename;
   $self->{data_dir} = $data_dir;
@@ -111,6 +114,12 @@ sub init
   my $conf;
   try{
     $conf = ConfigFile->new($filename, required => {'' => ['plugin']});
+    ## set task arguments ##
+    for (my ($gr, $vars) = $id->args) {
+      $conf->set_group($gr);
+      $conf->set_var($_, $vars->{$_}) for keys %$vars;
+    }
+    ## load task ##
     $conf->skip_unrecognized_lines(1);
     $conf->load;
 
@@ -135,6 +144,12 @@ sub reload_config
              ? shift
              : ConfigFileScheme->new(@_);
   my $conf = ConfigFile->new($self->{filename}, $scheme);
+  ## set task arguments ##
+  for (my ($gr, $vars) = $self->{id}->args) {
+    $conf->set_group($gr);
+    $conf->set_var($_, $vars->{$_}) for keys %$vars;
+  }
+  ## load task ##
   $conf->load;
   $self->{ conf } = $conf->get_all;
 

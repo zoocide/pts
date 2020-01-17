@@ -71,7 +71,7 @@ sub m_load_tasks
   for my $tname (readdir $d){
     my $file_name = catfile($dir, $tname);
     next if $tname !~ s/\.conf$//i;
-    my $task = Task->new($tname, $file_name, catfile($dir,'data',$tname));
+    my $task = Task->new(Task::ID->new($tname), $file_name, catfile($dir,'data',$tname));
     push @tasks, $task;
   }
   closedir $d;
