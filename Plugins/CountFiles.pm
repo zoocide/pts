@@ -55,17 +55,17 @@ sub process
   ## 'init' case ##
     eval{
       $conf->load;
-      push @found, grep $work_dir ne substr($_, 0, $l), @{$conf->get_var('', 'files')};
+      push @found, grep $work_dir ne substr($_, 0, $l), $conf->get_arr('', 'files');
     };
 
-    $conf->set_var('files', [@found]);
+    $conf->set_var('files', @found);
     $conf->save;
   }
   else{
   ## 'check' case ##
     $conf->load;
-    $task->DEBUG_TR(1, "saved data (", scalar @{$conf->get_var('' => 'files')}, ") loaded");
-    my @files = sort grep $work_dir eq substr($_, 0, $l), @{$conf->get_var('' => 'files')};
+    $task->DEBUG_TR(1, "saved data (", scalar $conf->get_arr('' => 'files'), ") loaded");
+    my @files = sort grep $work_dir eq substr($_, 0, $l), $conf->get_arr('' => 'files');
     $task->DEBUG_TR(1, "files are filtered for current dir");
     my @new_files = grep !m_arr_contains(\@files, $_), @found;
     $task->DEBUG_TR(1, "new files found");
