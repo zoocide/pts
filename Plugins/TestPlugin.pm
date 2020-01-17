@@ -22,7 +22,7 @@ sub process
     $task->reload_config(multiline => {'' => [qw(content)]});
     if ($task->has_var('', 'content')){
       print "content = "
-        , join(', ', map "'$_'", @{$task->get_var('','content')})
+        , join(', ', map "'$_'", $task->get_arr('','content'))
         , "\n";
     }
   };

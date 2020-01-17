@@ -7,7 +7,7 @@ use Carp;
 our @EXPORT;
 @EXPORT = qw(try throw catch exception2string string2exception make_exlist);
 
-our $VERSION = '0.3.2';
+our $VERSION = '0.3.3';
 
 =head1 NAME
 
@@ -182,38 +182,57 @@ __END__
 
 =over
 
-=item try(&;$)
+=item C<try(&;$)>
 
-'try' executes the block. When exception raised in the block:
-If exists 'catch' with suitable argument it is used. Otherwise exception will be forwarded.
+C<try> executes the block. When exception raised in the block:
+If exists C<catch> with suitable argument it is used. Otherwise exception will be forwarded.
 
-=item throw
+=item C<throw>
 
-  DEPRECATED: throw; - forward exception.
-  throw 'Exception' => @arguments; - raise new exception object.
-  throw $exc_obj; - raise existing exception object.
+Raises a new exception or rerases existing one.
+  C<< throw 'Exception' => @arguments; >> - raise new exception object.
+  C<throw $exc_obj;> - raise existing exception object.
+  B<DEPRECATED>: C<throw;> - forward exception.
 
-=item catch
-
-Use it only as exception processor.
-  catch {}; - catch exception of any type including string exceptions.
-  catch {} 'MyException'; - catch only exception of 'Exceptions::MyException' type.
-  DEPRECATED: catch {} 'Exceptions::MyException'; - catch only exception of 'Exceptions::MyException' type.
-
-=item exception2string
+=item C<catch>
 
 Use it only as exception processor.
-Converts any 'Exceptions::Exception' object to string exception.
+  C<catch {};> - catch exception of any type and string exceptions.
+  C<catch {} 'MyException';> - catch only exception of C<Exceptions::MyException> type.
+  B<DEPRECATED>: catch {} 'Exceptions::MyException'; - catch only exception of C<Exceptions::MyException> type.
 
-=item string2exception
-
-Use it only as exception processor.
-Converts any exception string to exception object 'Exceptions::Exception'.
-
-=make_exlist
+=item C<exception2string>
 
 Use it only as exception processor.
-If exception is not of type 'Exceptions::List' then create new 'Exceptions::List' contained caught exception.
+Converts any C<Exceptions::Exception> object to string exception.
+
+=item C<string2exception>
+
+Use it only as exception processor.
+Converts any exception string to exception object C<Exceptions::Exception>.
+
+=item C<make_exlist>
+
+Use it only as exception processor.
+If exception is not of type C<Exceptions::List> then create new C<Exceptions::List> contained caught exception.
+
+=back
+
+=head1 Exceptions::Exception
+
+Every exception package should inherit from the Exceptions::Exception.
+
+=head2 Methods
+
+=over
+
+=item C<msg>
+
+It returns the message of exception without trailing I<'\n'>.
+
+=item C<trim_location>
+
+This method removes trailing I<'at file line xxx.'> from the message, added by B<die> subroutine.
 
 =back
 

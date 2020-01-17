@@ -26,25 +26,7 @@ use Exceptions;
   }
   catch{
     ...
-  } 'Exceptions::List';
-
-=head1 DESCRIPTION
-
-  Config file structure:
-  -------------------------------
-  |
-  |# comment is the line starting from '#'
-  |    # another comment
-  |# Variables before any group declaration are placed in '' group (general group).
-  |var_from_general_group = value
-  |[group_1]
-  |var_form_gorup_1 = value
-  |multiline_variable = elem1 elem2
-  |   elem3 elem4
-  | # comment
-  | elem5 #this_is_not
-  |[group_2]
-  |var_from_group_2 = value
+  } 'List';
 
 =cut
 
@@ -201,3 +183,91 @@ sub m_struct_contains
 
 1;
 
+__END__
+
+=head1 METHODS
+
+=over
+
+=item new(@attrs)
+
+  my $scheme = ConfigFileScheme->new(@attrs);
+
+B<ATTRIBUTES>
+
+=over
+
+=item strict
+
+Prevents undeclared variables. Variables are declared with B<struct> attribute.
+
+  strict => 1
+
+=item multiline
+
+Specify multiline variables.
+
+  multiline => $mask
+
+=item join_lines
+
+Same as multiline, but lines are joined to one string.
+
+  join_lines => $mask
+
+=item required
+
+Specify mandatory variables.
+
+  required => $mask
+
+=item struct
+
+You can specify the whole file structure, by specifying groups and contained variables.
+
+  struct => {group => [@variables],}
+
+=back
+
+B<MASK>
+
+  $mask: 1                  - it corresponds to everything
+     or  {$group, ...}
+  $group: group_name => 1   - it corresponds to every variable in the group
+      or  group_name => ['variable_name', ...]
+
+=item is_multiline('group', 'var')
+
+Check whether is the variable multiline.
+
+=item is_join_lines('group', 'var')
+
+Check whether is the variable join_lines.
+
+=item is_valid('group', 'var')
+
+Check whether is the variable specified in the file structure.
+
+=item check_required({%struct})
+
+Check specified %struct to correspond the scheme.
+
+=back
+
+=head1 FILE EXAMPLE
+
+  Config file structure:
+  -------------------------------
+  |
+  |# comment is the line starting from '#'
+  |    # another comment
+  |# Variables before any group declaration are placed in '' group (general group).
+  |var_from_general_group = value
+  |[group_1]
+  |var_form_gorup_1 = value
+  |multiline_variable = elem1 elem2
+  |   elem3 elem4
+  | # comment
+  | elem5 #this_is_not
+  |[group_2]
+  |var_from_group_2 = value

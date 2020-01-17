@@ -2,6 +2,7 @@
 use strict;
 use FindBin;
 use lib "$FindBin::Bin/../modules";
+use lib "$FindBin::Bin/../modules/external";
 use PtsConfig;
 use CmdArgs;
 use CmdArgs::BasicTypes;

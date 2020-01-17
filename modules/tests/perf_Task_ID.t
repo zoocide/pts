@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 use strict;
-use lib '..';
+use lib '..', '../external';
 use Benchmark qw(cmpthese);
 use Task;
 

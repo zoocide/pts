@@ -46,7 +46,6 @@ sub new
 sub id     { $_[0]{id} }
 sub name   { $_[0]{name} }
 sub plugin { $_[0]{plugin} }
-sub conf   { $_[0]{conf} }
 sub data_dir { $_[0]{data_dir} }
 sub task_dir { $_[0]{task_dir} }
 sub set_debug { $_[0]{debug} = $_[1] }
@@ -70,18 +69,31 @@ sub DEBUG_TR{ $_[0]->DEBUG_T(@_[1..$#_]); $_[0]->DEBUG_RESET($_[1]) }
 # my $bool = $task->has_var('group_name', 'var_name');
 sub has_var
 {
-  exists $_[0]{conf}{$_[1]}{$_[2]}
+  $_[0]{conf}->is_set($_[1], $_[2])
 }
 
-# my $var = $task->get_var('group_name', 'var_name');
+# my $var = $task->get_var('group_name', 'var_name', 'default_value');
 # throws: Exceptions::Exception
 sub get_var
 {
-  if (!exists $_[0]{conf}{$_[1]}{$_[2]}){
+  my $c = $_[0]{conf};
+  if (!$c->is_set($_[1], $_[2])){
     my $fname = $_[0]->{filename};
     throw Exception => "$fname: variable '".($_[1] ? "$_[1]::" : '')."$_[2]' is not set";
   }
-  $_[0]{conf}{$_[1]}{$_[2]}
+  $c->get_var(@_[1,$#_])
+}
+
+# my @arr = $task->get_arr('group_name', 'var_name', @default_value);
+# throws: Exceptions::Exception
+sub get_arr
+{
+  my $c = $_[0]{conf};
+  if (!$c->is_set($_[1], $_[2])){
+    my $fname = $_[0]->{filename};
+    throw Exception => "$fname: variable '".($_[1] ? "$_[1]::" : '')."$_[2]' is not set";
+  }
+  $c->get_arr(@_[1,$#_])
 }
 
 # my @vars = $task->get_vars('group_name', @var_names);
@@ -90,13 +102,14 @@ sub get_vars
 {
   my $self = shift;
   my $gr   = shift;
-  my @missed = grep !exists $self->{conf}{$gr}{$_}, @_;
+  my $c = $_[0]{conf};
+  my @missed = grep !$c->is_set($gr, $_), @_;
   if (@missed){
     $gr .= '::' if $gr;
     my $fname = $self->{filename};
     throw List => map Exceptions::Exception->new("$fname: variable '$gr$_' is not set"), @missed;
   }
-  map $self->{conf}{$gr}{$_}, @_;
+  map $c->get_vars($gr, $_), @_;
 }
 
 # throws: Exceptions::List
@@ -123,7 +136,7 @@ sub init
     $conf->skip_unrecognized_lines(1);
     $conf->load;
 
-    $self->{ conf } = $conf->get_all;
+    $self->{ conf } = $conf;
     $self->{plugin} = $conf->get_var('', 'plugin');
     $self->{ name } = $conf->get_var('', 'name') if $conf->is_set('', 'name');
   }
@@ -140,7 +153,7 @@ sub init
 sub reload_config
 {
   my $self = shift;
-  my $scheme = ($_[0] && eval {$_[0]->isa('ConfigFileScheme')})
+  my $scheme = (blessed($_[0]) && $_[0]->isa('ConfigFileScheme'))
              ? shift
              : ConfigFileScheme->new(@_);
   my $conf = ConfigFile->new($self->{filename}, $scheme);
@@ -151,7 +164,8 @@ sub reload_config
   }
   ## load task ##
   $conf->load;
-  $self->{ conf } = $conf->get_all;
+  $self->{ conf } = $conf;
+}
 
 
 package Task::ID;

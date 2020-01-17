@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
-use lib '..';
+use lib '..', '../external';
 use Test::More tests => 22;
 use File::Temp qw(tempfile);
 
