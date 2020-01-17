@@ -139,7 +139,7 @@ sub init
     ## set task arguments ##
     for (my ($gr, $vars) = $id->args) {
       $conf->set_group($gr);
-      $conf->set_var($_, $vars->{$_}) for keys %$vars;
+      $conf->set_var($_, @{$vars->{$_}}) for keys %$vars;
     }
     ## load task ##
     $conf->skip_unrecognized_lines(1);
@@ -169,7 +169,7 @@ sub reload_config
   ## set task arguments ##
   for (my ($gr, $vars) = $self->{id}->args) {
     $conf->set_group($gr);
-    $conf->set_var($_, $vars->{$_}) for keys %$vars;
+    $conf->set_var($_, @{$vars->{$_}}) for keys %$vars;
   }
   ## load task ##
   $conf->load;
