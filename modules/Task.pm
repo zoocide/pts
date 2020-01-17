@@ -141,6 +141,7 @@ sub reload_config
 
 package Task::ID;
 use Exceptions;
+use overload '""' => sub { $_[0]->id };
 
 sub new
 {
@@ -151,6 +152,7 @@ sub new
     # short_id => 'short_id', #corresponding file short_id.conf
     # id => 'short_id:arg1=value1,arg2=e1 e2',
     # args => {'' => {arg1 => ['value1'], arg2=['e1', 'e2']}},
+    # args_str => 'arg1=value1,arg2=e1 e2',
   }, $class;
   $self->reset(@_);
   $self
@@ -158,7 +160,9 @@ sub new
 
 sub short_id { $_[0]{short_id} }
 sub id { $_[0]{id} }
+# my %args = $tid->args; #< ('gr_1' => {arg1 => ['elm 1',...],...},...)
 sub args { %{$_[0]{args}} }
+sub args_str { $_[0]{args_str} }
 
 sub reset
 {
@@ -201,6 +205,7 @@ sub reset
   } sort keys %args;
   $self->{id} .= ':'.$args_str if $args_str;
   $self->{args} = \%args;
+  $self->{args_str} = $args_str;
 }
 
 sub m_parse_value
