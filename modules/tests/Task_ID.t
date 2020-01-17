@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 use lib '..', '../external';
-use Test::More tests => 22;
+use Test::More tests => 28;
 use File::Temp qw(tempfile);
 
 BEGIN{ use_ok('Task') }
@@ -57,5 +57,19 @@ is_deeply({$id->args}, {
     a1 => ['abc', 'd e f${foo}'],
     a2 => ['\n\t\'', "\n\t"],
     a3 => ["abc\ndef\n"],
+  },
+});
+
+## check empty variable ##
+eval { $id->reset('t:a= ,v=') };
+is (defined $@ ? "$@" : '', '');
+is($id->short_id, 't');
+is("$id", $id->id);
+is($id->id, 't:::a=,::v=');
+is($id->args_str, '::a=,::v=');
+is_deeply({$id->args}, {
+  '' => {
+    a => [],
+    v => [],
   },
 });
