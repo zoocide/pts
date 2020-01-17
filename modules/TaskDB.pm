@@ -21,32 +21,32 @@ sub new
   my ($class, @tasks_dirs) = @_;
   @tasks_dirs = map realpath($_), @tasks_dirs;
   my $self = bless {
-    dirs => [],
-    tasks   => {},
+    dirs => [], #< ['dir/with/tasks', ...]
+    tasks   => {}, #< { 'canonical_id' => $Task_obj }
+    task_files => {}, #< { 'short_id' => {filename => $conf_filename,
+                      #                   data_dir => $task_data_dir}, ... }
   }, $class;
   $self->add_tasks_dir($_) for @tasks_dirs;
   $self
 }
 
-# throws: -
-sub task_exists{ exists $_[0]{tasks}{$_[1]} }
-sub all_task_ids { keys %{$_[0]{tasks}} }
+sub all_task_ids { keys %{$_[0]{task_files}} }
 
 # throws: Exceptions::Exception
 sub get_task
 {
   my $self = shift;
-  exists $self->{tasks}{$_[0]} || throw Exception => "unknown task '$_[0]'";
-  $self->{tasks}{$_[0]}
-}
+  ## return loaded task ##
+  return $self->{tasks}{$_[0]} if exists $self->{tasks}{$_[0]};
+  my $tid = Task::ID->new($_[0]);
+  my $id = $tid->id;
+  return $self->{tasks}{$id} if exists $self->{tasks}{$id};
 
-# throws: Exceptions::List
-sub get_tasks
-{
-  my $self = shift;
-  my @wrong_ids = grep !exists $self->{tasks}{$_}, @_;
-  @wrong_ids && throw List => map "unknown task '$_'", @wrong_ids;
-  map $self->{tasks}{$_}, @_
+  ## load task ##
+  my $short_id = $tid->short_id;
+  exists $self->{task_files}{$short_id} || throw Exception => "unknown task '$short_id'";
+  my ($fname, $data_dir) = @{$self->{task_files}{$short_id}}{qw(filename data_dir)};
+  $self->{tasks}{$id} = Task->new($tid, $fname, $data_dir)
 }
 
 # $db->add_tasks_dir($dir);
@@ -54,28 +54,21 @@ sub get_tasks
 sub add_tasks_dir
 {
   my ($self, $dir) = @_;
-  for my $t (m_load_tasks($dir)){
-    $self->{tasks}{$t->id} = $t;
-  }
-  push @{$self->{dirs}}, $dir;
-}
-
-# throws: Exceptions::Exception
-sub m_load_tasks
-{
-  my ($dir) = @_;
   -d $dir || throw Exception => "'$dir' is not a directory";
-  my @tasks;
   opendir (my $d, $dir) || throw Exception => "can not read directory '$dir': $!\n";
 
   for my $tname (readdir $d){
-    my $file_name = catfile($dir, $tname);
+    my $fname = catfile($dir, $tname);
     next if $tname !~ s/\.conf$//i;
-    my $task = Task->new(Task::ID->new($tname), $file_name, catfile($dir,'data',$tname));
-    push @tasks, $task;
+
+    $self->{task_files}{$tname} = {
+      filename => $fname,
+      data_dir => catfile($dir,'data',$tname),
+    };
   }
   closedir $d;
-  @tasks
+
+  push @{$self->{dirs}}, $dir;
 }
 
 1;

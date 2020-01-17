@@ -7,6 +7,8 @@ use PtsConfig;
 use CmdArgs;
 use CmdArgs::BasicTypes;
 use Exceptions;
+use Exceptions::OpenFileError;
+use Exceptions::TextFileError;
 use TaskDB;
 use File::Spec::Functions qw(catfile);
 
@@ -40,7 +42,7 @@ my $args = CmdArgs->declare(
     OPTIONS => [qw(quiet stat debug tasks_dir plugins_dir failed)],
   },
   use_cases => {
-    main => ['OPTIONS taskset:TaskSet...', 'Process a set of tasks.'
+    main => ['OPTIONS taskset...', 'Process a set of tasks.'
              .' There is a tasks database, from which you can select tasks to execute.'
              .' Also you can sepcify files, containing tasks names.'],
     list => ['tasks_dir? list', 'Print all tasks in database.'],
@@ -55,7 +57,7 @@ if ($args->use_case eq 'list'){
 }
 
 ## obtain tasks to execute ##
-my @tasks = map { -f $_ ? $db->get_tasks(load_task_id_set($_)) : $db->get_task($_) }
+my @tasks = map { -f $_ ? load_task_set($db, $_) : $db->get_task($_) }
                 @{$args->arg('taskset')};
 
 ## open file $failed_fname ##
@@ -142,17 +144,25 @@ sub debug
   print "DEBUG: $_\n" for split /\n/, join '', @_;
 }
 
-sub load_task_id_set
+sub load_task_set
 {
-  my $filename = shift;
-  open(my $f, '<', $filename) || die "can not open file '$filename': $!\n";
+  my ($db, $fname) = @_;
+  my @ret;
+  open(my $f, '<', $fname) || throw OpenFileError => $fname;
   ### rules ###
   #1)  # comment
   #2)  \#name  => '#name'
   #3)  \\#name => '\#name'
-  my @lines = map { s/^\s+//; s/^#.*//; s/^\\#/#/; s/^\\\\/\\/; s/\s+$//; $_ ? $_ : () } <$f>;
+  my $s;
+  for (my $ln = 1; defined ($s = <$f>); $ln++) {
+    # remove spaces at the beginnig, and comments.
+    $s =~ s/^\s*(?:#.*)//;
+    next if !$s;
+    try { push @ret, $db->get_task($s) }
+    catch { throw TextFileError => $fname, $ln, $_ };
+  }
   close $f;
-  @lines
+  @ret
 }
 
 sub load_plugins
@@ -180,18 +190,3 @@ sub load_plugins
   }
   @failed and die "ERROR! Can not load plugins: ".join(', ', @failed)."\n";
 }
-
-
-package CmdArgs::Types::TaskSet;
-use Exceptions;
-
-sub check
-{
-  my ($class, $filename) = @_;
-  if (!-f $filename && !$db->task_exists($filename)){
-    throw Exception => "Task '$filename' does not exist";
-    return 0;
-  };
-  1
-}
-
