@@ -147,6 +147,7 @@ sub debug
 sub load_task_set
 {
   my ($db, $fname) = @_;
+  debug("load task set from file $fname");
   my @ret;
   open(my $f, '<', $fname) || throw OpenFileError => $fname;
   ### rules ###
@@ -156,12 +157,14 @@ sub load_task_set
   my $s;
   for (my $ln = 1; defined ($s = <$f>); $ln++) {
     # remove spaces at the beginnig, and comments.
-    $s =~ s/^\s*(?:#.*)//;
+    chomp $s;
+    $s =~ s/^\s*(?:#.*)?//;
     next if !$s;
     try { push @ret, $db->get_task($s) }
-    catch { throw TextFileError => $fname, $ln, $_ };
+    catch { throw TextFileError => $fname, $ln, $@ };
   }
   close $f;
+  debug("loaded tasks:\n", map('  '.$_->id."\n", @ret));
   @ret
 }
 
