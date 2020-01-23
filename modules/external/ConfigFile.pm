@@ -105,7 +105,7 @@ sub load2
       \\(n) | \\(t) | \\(.)
       |
       # interpolate variables
-      \$({(?:(\w*)::)?)?(\w++)(?(4)})
+      \$(\{(?:(\w*)::)?)?(\w++)(?(4)\})
     /$1 ? "\n" : $2 ? "\t" : $3 ? $3 : $self->get_var(defined $5 ? $5||'' : $gr, $6, '')/gex;
     $str
   };
@@ -194,7 +194,7 @@ sub load2
         if ($do_concat) {
           $parr->[-1] .= &$interpolate_str($1);
         }
-        elsif ($1 =~ /^\$({(?:(\w*)::)?)?(\w++)(?(1)})(?=\s|#|$)/) {
+        elsif ($1 =~ /^\$(\{(?:(\w*)::)?)?(\w++)(?(1)\})(?=\s|#|$)/) {
           # array interpolation
           push @$parr, $self->get_arr(defined $2 ? $2||'' : $gr, $3);
         }
@@ -259,7 +259,7 @@ sub load
       \\(n) | \\(t) | \\(.)
       |
       # interpolate variables
-      \$({(?:(\w*)::)?)?(\w++)(?(4)})
+      \$(\{(?:(\w*)::)?)?(\w++)(?(4)\})
     /$1 ? "\n" : $2 ? "\t" : $3 ? $3 : $self->get_var(defined $5 ? $5||'' : $gr, $6, '')/gex;
     $str
   };
@@ -279,7 +279,7 @@ sub load
   my ($vg, $vn);
   my $as_vn = qr<(\w++)(?{$vn = $^N})>;
   my $as_vg = qr<(?:(\w*)::(?{$vg = $^N})|(?{$vg = $gr}))>;
-  my $array_substitution = qr~(?(?{$do_concat})(?!))\$(?:{$as_vg$as_vn}|$as_vn)(?:$space|$)(?{
+  my $array_substitution = qr~(?(?{$do_concat})(?!))\$(?:\{$as_vg$as_vn\}|$as_vn)(?:$space|$)(?{
     push @$parr, $self->get_arr($vg, $vn);
   })~;
   my $value_part = qr<^(?:$array_substitution|$space|$normal_word|$q_str_beg(?:$(?{
