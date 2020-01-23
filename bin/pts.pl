@@ -24,7 +24,7 @@ my $debug;
 my $quiet;
 
 my $args = CmdArgs->declare(
-  '0.2.3',
+  '0.3.0',
   options => {
     tasks_dir => ['-T:Dir<<tasks_dir>>', 'Allow to process tasks from <tasks_dir>.'
                   .' It extends the tasks database with tasks from this directory.',
