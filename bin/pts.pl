@@ -14,6 +14,13 @@ use File::Spec::Functions qw(catfile);
 
 BEGIN{ eval{ require 'Time/HiRes.pm'; Time::HiRes->import('time') } }
 
+use constant {
+  dbg1 => 1,
+  dbg2 => 0,
+};
+
+my $script_start_time = time;
+
 ## load TaskDB ##
 my $db;
 try{ $db = TaskDB->new(PtsConfig->tasks_dir) } string2exception make_exlist
@@ -105,7 +112,8 @@ for my $task (@tasks){
 
 ## print statistics ##
 
-debug("total execution time = ", time - $start_time);
+dbg1 and debug("total execution time = ", time - $start_time);
+dbg2 and debug("total           time = ", time - $script_start_time);
 
 my $num_total  = @tasks;
 my $num_failed = @failed;
