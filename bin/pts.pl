@@ -52,7 +52,7 @@ my $args = CmdArgs->declare(
     main => ['OPTIONS taskset...', 'Process a set of tasks.'
              .' There is a tasks database, from which you can select tasks to execute.'
              .' Also you can sepcify files, containing tasks names.'],
-    list => ['tasks_dir? list', 'Print all tasks in database.'],
+    list => ['OPTIONS list', 'Print all tasks in database.'],
   },
 );
 $args->parse;
