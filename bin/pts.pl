@@ -192,12 +192,22 @@ sub load_plugins
     next if exists $plugins{$pname};
     debug("load plugin $pname");
     (my $req_pname = $pname) =~ s#::#/#g;
-      eval { require "Plugins/$req_pname.pm" };
-      if ($@){
-        print $@;
-        push @failed, $pname;
-      }
-      $plugins{$pname} = !$@;
+    eval {
+      no strict 'refs';
+      my $d = $debug;
+      *{"Plugins::${pname}::dbg1"} = sub () { $d };
+      require "Plugins/$req_pname.pm"
+    };
+    if ($@){
+      print $@;
+      push @failed, $pname;
+    }
+    $plugins{$pname} = !$@;
+    if (dbg2) {
+      use B::Deparse;
+      my $d = B::Deparse->new();
+      print $d->coderef2text(\&{"Plugins::${pname}::process"}), "\n";
+    }
   }
   @failed and die "ERROR! Can not load plugins: ".join(', ', @failed)."\n";
 }
