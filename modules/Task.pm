@@ -86,11 +86,11 @@ sub has_var
 sub get_var
 {
   my $c = $_[0]{conf};
-  if (!$c->is_set($_[1], $_[2])){
+  if (@_ < 3 && !$c->is_set($_[1], $_[2])){
     my $fname = $_[0]->{filename};
     throw Exception => "$fname: variable '".($_[1] ? "$_[1]::" : '')."$_[2]' is not set";
   }
-  $c->get_var(@_[1,$#_])
+  $c->get_var(@_[1..$#_])
 }
 
 # my @arr = $task->get_arr('group_name', 'var_name', @default_value);
@@ -98,11 +98,11 @@ sub get_var
 sub get_arr
 {
   my $c = $_[0]{conf};
-  if (!$c->is_set($_[1], $_[2])){
+  if (@_ < 3 && !$c->is_set($_[1], $_[2])){
     my $fname = $_[0]->{filename};
     throw Exception => "$fname: variable '".($_[1] ? "$_[1]::" : '')."$_[2]' is not set";
   }
-  $c->get_arr(@_[1,$#_])
+  $c->get_arr(@_[1..$#_])
 }
 
 # my @vars = $task->get_vars('group_name', @var_names);
