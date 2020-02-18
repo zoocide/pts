@@ -80,44 +80,20 @@ $start_time = time if $debug;
 ## load plugins ##
 load_plugins(@tasks);
 
-my @failed;
-my @skipped;
-## main loop ##
-for my $task (@tasks){
-  print '===== ', $task->name, " =====\n" if !$quiet;
-  $task->set_debug(1) if $debug;
-  $task->DEBUG_RESET('main_task_timer');
-  my $res;
-  try{
-    $res = ('Plugins::'.$task->plugin)->process($task, $db);
-  }
-  catch{
-    print $@;
-    $res = 0;
-  };
-  $task->DEBUG_T('main_task_timer', 'task \''.$task->name.'\' finished');
+## construct task sequence ##
+my $prepared = prepare_tasks(@tasks);
 
-  my $status;
-  if ($res eq 'skipped'){
-    $status = 'skipped';
-    push @skipped, $task;
-  } elsif ($res){
-    $status = 'complete';
-  } else {
-    $status = 'failed ['.$task->id.']';
-    push @failed, $task;
-  }
-  print $task->name, ' ', $status, "\n" if !$res || !$quiet;
-}
+## process tasks ##
+my ($all, $failed, $skipped) = process_tasks($prepared);
 
 ## print statistics ##
 
 dbg1 and debug("total execution time = ", time - $start_time);
 dbg2 and debug("total           time = ", time - $script_start_time);
 
-my $num_total  = @tasks;
-my $num_failed = @failed;
-my $num_skipped = @skipped;
+my $num_total  = @$all;
+my $num_failed = @$failed;
+my $num_skipped = @$skipped;
 my $num_ok     = $num_total - ($num_failed + $num_skipped);
 
 print "\nstatistics:"
@@ -126,12 +102,12 @@ print "\nstatistics:"
      ,"\nnum skipped  = ", $num_skipped
      ,"\nnum failed   = ", $num_failed
      ,"\n"
-     if $args->is_opt('stat') || (!$quiet && @tasks > 1);
+     if $args->is_opt('stat') || (!$quiet && @$all > 1);
 
 ## write failed tasks ##
-if (@failed){
+if (@$failed){
   if ($failed_fname){
-    print $failed_file $_->id."\n" for @failed;
+    print $failed_file $_->id."\n" for @$failed;
     close $failed_file;
     debug("Failed tasks were written to file '$failed_fname'.\n");
   }
@@ -210,4 +186,47 @@ sub load_plugins
     }
   }
   @failed and die "ERROR! Can not load plugins: ".join(', ', @failed)."\n";
+}
+
+sub prepare_tasks
+{
+  \@_
+}
+
+sub process_tasks
+{
+  my $tasks = shift;
+
+  my @all;
+  my @failed;
+  my @skipped;
+
+  for my $task (@$tasks) {
+    print '===== ', $task->name, " =====\n" if !$quiet;
+    $task->set_debug(1) if $debug;
+    $task->DEBUG_RESET('main_task_timer');
+    my $res;
+    try {
+      $res = ('Plugins::'.$task->plugin)->process($task, $db);
+    }
+    catch {
+      print $@;
+      $res = 0;
+    };
+    $task->DEBUG_T('main_task_timer', 'task \''.$task->name.'\' finished');
+
+    push @all, $task;
+    my $status;
+    if ($res eq 'skipped') {
+      $status = 'skipped';
+      push @skipped, $task;
+    } elsif ($res) {
+      $status = 'complete';
+    } else {
+      $status = 'failed ['.$task->id.']';
+      push @failed, $task;
+    }
+    print $task->name, ' ', $status, "\n" if !$res || !$quiet;
+  }
+  (\@all, \@failed, \@skipped)
 }
