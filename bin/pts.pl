@@ -82,6 +82,7 @@ load_plugins(@tasks);
 
 ## construct task sequence ##
 my $prepared = prepare_tasks(@tasks);
+dbg1 and dprint_tasks($prepared);
 
 ## process tasks ##
 my ($all, $failed, $skipped) = process_tasks($prepared);
@@ -191,6 +192,23 @@ sub load_plugins
 sub prepare_tasks
 {
   \@_
+}
+
+sub dprint_tasks
+{
+  my ($tasks, $pref) = @_;
+  $pref = '' if !defined $pref;
+  debug($pref, '[');
+  for my $t (@$tasks) {
+    if (ref $t eq 'ARRAY') {
+      debug($pref.'  ## start parallel section ##');
+      dprint_tasks($_, $pref.'  ') for @$t;
+      debug($pref.'  ## end parallel section ##');
+      next;
+    }
+    debug($pref.'  ', $t->id);
+  }
+  debug($pref, ']');
 }
 
 sub process_tasks
