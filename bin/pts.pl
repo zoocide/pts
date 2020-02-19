@@ -15,6 +15,8 @@ use File::Spec::Functions qw(catfile);
 
 BEGIN{ eval{ require 'Time/HiRes.pm'; Time::HiRes->import('time') } }
 
+our $VERSION = v0.3.0;
+
 use constant {
   dbg1 => 1,
   dbg2 => 0,
@@ -32,7 +34,7 @@ my $debug;
 my $quiet;
 
 my $args = CmdArgs->declare(
-  '0.3.0',
+  $VERSION,
   options => {
     tasks_dir => ['-T:Dir<<tasks_dir>>', 'Allow to process tasks from <tasks_dir>.'
                   .' It extends the tasks database with tasks from this directory.',
