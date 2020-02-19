@@ -224,6 +224,11 @@ sub dprint_tasks
   debug($pref, ']');
 }
 
+sub format_msg
+{
+  join '', map "# $_\n", split /\n/, join '', @_
+}
+
 sub process_tasks
 {
   my $tasks = shift;
@@ -250,15 +255,15 @@ sub process_tasks
     }
 
     ## process task ##
-    print '===== ', $task->name, " =====\n" if !$quiet;
+    print '----- ', $task->name, " -----\n" if !$quiet;
     $task->set_debug(1) if $debug;
     $task->DEBUG_RESET('main_task_timer');
-    my $res;
+    my ($res, $msg);
     try {
       $res = ('Plugins::'.$task->plugin)->process($task, $db);
     }
     catch {
-      print $@;
+      $msg = format_msg($@);
       $res = 0;
     };
     $task->DEBUG_T('main_task_timer', 'task \''.$task->name.'\' finished');
@@ -266,15 +271,15 @@ sub process_tasks
     push @all, $task;
     my $status;
     if ($res eq 'skipped') {
-      $status = 'skipped';
+      $status = 'skipped........';
       push @skipped, $task;
     } elsif ($res) {
-      $status = 'complete';
+      $status = 'ok.............';
     } else {
-      $status = 'failed ['.$task->id.']';
+      $status = 'failed ['.$task->id.']........';
       push @failed, $task;
     }
-    print $task->name, ' ', $status, "\n" if !$res || !$quiet;
+    print $status, $task->name, "\n", (defined $msg ? $msg : ()) if !$res || !$quiet;
   }
   (\@all, \@failed, \@skipped)
 }
