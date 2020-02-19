@@ -28,7 +28,7 @@ ConfigFile - read and write configuration files aka '.ini'.
   my $cf = ConfigFile->new($filename);
 
   # Ignoring unrecognized lines is useful when you want to read some scalar
-  # varibles, but there can be multiline variables and you are not interested
+  # variables, but there can be multiline variables and you are not interested
   # in these values.
   $cf->skip_unrecognized_lines(1);
 
