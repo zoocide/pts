@@ -191,7 +191,17 @@ sub load_plugins
 
 sub prepare_tasks
 {
-  \@_
+  my @ret;
+  for (my $i = 0; $i < @_; $i++) {
+    my $t = $_[$i];
+    my $class = 'Plugins::'.$t->plugin;
+    if ($class->can('on_prepare')) {
+      $class->on_prepare($t, $i, \@_, \@ret);
+      next;
+    }
+    push @ret, $t;
+  }
+  \@ret
 }
 
 sub dprint_tasks
