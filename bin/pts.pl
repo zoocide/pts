@@ -47,9 +47,10 @@ my $args = CmdArgs->declare(
                     sub{ PtsConfig->add_plugins_parent_dir($_) }],
     failed  => ['--failed:<<file>>', 'Put failed tasks into <file>.',
                 sub { $failed_fname = $_ }],
+    ttime => ['--total-time', 'Print total time.'],
   },
   groups => {
-    OPTIONS => [qw(quiet stat debug tasks_dir plugins_dir failed)],
+    OPTIONS => [qw(quiet stat debug tasks_dir plugins_dir failed ttime)],
   },
   use_cases => {
     main => ['OPTIONS taskset...', 'Process a set of tasks.'
@@ -92,8 +93,8 @@ my ($all, $failed, $skipped) = process_tasks($prepared);
 
 ## print statistics ##
 
-dbg1 and debug("total execution time = ", time - $start_time);
-dbg2 and debug("total           time = ", time - $script_start_time);
+dbg1 and debug(sprintf "tasks time = %.3f", time - $start_time);
+printf "total time = %.3f\n", time - $script_start_time if $args->is_opt('ttime');
 
 my $num_total  = @$all;
 my $num_failed = @$failed;
