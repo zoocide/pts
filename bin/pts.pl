@@ -148,7 +148,7 @@ sub load_task_set
     catch { throw TextFileError => $fname, $ln, $@ };
   }
   close $f;
-  debug("loaded tasks:\n", map('  '.$_->id."\n", @ret));
+  debug("$fname: loaded tasks:\n", map('  '.$_->id."\n", @ret));
   @ret
 }
 
