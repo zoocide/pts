@@ -1,5 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
+use threads;
 use FindBin;
 use lib "$FindBin::Bin/../modules";
 use lib "$FindBin::Bin/../modules/external";
@@ -230,6 +231,23 @@ sub process_tasks
   my @skipped;
 
   for my $task (@$tasks) {
+    if (ref $task eq 'ARRAY') {
+      ## process parallel tasks group ##
+      # $task = [[@tasks], ...]
+      dbg1 and debug("## start parallel section ##");
+      my @thrs;
+      push @thrs, threads->create({context => 'list'}, \&process_tasks, $_) for @$task;
+      for my $thr (@thrs) {
+        my ($all, $failed, $skipped) = $thr->join;
+        push @all, @$all;
+        push @failed, @$failed;
+        push @skipped, @$skipped;
+      }
+      dbg1 and debug("## end parallel section ##");
+      next;
+    }
+
+    ## process task ##
     print '===== ', $task->name, " =====\n" if !$quiet;
     $task->set_debug(1) if $debug;
     $task->DEBUG_RESET('main_task_timer');
