@@ -9,9 +9,11 @@ use Task;
 
   my $db = TaskDB->new('tasks_directory', ...);
   $db->add_tasks_dir('another_directory');
-  my @tasks = $db->get_tasks(@task_IDs);
-  my $bool = $db->task_exists($task_ID);
-  my $task = $db->get_task($task_ID);
+
+  # $tid is a task specification string.
+  # It may be a Task::ID object or something else.
+  my $task = $db->new_task($tid);
+  my $task = $db->get_task($tid);
 
 =cut
 
@@ -22,7 +24,7 @@ sub new
   @tasks_dirs = map realpath($_), @tasks_dirs;
   my $self = bless {
     dirs => [], #< ['dir/with/tasks', ...]
-    tasks   => {}, #< { 'canonical_id' => $Task_obj }
+    tasks   => {}, #< { 'canonical_id' => [$Task_obj, ...], ... }
     task_files => {}, #< { 'short_id' => {filename => $conf_filename,
                       #                   data_dir => $task_data_dir}, ... }
   }, $class;
@@ -30,23 +32,44 @@ sub new
   $self
 }
 
+# my @all_tids = $db->all_task_ids;
 sub all_task_ids { keys %{$_[0]{task_files}} }
 
+# my $task = $db->new_task($task_spec_str);
+# throws: Exceptions::Exception
+sub new_task
+{
+  my $self = shift;
+
+  ## load task ##
+  my $tid = Task::ID->new($_[0]);
+  my $id = $tid->id;
+  my $short_id = $tid->short_id;
+  exists $self->{task_files}{$short_id} || throw Exception => "unknown task '$short_id'";
+  my ($fname, $data_dir) = @{$self->{task_files}{$short_id}}{qw(filename data_dir)};
+  my $task = Task->new($tid, $fname, $data_dir);
+  push @{$self->{tasks}{$id}}, $task;
+  $task
+}
+
+# my $task = $db->get_task($task_spec_str);
 # throws: Exceptions::Exception
 sub get_task
 {
   my $self = shift;
   ## return loaded task ##
-  return $self->{tasks}{$_[0]} if exists $self->{tasks}{$_[0]};
+  return $self->{tasks}{$_[0]}[0] if exists $self->{tasks}{$_[0]};
   my $tid = Task::ID->new($_[0]);
   my $id = $tid->id;
-  return $self->{tasks}{$id} if exists $self->{tasks}{$id};
+  return $self->{tasks}{$id}[0] if exists $self->{tasks}{$id};
 
   ## load task ##
   my $short_id = $tid->short_id;
   exists $self->{task_files}{$short_id} || throw Exception => "unknown task '$short_id'";
   my ($fname, $data_dir) = @{$self->{task_files}{$short_id}}{qw(filename data_dir)};
-  $self->{tasks}{$id} = Task->new($tid, $fname, $data_dir)
+  my $task = Task->new($tid, $fname, $data_dir);
+  push @{$self->{tasks}{$id}}, $task;
+  $task
 }
 
 # $db->add_tasks_dir($dir);
