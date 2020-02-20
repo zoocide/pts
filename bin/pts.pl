@@ -246,10 +246,16 @@ sub format_msg
   join '', map "# $_\n", split /\n/, join '', @_
 }
 
+sub m_sleep
+{
+  select undef, undef, undef, $_[0]
+}
+
 sub process_tasks
 {
   my $tasks = shift;
   my $output : shared = shift || TasksOutput->new;
+  my $is_master = $output->is_main_thread;
 
   my @all;
   my @failed;
@@ -263,6 +269,9 @@ sub process_tasks
       my @thrs;
       push @thrs, threads->create({context => 'list'}, \&process_tasks, $_, $output) for @$task;
       for my $thr (@thrs) {
+        if ($is_master) {
+          $output->flush, m_sleep(0.1) while !$thr->is_joinable();
+        }
         my ($all, $failed, $skipped) = $thr->join;
         $output->flush;
         push @all, @$all;

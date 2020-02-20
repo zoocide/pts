@@ -2,26 +2,46 @@ package TasksOutput;
 use strict;
 use threads;
 use threads::shared;
+use Thread::Queue;
 
 {
   package QueuedOutput;
   sub new
   {
-    bless [], shift
+    bless [Thread::Queue->new], shift
   }
   sub push
   {
     my $self = shift;
-    push @$self, join '', @_;
+    $self->[0]->enqueue(join '', @_);
   }
   sub flush
   {
     my $self = shift;
-    print @$self;
-    @$self = ();
+    my $q = $self->[0];
+    my $n = $q->pending or return;
+    print $q->dequeue_nb($n);
   }
 }
 
+{
+  package MainThreadOutput;
+  sub new
+  {
+    my $self;
+    bless \$self, shift
+  }
+  sub push
+  {
+    shift;
+    print @_;
+  }
+  sub flush
+  {
+  }
+}
+
+# my $to = TasksOutput->new;
 sub new
 {
   my $class = shift;
@@ -32,11 +52,19 @@ sub new
   }), $class
 }
 
+#my $is_main_thread = $to->is_main_thread;
+sub is_main_thread
+{
+  $_[0]{main_tid} == threads->tid
+}
+
+#my $out = $to->open($index);
 sub open
 {
   my $self = shift;
   my $ind = shift;
-  my $out = shared_clone(QueuedOutput->new);
+  my $out_class = $self->is_main_thread ? 'MainThreadOutput' : 'QueuedOutput';
+  my $out = shared_clone($out_class->new);
   $self->{outs}[$ind] = shared_clone({
     closed => 0,
     out => $out,
@@ -44,6 +72,7 @@ sub open
   $out
 }
 
+#my $to->flush;
 sub flush
 {
   my $self = shift;
@@ -51,11 +80,14 @@ sub flush
 
   my $i = $self->{cur_ind};
   my $outs = $self->{outs};
-  my $n = @$outs;
-  $outs->[$i++]{out}->flush while $i < $n && $outs->[$i]{closed};
+  for (my $n = @$outs; $i < $n; $i++) {
+    $outs->[$i]{out}->flush;
+    last if !$outs->[$i]{closed};
+  }
   $self->{cur_ind} = $i;
 }
 
+#my $to->close($index);
 sub close
 {
   my $self = shift;
