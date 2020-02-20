@@ -8,22 +8,22 @@ my $tasks_dir = '-Ttasks';
 
 ## launch capability testing ##
 is(run_tasks('simple_1'), <<'EOS');
-===== simple_1 =====
+----- simple_1 -----
 ok
-simple_1 complete
+ok.............simple_1
 EOS
 
 ## several tasks launch ##
 is(run_tasks(qw(simple_1 simple_1 simple_2)), <<'EOS');
-===== simple_1 =====
+----- simple_1 -----
 ok
-simple_1 complete
-===== simple_1 =====
+ok.............simple_1
+----- simple_1 -----
 ok
-simple_1 complete
-===== simple_2 =====
+ok.............simple_1
+----- simple_2 -----
 simple_2:ok
-simple_2 complete
+ok.............simple_2
 
 statistics:
 num total    = 3
