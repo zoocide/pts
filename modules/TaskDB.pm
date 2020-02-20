@@ -13,6 +13,7 @@ use Task;
   # $tid is a task specification string.
   # It may be a Task::ID object or something else.
   my $task = $db->new_task($tid);
+  my @tasks = $db->get_tasks($tid);
   my $task = $db->get_task($tid);
 
 =cut
@@ -70,6 +71,19 @@ sub get_task
   my $task = Task->new($tid, $fname, $data_dir);
   push @{$self->{tasks}{$id}}, $task;
   $task
+}
+
+# my @tasks = $db->get_tasks($tid);
+# It returns all tasks with the same specification ($tid).
+sub get_tasks
+{
+  my $self = shift;
+  ## return loaded task ##
+  return @{$self->{tasks}{$_[0]}} if exists $self->{tasks}{$_[0]};
+  my $tid = Task::ID->new($_[0]);
+  my $id = $tid->id;
+  return @{$self->{tasks}{$id}} if exists $self->{tasks}{$id};
+  ()
 }
 
 # $db->add_tasks_dir($dir);
