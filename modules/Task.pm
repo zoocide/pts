@@ -47,10 +47,12 @@ sub new
 
 sub id     { $_[0]{id} }
 sub name   { $_[0]{name} }
+sub index  { $_[0]{index} }
 sub plugin { $_[0]{plugin} }
 sub data_dir { $_[0]{data_dir} }
 sub task_dir { $_[0]{task_dir} }
 sub set_debug { $_[0]{debug} = $_[1] }
+sub set_index { $_[0]{index} = $_[1] }
 
 # $task->make_data_dir;
 # # or #
@@ -128,6 +130,7 @@ sub init
   croak "$id is not a Task::ID object" if !blessed($id) || !$id->isa('Task::ID');
   $self->{id} = $id;
   $self->{name} = $id->short_id;
+  $self->{index} = -1;
   $self->{debug} = 0;
   $self->{filename} = $filename;
   $self->{data_dir} = $data_dir;

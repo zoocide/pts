@@ -193,6 +193,20 @@ sub load_plugins
   @failed and die "ERROR! Can not load plugins: ".join(', ', @failed)."\n";
 }
 
+sub index_tasks
+{
+  my $tasks = shift;
+  my $i = shift || 0;
+  for my $t (@$tasks) {
+    if (ref $t eq 'ARRAY') {
+      $i = index_tasks($_, $i) for @$t;
+      next;
+    }
+    $t->set_index($i++);
+  }
+  $i
+}
+
 sub prepare_tasks
 {
   my @ret;
@@ -205,6 +219,7 @@ sub prepare_tasks
     }
     push @ret, $t;
   }
+  index_tasks(\@ret);
   \@ret
 }
 
@@ -220,7 +235,7 @@ sub dprint_tasks
       debug($pref.'  ## end parallel section ##');
       next;
     }
-    debug($pref.'  ', $t->id);
+    debug($pref.'  ', $t->index, ':', $t->id);
   }
   debug($pref, ']');
 }
