@@ -12,6 +12,7 @@ use Exceptions::OpenFileError;
 use Exceptions::TextFileError;
 use TaskDB;
 use File::Spec::Functions qw(catfile);
+use TasksOutput;
 
 BEGIN{ eval{ require 'Time/HiRes.pm'; Time::HiRes->import('time') } }
 
@@ -248,6 +249,7 @@ sub format_msg
 sub process_tasks
 {
   my $tasks = shift;
+  my $output : shared = shift || TasksOutput->new;
 
   my @all;
   my @failed;
@@ -259,9 +261,10 @@ sub process_tasks
       # $task = [[@tasks], ...]
       dbg1 and debug("## start parallel section ##");
       my @thrs;
-      push @thrs, threads->create({context => 'list'}, \&process_tasks, $_) for @$task;
+      push @thrs, threads->create({context => 'list'}, \&process_tasks, $_, $output) for @$task;
       for my $thr (@thrs) {
         my ($all, $failed, $skipped) = $thr->join;
+        $output->flush;
         push @all, @$all;
         push @failed, @$failed;
         push @skipped, @$skipped;
@@ -271,12 +274,13 @@ sub process_tasks
     }
 
     ## process task ##
-    print '----- ', $task->name, " -----\n" if !$quiet;
+    my $o = $output->open($task->index);
+    $o->push('----- ', $task->name, " -----\n") if !$quiet;
     $task->set_debug(1) if $debug;
     $task->DEBUG_RESET('main_task_timer');
     my ($res, $msg);
     try {
-      $res = ('Plugins::'.$task->plugin)->process($task, $db);
+      $res = ('Plugins::'.$task->plugin)->process_wrp($o, $task, $db);
     }
     catch {
       $msg = format_msg($@);
@@ -295,7 +299,8 @@ sub process_tasks
       $status = 'failed ['.$task->id.']........';
       push @failed, $task;
     }
-    print $status, $task->name, "\n", (defined $msg ? $msg : ()) if !$res || !$quiet;
+    $o->push($status, $task->name, "\n", (defined $msg ? $msg : ())) if !$res || !$quiet;
+    $output->close($task->index);
   }
   (\@all, \@failed, \@skipped)
 }

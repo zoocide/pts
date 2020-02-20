@@ -1,5 +1,11 @@
 package Plugins::Base;
-use Task;
+use strict;
+use Exporter 'import';
+
+our @EXPORT = qw(
+  print_out
+  dprint
+);
 
 =head1 SYNOPSIS
 
@@ -11,6 +17,28 @@ use Task;
 This is the base of all plugins.
 
 =cut
+
+our $out;
+
+sub print_out
+{
+  defined $out or return print @_;
+  $out->push(@_);
+}
+
+sub dprint
+{
+  my $msg = join '', map "DEBUG: $_\n", split "\n", join '', @_;
+  defined $out or return print $msg;
+  $out->push($msg);
+}
+
+sub process_wrp
+{
+  my $class = shift;
+  local $out = shift;
+  $class->process(@_)
+}
 
 sub process
 {
