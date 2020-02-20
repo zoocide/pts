@@ -69,7 +69,7 @@ if ($args->use_case eq 'list'){
 }
 
 ## obtain tasks to execute ##
-my @tasks = map { -f $_ ? load_task_set($db, $_) : $db->get_task($_) }
+my @tasks = map { -f $_ ? load_task_set($db, $_) : $db->new_task($_) }
                 @{$args->arg('taskset')};
 
 ## open file $failed_fname ##
@@ -150,7 +150,7 @@ sub load_task_set
     chomp $s;
     $s =~ s/^\s*(?:#.*)?//;
     next if !$s;
-    try { push @ret, $db->get_task($s) }
+    try { push @ret, $db->new_task($s) }
     catch { throw TextFileError => $fname, $ln, $@ };
   }
   close $f;
