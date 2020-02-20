@@ -2,6 +2,8 @@ package Plugins::Base;
 use strict;
 use Exporter 'import';
 
+our $VERSION = v0.4.0;
+
 our @EXPORT = qw(
   print_out
   dprint
@@ -19,6 +21,7 @@ This is the base of all plugins.
 =cut
 
 our $out;
+our %timers;
 
 sub print_out
 {
@@ -37,6 +40,7 @@ sub process_wrp
 {
   my $class = shift;
   local $out = shift;
+  local %timers;
   $class->process(@_)
 }
 
