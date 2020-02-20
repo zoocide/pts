@@ -14,8 +14,7 @@ This is the base of all plugins.
 
 sub process
 {
-  die $_[0].' is not implemented. Task \''.$_[1]->name."' can not be processed\n";
+  die $_[0].' is not implemented. Task \''.$_[1]->name."' can not be processed.\n";
 }
 
-1;
-
+1
