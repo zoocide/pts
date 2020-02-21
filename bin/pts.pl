@@ -284,7 +284,7 @@ sub process_tasks
 
     ## process task ##
     my $o = $output->open($task->index);
-    $o->push('----- ', $task->name, " -----\n") if !$quiet;
+    $o->push('----- ', $task->name, " -----\n") if $debug;
     $task->set_debug(1) if $debug;
     $task->DEBUG_RESET('main_task_timer');
     my ($res, $msg);
