@@ -3,7 +3,7 @@ use strict;
 
 our $in_parallel = 0;
 
-# Plugins::Parallel->on_prepare($task, $cur_ind, \@tasks, \@task_list);
+# Plugins::Parallel->on_prepare($task, $cur_ind, \@all_tasks, \@task_list, $db);
 sub on_prepare
 {
   my $class = shift;
@@ -24,7 +24,7 @@ sub on_prepare
     my $t = $_[1][$i];
     my $cur_list = [];
     if (('Plugins::'.$t->plugin)->can('on_prepare')) {
-      ('Plugins::'.$t->plugin)->on_prepare($t, $i, $_[1], $cur_list);
+      ('Plugins::'.$t->plugin)->on_prepare($t, $i, $_[1], $cur_list, $_[3]);
     }
     else {
       push @$cur_list, $t;

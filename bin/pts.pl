@@ -215,7 +215,7 @@ sub prepare_tasks
     my $t = $_[$i];
     my $class = 'Plugins::'.$t->plugin;
     if ($class->can('on_prepare')) {
-      $class->on_prepare($t, $i, \@_, \@ret);
+      $class->on_prepare($t, $i, \@_, \@ret, $db);
       next;
     }
     push @ret, $t;
