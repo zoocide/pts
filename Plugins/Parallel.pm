@@ -24,7 +24,7 @@ sub on_prepare
     my $t = $_[1][$i];
     my $cur_list = [];
     if (('Plugins::'.$t->plugin)->can('on_prepare')) {
-      ('Plugins::'.$t->plugin)->on_prepare($t, $i, $_[1], $cur_list, $_[3]);
+      ('Plugins::'.$t->plugin)->on_prepare($t, $i, $_[1], $cur_list, @_[3..$#_]);
     }
     else {
       push @$cur_list, $t;

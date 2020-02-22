@@ -28,7 +28,7 @@ sub on_prepare
   for (; $cont && $i < @{$_[1]}; $i++) {
     my $t = $_[1][$i];
     if (('Plugins::'.$t->plugin)->can('on_prepare')) {
-      ('Plugins::'.$t->plugin)->on_prepare($t, $i, $_[1], $_[2], $_[3]);
+      ('Plugins::'.$t->plugin)->on_prepare($t, $i, @_[1..$#_]);
       next;
     }
     push @{$_[2]}, $t;
