@@ -8,6 +8,9 @@ sub on_prepare
 {
   my $class = shift;
   my $task = shift;
+  my $pind = \shift;
+  my $all_tasks = shift;
+  my $task_list = shift;
 
   ## end parallel ##
   if (!$task->get_var('', 'in_parallel')) {
@@ -19,20 +22,20 @@ sub on_prepare
   local $in_parallel = 1;
 
   my @ret;
-  my $i = $_[0]+1;
-  for (; $in_parallel && $i < @{$_[1]}; $i++) {
-    my $t = $_[1][$i];
+  my $i = $$pind+1;
+  for (; $in_parallel && $i < @$all_tasks; $i++) {
+    my $t = $all_tasks->[$i];
     my $cur_list = [];
     if (('Plugins::'.$t->plugin)->can('on_prepare')) {
-      ('Plugins::'.$t->plugin)->on_prepare($t, $i, $_[1], $cur_list, @_[3..$#_]);
+      ('Plugins::'.$t->plugin)->on_prepare($t, $i, $all_tasks, $cur_list, @_);
     }
     else {
       push @$cur_list, $t;
     }
     push @ret, $cur_list if @$cur_list;
   }
-  push @{$_[2]}, [@ret];
-  $_[0] = $i - 1;
+  push @$task_list, [@ret];
+  $$pind = $i - 1;
 }
 
 1

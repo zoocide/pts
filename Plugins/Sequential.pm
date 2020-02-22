@@ -8,11 +8,15 @@ sub on_prepare
 {
   my $class = shift;
   my $task = shift;
+  my $pind = \shift;
+  # $_[0] - $all_tasks
+  # $_[1] - $tasks_list
+  # $_[2] - $db
 
   ## push int @all_tasks a seq task after current ##
   if ($task->get_var('', 'add_seq', 0)) {
-    my $seq_task = $_[3]->get_task('seq');
-    splice @{$_[1]}, $_[0]+1, 0, $seq_task;
+    my $seq_task = $_[2]->get_task('seq');
+    splice @{$_[0]}, $$pind+1, 0, $seq_task;
   }
 
   ## end block ##
@@ -24,16 +28,16 @@ sub on_prepare
   ## begin block ##
   local $cont = 1;
 
-  my $i = $_[0]+1; #< skip current task
-  for (; $cont && $i < @{$_[1]}; $i++) {
-    my $t = $_[1][$i];
+  my $i = $$pind+1; #< skip current task
+  for (; $cont && $i < @{$_[0]}; $i++) {
+    my $t = $_[0][$i];
     if (('Plugins::'.$t->plugin)->can('on_prepare')) {
-      ('Plugins::'.$t->plugin)->on_prepare($t, $i, @_[1..$#_]);
+      ('Plugins::'.$t->plugin)->on_prepare($t, $i, @_);
       next;
     }
-    push @{$_[2]}, $t;
+    push @{$_[1]}, $t;
   }
-  $_[0] = $i - 1;
+  $$pind = $i - 1;
 }
 
 1
