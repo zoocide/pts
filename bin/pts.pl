@@ -64,7 +64,9 @@ $args->parse;
 
 ## list tasks ##
 if ($args->use_case eq 'list'){
-  print $_, "\n" for sort $db->all_task_ids;
+  my @list = $db->all_task_ids;
+  @list = map {my $t = $db->get_task($_); $t->task_dir.": $_"} @list if $debug;
+  print $_, "\n" for sort @list;
   exit 0;
 }
 
