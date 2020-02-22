@@ -8,7 +8,7 @@ BEGIN{
   };
 }
 
-our $VERSION = v0.4.0;
+our $VERSION = v0.4.1;
 
 our @EXPORT = qw(
   print_out

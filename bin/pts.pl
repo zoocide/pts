@@ -16,7 +16,7 @@ use TasksOutput;
 
 BEGIN{ eval{ require 'Time/HiRes.pm'; Time::HiRes->import('time') } }
 
-our $VERSION = v0.4.0;
+our $VERSION = v0.4.1;
 
 use constant {
   dbg1 => 1,
