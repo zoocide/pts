@@ -7,7 +7,7 @@ use Exceptions;
 use File::Path qw(make_path remove_tree);
 use File::Spec::Functions qw(splitdir catdir);
 use Scalar::Util qw(blessed);
-use Plugins::Base;
+use Plugins::Base qw(print_out);
 BEGIN{
   eval {
     require 'Time/HiRes.pm';
