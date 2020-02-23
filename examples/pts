@@ -1,0 +1,4 @@
+#!/bin/bash
+pts=../bin/pts.pl
+$pts -Ttasks -I. $*
+
