@@ -1,5 +1,6 @@
 #!/bin/env perl
 use strict;
+#BEGIN { use Carp; $SIG{__WARN__} = sub {confess}; }
 use FindBin;
 use lib "$FindBin::Bin/../modules";
 use lib "$FindBin::Bin/../modules/external";
