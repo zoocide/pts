@@ -4,6 +4,8 @@ use threads;
 use FindBin;
 use lib "$FindBin::Bin/../modules";
 use lib "$FindBin::Bin/../modules/external";
+our $VERSION;
+BEGIN { $VERSION = v0.4.1; }
 use PtsConfig;
 use CmdArgs;
 use CmdArgs::BasicTypes;
@@ -15,8 +17,6 @@ use File::Spec::Functions qw(catfile);
 use TasksOutput;
 
 BEGIN{ eval{ require 'Time/HiRes.pm'; Time::HiRes->import('time') } }
-
-our $VERSION = v0.4.1;
 
 use constant {
   dbg1 => 1,

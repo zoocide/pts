@@ -8,7 +8,7 @@ BEGIN{
   };
 }
 
-our $VERSION = v0.4.1;
+our $VERSION = $::VERSION;
 
 our @EXPORT = qw(
   print_out
