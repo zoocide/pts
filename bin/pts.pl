@@ -1,11 +1,10 @@
 #!/usr/bin/perl -w
 use strict;
-use threads;
 use FindBin;
 use lib "$FindBin::Bin/../modules";
 use lib "$FindBin::Bin/../modules/external";
 our $VERSION;
-BEGIN { $VERSION = v0.4.1; }
+BEGIN { $VERSION = v0.4.2; }
 use PtsConfig;
 use CmdArgs;
 use CmdArgs::BasicTypes;
@@ -14,7 +13,8 @@ use Exceptions::OpenFileError;
 use Exceptions::TextFileError;
 use TaskDB;
 use File::Spec::Functions qw(catfile);
-use TasksOutput;
+use ForkedChild;
+use ForkedOutput;
 
 BEGIN{ eval{ require 'Time/HiRes.pm'; Time::HiRes->import('time') } }
 
@@ -92,7 +92,10 @@ my $prepared = prepare_tasks(@tasks);
 dbg1 and dprint_tasks($prepared);
 
 ## process tasks ##
-my ($all, $failed, $skipped) = process_tasks($prepared);
+STDOUT->autoflush(1);
+my $output = ForkedOutput->new;
+my ($all, $failed, $skipped) = process_tasks($prepared, $output);
+unlink $_ for $output->filenames;
 
 ## print statistics ##
 
@@ -256,7 +259,7 @@ sub m_sleep
 sub process_tasks
 {
   my $tasks = shift;
-  my $output : shared = shift || TasksOutput->new;
+  my $output = shift || ForkedOutput->new;
   my $is_master = $output->is_main_thread;
 
   my @all;
@@ -269,10 +272,10 @@ sub process_tasks
       # $task = [[@tasks], ...]
       dbg1 and debug("## start parallel section ##");
       my @thrs;
-      push @thrs, threads->create({context => 'list'}, \&process_tasks, $_, $output) for @$task;
+      push @thrs, ForkedChild->create(\&process_tasks, $_, $output) for @$task;
       for my $thr (@thrs) {
         if ($is_master) {
-          $output->flush, m_sleep(0.1) while !$thr->is_joinable();
+          $output->flush, m_sleep(0.1) while !$thr->is_joinable;
         }
         my ($all, $failed, $skipped) = $thr->join;
         $output->flush;
