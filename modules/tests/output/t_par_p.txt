@@ -1,0 +1,15 @@
+t1: 1
+ok.............t1
+t2: 1
+t2: 2
+ok.............t2
+t3: 1
+t3: 2
+t3: 3
+ok.............t3
+
+statistics:
+num total    = 3
+num complete = 3
+num skipped  = 0
+num failed   = 0

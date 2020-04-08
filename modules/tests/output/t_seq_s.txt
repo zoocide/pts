@@ -1,0 +1,46 @@
+t1: last id = , cur_id = 1
+ok.............t1
+t1: last id = 1, cur_id = 2
+ok.............t1
+t1: last id = 2, cur_id = 3
+ok.............t1
+t1: last id = 3, cur_id = 4
+ok.............t1
+t1: last id = 4, cur_id = 5
+ok.............t1
+t1: last id = 5, cur_id = 6
+ok.............t1
+t1: last id = 6, cur_id = 7
+ok.............t1
+t1: last id = 7, cur_id = 8
+ok.............t1
+t1: last id = 8, cur_id = 9
+ok.............t1
+t1: last id = 9, cur_id = 10
+ok.............t1
+t2: last id = , cur_id = 11
+ok.............t2
+t2: last id = 11, cur_id = 12
+ok.............t2
+t2: last id = 12, cur_id = 13
+ok.............t2
+t2: last id = 13, cur_id = 14
+ok.............t2
+t2: last id = 14, cur_id = 15
+ok.............t2
+t2: last id = 15, cur_id = 16
+ok.............t2
+t2: last id = 16, cur_id = 17
+ok.............t2
+t2: last id = 17, cur_id = 18
+ok.............t2
+t2: last id = 18, cur_id = 19
+ok.............t2
+t2: last id = 19, cur_id = 20
+ok.............t2
+
+statistics:
+num total    = 20
+num complete = 20
+num skipped  = 0
+num failed   = 0

@@ -1,0 +1,12 @@
+simple_2:ok
+ok.............simple_2
+foo:ok
+ok.............foo
+bar:ok
+ok.............bar
+
+statistics:
+num total    = 3
+num complete = 3
+num skipped  = 0
+num failed   = 0
