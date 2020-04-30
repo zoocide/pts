@@ -89,11 +89,14 @@ sub has_var
 sub get_var
 {
   my $c = $_[0]{conf};
-  if (@_ < 3 && !$c->is_set($_[1], $_[2])){
-    my $fname = $_[0]->{filename};
-    throw Exception => "$fname: variable '".($_[1] ? "$_[1]::" : '')."$_[2]' is not set";
+  if (!$c->is_set($_[1], $_[2])){
+    if ($#_ < 3) {
+      my $fname = $_[0]->{filename};
+      throw Exception => "$fname: variable '".($_[1] ? "$_[1]::" : '')."$_[2]' is not set";
+    }
+    return $_[3];
   }
-  $c->get_var(@_[1..$#_])
+  $c->get_var(@_[1,2])
 }
 
 # my @arr = $task->get_arr('group_name', 'var_name', @default_value);
@@ -101,11 +104,14 @@ sub get_var
 sub get_arr
 {
   my $c = $_[0]{conf};
-  if (@_ < 3 && !$c->is_set($_[1], $_[2])){
-    my $fname = $_[0]->{filename};
-    throw Exception => "$fname: variable '".($_[1] ? "$_[1]::" : '')."$_[2]' is not set";
+  if (!$c->is_set($_[1], $_[2])){
+    if ($#_ < 3) {
+      my $fname = $_[0]->{filename};
+      throw Exception => "$fname: variable '".($_[1] ? "$_[1]::" : '')."$_[2]' is not set";
+    }
+    return $#_ == 3 && ref $_[3] eq 'ARRAY' ? @{$_[3]} : @_[3..$#_];
   }
-  $c->get_arr(@_[1..$#_])
+  $c->get_arr(@_[1,2])
 }
 
 # my @vars = $task->get_vars('group_name', @var_names);
