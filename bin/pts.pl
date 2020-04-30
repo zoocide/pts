@@ -313,7 +313,7 @@ sub process_tasks
       $status = 'failed ['.$task->id.']........';
       push @failed, $task;
     }
-    $o->push($status, $task->name, "\n", (defined $msg ? $msg : ())) if !$res || !$quiet;
+    $o->push((defined $msg ? $msg : ()), $status, $task->name, "\n") if !$res || !$quiet;
     $output->close($task->index);
   }
   (\@all, \@failed, \@skipped)
