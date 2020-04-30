@@ -28,9 +28,11 @@ BEGIN{
 
   chdir $task->data_dir;
 
-  my ($var1, $var2) = $task->get_vars('group', 'var1', 'var2');
-  my $var3 = 'default_value';
-  $var3 = $task->get_var('', 'var3') if $task->has_var('', 'var3');
+  my $var = 'default_value';
+  $var = $task->get_var('', 'var') if $task->has_var('', 'var');
+
+  $var = $task->get_var('', 'var', 'default_value');
+  @arr = $task->get_arr('', 'var', @default_value);
 
   ======== DEBUG ========
   $task->DEBUG(@messages_to_print);      ##< print debug messages
@@ -52,6 +54,7 @@ sub index  { $_[0]{index} }
 sub plugin { $_[0]{plugin} }
 sub data_dir { $_[0]{data_dir} }
 sub task_dir { $_[0]{task_dir} }
+sub set_name { $_[0]{name} = $_[1] }
 sub set_debug { $_[0]{debug} = $_[1] }
 sub set_index { $_[0]{index} = $_[1] }
 
@@ -136,7 +139,6 @@ sub init
   my ($self, $id, $filename, $data_dir) = @_;
   croak "$id is not a Task::ID object" if !blessed($id) || !$id->isa('Task::ID');
   $self->{id} = $id;
-  $self->{name} = $id->short_id;
   $self->{index} = -1;
   $self->{debug} = 0;
   $self->{filename} = $filename;
@@ -146,6 +148,9 @@ sub init
   my $conf;
   try{
     $conf = ConfigFile->new($filename, required => {'' => ['plugin']});
+    ## set name ##
+    $conf->set_group('');
+    $conf->set_var('name', $id->short_id);
     ## set task arguments ##
     for (my ($gr, $vars) = $id->args) {
       $conf->set_group($gr);
@@ -157,7 +162,7 @@ sub init
 
     $self->{ conf } = $conf;
     $self->{plugin} = $conf->get_var('', 'plugin');
-    $self->{ name } = $conf->get_var('', 'name') if $conf->is_set('', 'name');
+    $self->{ name } = $conf->get_var('', 'name');
   }
   make_exlist
   catch{
@@ -176,6 +181,9 @@ sub reload_config
              ? shift
              : ConfigFileScheme->new(@_);
   my $conf = ConfigFile->new($self->{filename}, $scheme);
+  ## set name ##
+  $conf->set_group('');
+  $conf->set_var('name', $self->{id}->short_id);
   ## set task arguments ##
   for (my ($gr, $vars) = $self->{id}->args) {
     $conf->set_group($gr);
@@ -284,3 +292,124 @@ sub m_parse_value
 }
 
 1;
+
+__END__
+
+=head1 METHODS
+
+=over
+
+=item id()
+
+Method returns object Task::ID for this task.
+
+=item name()
+
+Method returns display name of the task.
+It is constructed while task creation, based on I<name> variable from configuration file
+and can be changed by I<set_name> method.
+
+=item index()
+
+Method returns index of the task.
+
+=item plugin()
+
+Method returns plugin name.
+
+=item data_dir()
+
+Method returns path to the task data directory.
+
+=item task_dir()
+
+Method returns path to the directory containing task configuration file.
+
+=item set_name($name)
+
+Set task display name.
+It does not affect variable I<name>.
+
+=item set_index($ind)
+
+Set task index.
+
+=item make_data_dir($dir)
+
+Creates task data directory.
+If C<$dir> is specified, method changes task data directory to that value.
+
+=item clear_data_dir()
+
+Delete all content of the task data directory.
+
+=item has_var($group_name, $var_name)
+
+Return true if configuration file contains specified variable.
+
+=item get_var($group_name, $var_name, $default_value)
+
+Return string value of the specified variable.
+Method returns $defualt_value if the variable is not set.
+It raises exception when variable is not set and $default_value is not specified.
+
+=item get_arr($group_name, $var_name, @default_value)
+
+Return list value of the specified variable.
+Method returns @defualt_value if the variable is not set.
+Also, default value can be specified as a list reference, e.g
+C<$task->get_arr('', 'var', [])>.
+It is useful to specify empty list as default value.
+Method raises exception when variable is not set and $default_value is not specified.
+
+=item reload_config(SCHEME)
+
+Reload config file with the specified SCHEME.
+SCHEME could be a ConfigFileScheme object or scheme specification, e.g.:
+
+C<< $task->reload_config(multiline => 1, ...); >>
+
+Task name, plugin will not change even if the corresponding variables change.
+
+Before configuration file read, the following actions will be performed.
+1 - variable I<name> will be set to task short_id.
+2 - variables from task arguments will be set.
+
+=back
+
+=head2 DEPRECATED METHODS
+
+=over
+
+=item set_debug($bool)
+
+Method turns on and off debug messages.
+Affected methods are: C<DEBUG>, C<DEBUG_T>, C<DEBUG_TR>.
+
+=item DEBUG(@list)
+
+When debug mode is on, print debug message.
+
+=item DEBUG_T($timer_name, @list)
+
+Print debug message and elapsed time from last $timer_name reset.
+
+=item DEBUG_RESET(@timer_names)
+
+Reset specified timers.
+
+=item DEBUG_TR($timer_name, @list)
+
+Same as
+
+  $task->DEBUG_T($timer_name, @list);
+  $task->DEBUG_RESET($timer_name);
+
+=item get_vars($group_name, @var_names)
+
+Return string values of the specified variables.
+It raises exception when any variable is not set.
+
+=back
+
+=cut
