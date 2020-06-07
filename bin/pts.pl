@@ -88,11 +88,16 @@ $start_time = time if $debug;
 load_plugins(@tasks);
 
 ## construct task sequence ##
+our $has_parallel = 0;
 my $prepared = prepare_tasks(@tasks);
 dbg1 and dprint_tasks($prepared);
 
 ## process tasks ##
-my $stats = process_tasks($prepared);
+my ($process_func, $process_func_descr) =
+    !$has_parallel ? (\&process_tasks_seq              => 'sequentially'      )
+  :                  (\&process_tasks                  => 'threads-like forks');
+dbg1 and debug("processing method: $process_func_descr");
+my $stats = $process_func->($prepared);
 my $all     = $stats->{all}    || [];
 my $failed  = $stats->{failed} || [];
 my $skipped = $stats->{skipped}|| [];
@@ -203,8 +208,10 @@ sub index_tasks
 {
   my $tasks = shift;
   my $i = shift || 0;
+  our $has_parallel;
   for my $t (@$tasks) {
     if (ref $t eq 'ARRAY') {
+      $has_parallel = 1;
       $i = index_tasks($_, $i) for @$t;
       next;
     }
@@ -287,6 +294,19 @@ sub process_task
     push @{$stats->{failed}}, $task;
   }
   $o->push((defined $msg ? $msg : ()), $status, $task->name, "\n") if !$res || !$quiet;
+}
+
+# my $stats = process_tasks_seq(\@prepared_tasks);
+# ## $stats = {all => [@all], failed => [@failed], skipped => [@skipped],}
+sub process_tasks_seq
+{
+  my $prepared = shift;
+  my $stats = {};
+  my $o = ForkedOutput::MainThreadOutput->new;
+  for my $t (@$prepared) {
+    process_task($t, $o, $stats);
+  }
+  $stats
 }
 
 # my $stats = process_tasks(\@prepared_tasks);
