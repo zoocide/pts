@@ -92,10 +92,10 @@ my $prepared = prepare_tasks(@tasks);
 dbg1 and dprint_tasks($prepared);
 
 ## process tasks ##
-STDOUT->autoflush(1);
-my $output = ForkedOutput->new;
-my ($all, $failed, $skipped) = process_tasks($prepared, $output);
-unlink $_ for $output->filenames;
+my $stats = process_tasks($prepared);
+my $all     = $stats->{all}    || [];
+my $failed  = $stats->{failed} || [];
+my $skipped = $stats->{skipped}|| [];
 
 ## print statistics ##
 
@@ -256,15 +256,58 @@ sub m_sleep
   select undef, undef, undef, $_[0]
 }
 
+# $stats = {all => [], failed => [], skipped => [],};
+# # $out should have 'push' method;
+# process_task($task, $out, $stats);
+sub process_task
+{
+  my ($task, $o, $stats) = @_;
+  $o->push('----- ', $task->name, " -----\n") if $debug;
+  $task->set_debug(1) if $debug;
+  $task->DEBUG_RESET('main_task_timer');
+  my ($res, $msg);
+  try {
+    $res = ('Plugins::'.$task->plugin)->process_wrp($o, $task, $db);
+  }
+  catch {
+    $msg = format_msg($@);
+    $res = 0;
+  };
+  $task->DEBUG_T('main_task_timer', 'task \''.$task->name.'\' finished');
+
+  push @{$stats->{all}}, $task;
+  my $status;
+  if ($res eq 'skipped') {
+    $status = 'skipped........';
+    push @{$stats->{skipped}}, $task;
+  } elsif ($res) {
+    $status = 'ok.............';
+  } else {
+    $status = 'failed ['.$task->id.']........';
+    push @{$stats->{failed}}, $task;
+  }
+  $o->push((defined $msg ? $msg : ()), $status, $task->name, "\n") if !$res || !$quiet;
+}
+
+# my $stats = process_tasks(\@prepared_tasks);
+# ## $stats = {all => [@all], failed => [@failed], skipped => [@skipped],}
 sub process_tasks
 {
+  my $prepared = shift;
+  STDOUT->autoflush(1);
+  my $output = ForkedOutput->new;
+  my $ret = m_process_tasks($prepared, $output);
+  unlink $_ for $output->filenames;
+  $ret
+}
+
+sub m_process_tasks
+{
   my $tasks = shift;
-  my $output = shift || ForkedOutput->new;
+  my $output = shift;
   my $is_master = $output->is_main_thread;
 
-  my @all;
-  my @failed;
-  my @skipped;
+  my $stats = {};
 
   for my $task (@$tasks) {
     if (ref $task eq 'ARRAY') {
@@ -272,16 +315,14 @@ sub process_tasks
       # $task = [[@tasks], ...]
       dbg1 and debug("## start parallel section ##");
       my @thrs;
-      push @thrs, ForkedChild->create(\&process_tasks, $_, $output) for @$task;
+      push @thrs, ForkedChild->create(\&m_process_tasks, $_, $output) for @$task;
       for my $thr (@thrs) {
         if ($is_master) {
           $output->flush, m_sleep(0.1) while !$thr->is_joinable;
         }
-        my ($all, $failed, $skipped) = $thr->join;
+        my ($rs) = $thr->join;
         $output->flush;
-        push @all, @$all;
-        push @failed, @$failed;
-        push @skipped, @$skipped;
+        push @{$stats->{$_}}, @{$rs->{$_}} for keys %$rs;
       }
       dbg1 and debug("## end parallel section ##");
       next;
@@ -289,32 +330,8 @@ sub process_tasks
 
     ## process task ##
     my $o = $output->open($task->index);
-    $o->push('----- ', $task->name, " -----\n") if $debug;
-    $task->set_debug(1) if $debug;
-    $task->DEBUG_RESET('main_task_timer');
-    my ($res, $msg);
-    try {
-      $res = ('Plugins::'.$task->plugin)->process_wrp($o, $task, $db);
-    }
-    catch {
-      $msg = format_msg($@);
-      $res = 0;
-    };
-    $task->DEBUG_T('main_task_timer', 'task \''.$task->name.'\' finished');
-
-    push @all, $task;
-    my $status;
-    if ($res eq 'skipped') {
-      $status = 'skipped........';
-      push @skipped, $task;
-    } elsif ($res) {
-      $status = 'ok.............';
-    } else {
-      $status = 'failed ['.$task->id.']........';
-      push @failed, $task;
-    }
-    $o->push((defined $msg ? $msg : ()), $status, $task->name, "\n") if !$res || !$quiet;
+    main::process_task($task, $o, $stats);
     $output->close($task->index);
   }
-  (\@all, \@failed, \@skipped)
+  $stats
 }
