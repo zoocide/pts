@@ -18,6 +18,9 @@ use ForkedOutput;
 
 BEGIN{ eval{ require 'Time/HiRes.pm'; Time::HiRes->import('time') } }
 
+use constant force_mce => 0;
+#use constant use_mce => 0;# eval{ require ParallelWithMCE; 'ParallelWithMCE' } || (force_mce && die $@);
+use constant use_mce => eval{ require ParallelWithMCE; 'ParallelWithMCE' } || (force_mce && die $@);
 use constant {
   dbg1 => 1,
   dbg2 => 0,
@@ -31,7 +34,7 @@ try{ $db = TaskDB->new(PtsConfig->tasks_dir) } string2exception make_exlist
 catch{ push @{$@}, Exceptions::Exception->new('can not load tasks database'); throw };
 
 my $failed_fname;
-my $debug;
+our $debug;
 my $quiet;
 
 my $args = CmdArgs->declare(
@@ -49,6 +52,8 @@ my $args = CmdArgs->declare(
     failed  => ['--failed:<<file>>', 'Put failed tasks into <file>.',
                 sub { $failed_fname = $_ }],
     ttime => ['--total-time', 'Print total time.'],
+    #opt_use_mce => ['--mce', 'Force to use MCE parallel engine.', sub {...}],
+    #opt_no_mce => ['--no-mce', "Don't use MCE parallel engine.", sub {...}],
   },
   groups => {
     OPTIONS => [qw(quiet stat debug tasks_dir plugins_dir failed ttime)],
@@ -95,6 +100,7 @@ dbg1 and dprint_tasks($prepared);
 ## process tasks ##
 my ($process_func, $process_func_descr) =
     !$has_parallel ? (\&process_tasks_seq              => 'sequentially'      )
+  : use_mce        ? (\&ParallelWithMCE::process_tasks => 'MCE'               )
   :                  (\&process_tasks                  => 'threads-like forks');
 dbg1 and debug("processing method: $process_func_descr");
 my $stats = $process_func->($prepared);
