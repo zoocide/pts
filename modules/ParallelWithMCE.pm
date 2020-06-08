@@ -5,6 +5,7 @@ use MCE;
 use MCE::Queue;
 
 my $q_chunks = MCE::Queue->new;
+my $q_done = MCE::Queue->new;
 my $q_out = MCE::Queue->new;
 my %chunks_wait; #< ($chunk_id => {$chunk_id => 1,},)
 my %chunks_next; #< ($chunk_id => [@chunk_ids],)
@@ -23,9 +24,23 @@ sub process_tasks
 
   our %stats = ();
   MCE->new(
-    max_workers => 'auto',
-    #max_workers => $max_par_workers,
-    user_func => \&worker,
+    user_tasks => [
+      {
+        max_workers => 'auto',
+        #max_workers => $max_par_workers,
+        #max_workers => 1,
+        user_func => \&worker,
+      },
+      {
+        max_workers => 1,
+        gather => \%stats,
+        user_func => \&chunk_manager,
+      },
+      {
+        max_workers => 1,
+        user_func => \&output_manager,
+      },
+    ],
   )->run;
   #TODO: sort stats by task index.
   \%stats
@@ -44,10 +59,33 @@ sub worker
       main::process_task($t, $o, \%sts);
       $o->close;
     }
-    MCE->do("on_chunk_done", $chunk_id, \%sts);
+    $q_done->enqueue([$chunk_id, \%sts]);
   }
   #MCE->say("worker $wid is exiting");
 };
+
+sub chunk_manager
+{
+  our %stats;
+  my %wait_for = %chunks;
+  #MCE->say("# chunk_manager started #");
+  while (%wait_for && (my $data = $q_done->dequeue)) {
+    on_chunk_done(@$data);
+    delete $wait_for{$data->[0]};
+  }
+  $q_out->end;
+  MCE->gather(%stats);
+  #MCE->say("# chunk_manager finished #");
+}
+
+sub output_manager
+{
+  #MCE->say("# output_manager started #");
+  while (my $data = $q_out->dequeue) {
+    receive_output(@$data);
+  }
+  #MCE->say("# output_manager finished #");
+}
 
 sub receive_output
 {
@@ -179,14 +217,13 @@ sub new
 sub push
 {
   my $self = shift;
-  #MCE->print(@_);
-  MCE->do('ParallelWithMCE::receive_output', $self->{ind}, join '', @_);
+  $q_out->enqueue([$self->{ind}, join('', @_)]);
 }
 
 sub close
 {
   my $self = shift;
-  MCE->do('ParallelWithMCE::receive_output', $self->{ind}, undef);
+  $q_out->enqueue([$self->{ind}, undef]);
 }
 
 1
