@@ -4,7 +4,7 @@ use FindBin;
 use lib "$FindBin::Bin/../modules";
 use lib "$FindBin::Bin/../modules/external";
 our $VERSION;
-BEGIN { $VERSION = v0.4.3; }
+BEGIN { $VERSION = v0.5.0; }
 use PtsConfig;
 use CmdArgs;
 use CmdArgs::BasicTypes;
