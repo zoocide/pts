@@ -20,15 +20,16 @@ sub process_tasks
 
   tasks2chunks(@$tasks);
   dprint_chunks();
-  main::debug("max_par_workers = $max_par_workers");
 
+  my $ncpu = MCE::Util::get_ncpu;
+  my $nworkers = $max_par_workers < $ncpu ? $max_par_workers : $ncpu;
+  main::debug("max_par_workers   = $max_par_workers");
+  main::debug("number_of_workers = $nworkers");
   our %stats = ();
   MCE->new(
     user_tasks => [
       {
-        max_workers => 'auto',
-        #max_workers => $max_par_workers,
-        #max_workers => 1,
+        max_workers => $nworkers,
         user_func => \&worker,
       },
       {
@@ -42,7 +43,8 @@ sub process_tasks
       },
     ],
   )->run;
-  #TODO: sort stats by task index.
+  ## sort stats by task index. ##
+  @{$stats{$_}} = sort {$a->index <=> $b->index} @{$stats{$_}} for keys %stats;
   \%stats
 }
 
@@ -98,7 +100,7 @@ sub receive_output
 
   if (defined $text) {
     if ($ti == $cur_ti) {
-      print $text;
+      MCE->print($text);
     }
     else {
       push @{$output[$ti]{text}}, $text;
