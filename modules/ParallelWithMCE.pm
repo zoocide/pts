@@ -4,6 +4,12 @@ use warnings;
 use MCE;
 use MCE::Queue;
 
+BEGIN {
+  *dprint = *main::dprint;
+  *dbg1 = *main::dbg1;
+  *dbg2 = *main::dbg2;
+}
+
 my $q_chunks = MCE::Queue->new;
 my $q_done = MCE::Queue->new;
 my $q_out = MCE::Queue->new;
@@ -19,12 +25,12 @@ sub process_tasks
   my $tasks = shift;
 
   tasks2chunks(@$tasks);
-  dprint_chunks();
+  dbg1 and dprint_chunks();
 
   my $ncpu = MCE::Util::get_ncpu;
   my $nworkers = $max_par_workers < $ncpu ? $max_par_workers : $ncpu;
-  main::debug("max_par_workers   = $max_par_workers");
-  main::debug("number_of_workers = $nworkers");
+  dbg1 and dprint("max_par_workers   = $max_par_workers");
+  dbg1 and dprint("number_of_workers = $nworkers");
   our %stats = ();
   MCE->new(
     user_tasks => [
@@ -196,12 +202,11 @@ sub m_complete_cur_chunk
 
 sub dprint_chunks
 {
-  return if !$main::debug;
   local $" = ', ';
   for my $chunk_id (sort {$a<=>$b} keys %chunks) {
     my @ctasks = map '['.$_->id.']', @{$chunks{$chunk_id}};
     my @w = sort {$a<=>$b} keys %{$chunks_wait{$chunk_id}} if exists $chunks_wait{$chunk_id};
-    main::debug("chunk $chunk_id: tasks(@ctasks); waits for chunks (@w)");
+    dprint("chunk $chunk_id: tasks(@ctasks); waits for chunks (@w)");
   }
 }
 

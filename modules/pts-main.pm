@@ -3,8 +3,6 @@ use warnings;
 
 our $db;
 our $args;
-our $debug;
-our $quiet;
 our $failed_fname;
 our $script_start_time;
 
@@ -14,13 +12,13 @@ my @tasks = map { -f $_ ? load_task_set($db, $_) : $db->new_task($_) }
 
 ## open file $failed_fname ##
 my $failed_file;
-if ($failed_fname){
+if ($failed_fname) {
   open $failed_file, '>', $failed_fname
       or die "Can not write to file '$failed_fname': $!\n";
 }
 
 my $start_time = 0;
-$start_time = time if $debug;
+$start_time = time if dbg1;
 
 ## load plugins ##
 load_plugins(@tasks);
@@ -35,7 +33,7 @@ my ($process_func, $process_func_descr) =
     !$has_parallel ? (\&process_tasks_seq              => 'sequentially'      )
   : use_mce        ? (\&ParallelWithMCE::process_tasks => 'MCE'               )
   :                  (\&process_tasks                  => 'threads-like forks');
-dbg1 and debug("processing method: $process_func_descr");
+dbg1 and dprint("processing method: $process_func_descr");
 my $stats = $process_func->($prepared);
 my $all     = $stats->{all}    || [];
 my $failed  = $stats->{failed} || [];
@@ -43,7 +41,7 @@ my $skipped = $stats->{skipped}|| [];
 
 ## print statistics ##
 
-dbg1 and debug(sprintf "tasks time = %.3f", time - $start_time);
+dbg1 and dprint(sprintf "tasks time = %.3f", time - $start_time);
 printf "total time = %.3f\n", time - $script_start_time if $args->is_opt('ttime');
 
 my $num_total  = @$all;
@@ -57,14 +55,14 @@ print "\nstatistics:"
      ,"\nnum skipped  = ", $num_skipped
      ,"\nnum failed   = ", $num_failed
      ,"\n"
-     if $args->is_opt('stat') || (!$quiet && @$all > 1);
+     if $args->is_opt('stat') || (!quiet && @$all > 1);
 
 ## write failed tasks ##
 if (@$failed){
   if ($failed_fname){
     print $failed_file $_->id."\n" for @$failed;
     close $failed_file;
-    debug("Failed tasks were written to file '$failed_fname'.\n");
+    dbg1 and dprint("Failed tasks were written to file '$failed_fname'.\n");
   }
   exit 1
 }
@@ -77,16 +75,15 @@ if ($failed_file){
 
 ##### END #####
 
-sub debug
+sub dprint
 {
-  return if !$debug;
   print "DEBUG: $_\n" for split /\n/, join '', @_;
 }
 
 sub load_task_set
 {
   my ($db, $fname) = @_;
-  debug("load task set from file $fname");
+  dbg1 and dprint("load task set from file $fname");
   my @ret;
   open(my $f, '<', $fname) || throw OpenFileError => $fname;
   ### rules ###
@@ -103,7 +100,7 @@ sub load_task_set
     catch { throw TextFileError => $fname, $ln, $@ };
   }
   close $f;
-  debug("$fname: loaded tasks:\n", map('  '.$_->id."\n", @ret));
+  dbg1 and dprint("$fname: loaded tasks:\n", map('  '.$_->id."\n", @ret));
   @ret
 }
 
@@ -113,7 +110,7 @@ sub load_plugins
   for my $plugins_pdir (PtsConfig->plugins_parent_dirs) {
     eval "use lib '$plugins_pdir'";
     die $@ if $@;
-    debug('plugins dir = '.catfile($plugins_pdir, 'Plugins'));
+    dbg1 and dprint('plugins dir = '.catfile($plugins_pdir, 'Plugins'));
   }
 
   my @failed;
@@ -121,12 +118,11 @@ sub load_plugins
   for my $task (@tasks){
     my $pname = $task->plugin;
     next if exists $plugins{$pname};
-    debug("load plugin $pname");
+    dbg1 and dprint("load plugin $pname");
     (my $req_pname = $pname) =~ s#::#/#g;
     eval {
       no strict 'refs';
-      my $d = $debug;
-      *{"Plugins::${pname}::dbg1"} = sub () { $d };
+      *{"Plugins::${pname}::dbg1"} = *dbg1;
       require "Plugins/$req_pname.pm"
     };
     if ($@){
@@ -134,7 +130,7 @@ sub load_plugins
       push @failed, $pname;
     }
     $plugins{$pname} = !$@;
-    if (dbg2) {
+    if (dbg2 && exists &{"Plugins::${pname}::process"}) {
       use B::Deparse;
       my $d = B::Deparse->new();
       print $d->coderef2text(\&{"Plugins::${pname}::process"}), "\n";
@@ -179,17 +175,17 @@ sub dprint_tasks
 {
   my ($tasks, $pref) = @_;
   $pref = '' if !defined $pref;
-  debug($pref, '[');
+  dprint($pref, '[');
   for my $t (@$tasks) {
     if (ref $t eq 'ARRAY') {
-      debug($pref.'  ## start parallel section ##');
+      dprint($pref.'  ## start parallel section ##');
       dprint_tasks($_, $pref.'  ') for @$t;
-      debug($pref.'  ## end parallel section ##');
+      dprint($pref.'  ## end parallel section ##');
       next;
     }
-    debug($pref.'  ', $t->index, ':', $t->id);
+    dprint($pref.'  ', $t->index, ':', $t->id);
   }
-  debug($pref, ']');
+  dprint($pref, ']');
 }
 
 sub format_msg
@@ -208,9 +204,9 @@ sub m_sleep
 sub process_task
 {
   my ($task, $o, $stats) = @_;
-  $o->push('----- ', $task->name, " -----\n") if $debug;
-  $task->set_debug(1) if $debug;
-  $task->DEBUG_RESET('main_task_timer');
+  dbg1 and $o->push('----- ', $task->name, " -----\n");
+  dbg1 and $task->set_debug(1);
+  dbg1 and $task->DEBUG_RESET('main_task_timer');
   my ($res, $msg);
   try {
     $res = ('Plugins::'.$task->plugin)->process_wrp($o, $task, $db);
@@ -219,7 +215,7 @@ sub process_task
     $msg = format_msg($@);
     $res = 0;
   };
-  $task->DEBUG_T('main_task_timer', 'task \''.$task->name.'\' finished');
+  dbg1 and $task->DEBUG_T('main_task_timer', 'task \''.$task->name.'\' finished');
 
   push @{$stats->{all}}, $task;
   my $status;
@@ -232,7 +228,7 @@ sub process_task
     $status = 'failed ['.$task->id.']........';
     push @{$stats->{failed}}, $task;
   }
-  $o->push((defined $msg ? $msg : ()), $status, $task->name, "\n") if !$res || !$quiet;
+  $o->push((defined $msg ? $msg : ()), $status, $task->name, "\n") if !$res || !quiet;
 }
 
 # my $stats = process_tasks_seq(\@prepared_tasks);
@@ -272,7 +268,7 @@ sub m_process_tasks
     if (ref $task eq 'ARRAY') {
       ## process parallel tasks group ##
       # $task = [[@tasks], ...]
-      dbg1 and debug("## start parallel section ##");
+      dbg1 and dprint("## start parallel section ##");
       my @thrs;
       push @thrs, ForkedChild->create(\&m_process_tasks, $_, $output) for @$task;
       for my $thr (@thrs) {
@@ -283,7 +279,7 @@ sub m_process_tasks
         $output->flush;
         push @{$stats->{$_}}, @{$rs->{$_}} for keys %$rs;
       }
-      dbg1 and debug("## end parallel section ##");
+      dbg1 and dprint("## end parallel section ##");
       next;
     }
 

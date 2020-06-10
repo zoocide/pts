@@ -30,8 +30,8 @@ try{ $db = TaskDB->new(PtsConfig->tasks_dir) } string2exception make_exlist
 catch{ push @{$@}, Exceptions::Exception->new('can not load tasks database'); throw };
 
 our $failed_fname;
-our $debug = 0;
-our $quiet;
+my $debug = 0;
+my $quiet;
 
 our $args = CmdArgs->declare(
   sprintf('%vd',$VERSION),
@@ -40,7 +40,7 @@ our $args = CmdArgs->declare(
                   .' It extends the tasks database with tasks from this directory.',
                   sub{ $db->add_tasks_dir($_) }],
     quiet => ['-q --quiet', 'Do not print statistics and task name.', \$quiet],
-    debug => ['-D --debug', 'Print debug information.', sub { $debug++ }],
+    debug => ['-D --debug', 'Print debug information. -DD produces even more information.', sub { $debug++ }],
     list  => ['-l --list',  'Print all tasks in database.'],
     stat  => ['-s --stat',  'Force to print statistics even for one task.'],
     plugins_dir => ['-I:Dir<<plugins_dir>>', 'Include plugins from directory.',
