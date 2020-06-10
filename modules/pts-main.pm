@@ -6,6 +6,8 @@ our $args;
 our $failed_fname;
 our $script_start_time;
 
+use constant use_mce => !no_mce && (eval{ require ParallelWithMCE; 'ParallelWithMCE' } || (force_mce && die $@));
+
 ## obtain tasks to execute ##
 my @tasks = map { -f $_ ? load_task_set($db, $_) : $db->new_task($_) }
                 @{$args->arg('taskset')};

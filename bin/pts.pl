@@ -18,10 +18,6 @@ use ForkedOutput;
 
 BEGIN{ eval{ require 'Time/HiRes.pm'; Time::HiRes->import('time') } }
 
-use constant force_mce => 0;
-#use constant use_mce => 0;# eval{ require ParallelWithMCE; 'ParallelWithMCE' } || (force_mce && die $@);
-use constant use_mce => eval{ require ParallelWithMCE; 'ParallelWithMCE' } || (force_mce && die $@);
-
 our $script_start_time = time;
 
 ## load TaskDB ##
@@ -48,11 +44,17 @@ our $args = CmdArgs->declare(
     failed  => ['--failed:<<file>>', 'Put failed tasks into <file>.',
                 sub { $failed_fname = $_ }],
     ttime => ['--total-time', 'Print total time.'],
-    #opt_use_mce => ['--mce', 'Force to use MCE parallel engine.', sub {...}],
-    #opt_no_mce => ['--no-mce', "Don't use MCE parallel engine.", sub {...}],
+    force_mce => ['--mce', 'Force to use MCE parallel engine. It should be installed from CPAN.'],
+    no_mce => ['--no-mce', "Don't use MCE parallel engine."],
   },
   groups => {
-    OPTIONS => [qw(quiet stat debug tasks_dir plugins_dir failed ttime)],
+    OPTIONS => [qw(
+      quiet stat debug
+      tasks_dir plugins_dir
+      failed
+      ttime
+      force_mce no_mce
+    )],
   },
   use_cases => {
     main => ['OPTIONS taskset...', 'Process a set of tasks.'
@@ -60,6 +62,9 @@ our $args = CmdArgs->declare(
              .' Also you can sepcify files, containing tasks names.'],
     list => ['OPTIONS list', 'Print all tasks in database.'],
   },
+  restrictions => [
+    'force_mce|no_mce',
+  ],
 );
 $args->parse;
 
@@ -75,6 +80,8 @@ if ($args->use_case eq 'list'){
 {my $d = $debug >= 1; *{dbg1} = sub () { $d } }
 {my $d = $debug >= 2; *{dbg2} = sub () { $d } }
 {my $q = $quiet; *{quiet} = sub () { $q } }
+{my $v = $args->is_opt('force_mce'); *{force_mce} = sub () { $v } }
+{my $v = $args->is_opt('no_mce'); *{no_mce} = sub () { $v } }
 
 ## load module with constants enabled ##
 require 'pts-main.pm';
