@@ -26,6 +26,7 @@ try{ $db = TaskDB->new(PtsConfig->tasks_dir) } string2exception make_exlist
 catch{ push @{$@}, Exceptions::Exception->new('can not load tasks database'); throw };
 
 our $failed_fname;
+our $num_procs;
 my $debug = 0;
 my $quiet;
 
@@ -46,6 +47,7 @@ our $args = CmdArgs->declare(
     ttime => ['--total-time', 'Print total time.'],
     force_mce => ['--mce', 'Force to use MCE parallel engine. It should be installed from CPAN.'],
     no_mce => ['--no-mce', "Don't use MCE parallel engine."],
+    num_procs => ['--np:Int', 'Set the number of parallel workers. It makes sense only for the MCE engine.', \$num_procs],
   },
   groups => {
     OPTIONS => [qw(
@@ -54,6 +56,7 @@ our $args = CmdArgs->declare(
       failed
       ttime
       force_mce no_mce
+      num_procs
     )],
   },
   use_cases => {
@@ -75,6 +78,9 @@ if ($args->use_case eq 'list'){
   print $_, "\n" for sort @list;
   exit 0;
 }
+
+## check arguments ##
+defined $num_procs && $num_procs <= 0 and die "the number of workers should be a positive integer\n";
 
 ## set constants ##
 {my $d = $debug >= 1; *{dbg1} = sub () { $d } }

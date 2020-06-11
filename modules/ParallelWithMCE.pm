@@ -28,7 +28,9 @@ sub process_tasks
   dbg1 and dprint_chunks();
 
   my $ncpu = MCE::Util::get_ncpu;
-  my $nworkers = $max_par_workers < $ncpu ? $max_par_workers : $ncpu;
+  my $nworkers = defined $main::num_procs
+      ? $main::num_procs
+      : $max_par_workers < $ncpu ? $max_par_workers : $ncpu;
   dbg1 and dprint("max_par_workers   = $max_par_workers");
   dbg1 and dprint("number_of_workers = $nworkers");
   our %stats = ();
