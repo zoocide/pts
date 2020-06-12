@@ -14,8 +14,6 @@ use Exceptions::OpenFileError;
 use Exceptions::TextFileError;
 use TaskDB;
 use File::Spec::Functions qw(catfile);
-use ForkedChild;
-use ForkedOutput;
 
 BEGIN{ eval{ require 'Time/HiRes.pm'; Time::HiRes->import('time') } }
 

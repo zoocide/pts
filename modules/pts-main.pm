@@ -1,5 +1,6 @@
 use strict;
 use warnings;
+use ForkedOutput;
 
 our $db;
 our $args;
@@ -7,6 +8,8 @@ our $failed_fname;
 our $script_start_time;
 
 use constant use_mce => !no_mce && (eval{ require ParallelWithMCE; 'ParallelWithMCE' } || (force_mce && die $@));
+use constant use_threads => !use_mce && $^O eq 'MSWin32' && require ParallelWithThreads;
+use if !use_mce && !use_threads, 'ParallelWithForks';
 
 ## obtain tasks to execute ##
 my @tasks = map { -f $_ ? load_task_set($db, $_) : $db->new_task($_) }
@@ -34,6 +37,7 @@ dbg1 and dprint_tasks($prepared);
 my ($process_func, $process_func_descr) =
     !$has_parallel ? (\&process_tasks_seq              => 'sequentially'      )
   : use_mce        ? (\&ParallelWithMCE::process_tasks => 'MCE'               )
+  : use_threads    ? (\&ParallelWithThreads::process_tasks => 'threads'       )
   :                  (\&process_tasks                  => 'threads-like forks');
 dbg1 and dprint("processing method: $process_func_descr");
 my $stats = $process_func->($prepared);
@@ -242,53 +246,6 @@ sub process_tasks_seq
   my $o = ForkedOutput::MainThreadOutput->new;
   for my $t (@$prepared) {
     process_task($t, $o, $stats);
-  }
-  $stats
-}
-
-# my $stats = process_tasks(\@prepared_tasks);
-# ## $stats = {all => [@all], failed => [@failed], skipped => [@skipped],}
-sub process_tasks
-{
-  my $prepared = shift;
-  STDOUT->autoflush(1);
-  my $output = ForkedOutput->new;
-  my $ret = m_process_tasks($prepared, $output);
-  unlink $_ for $output->filenames;
-  $ret
-}
-
-sub m_process_tasks
-{
-  my $tasks = shift;
-  my $output = shift;
-  my $is_master = $output->is_main_thread;
-
-  my $stats = {};
-
-  for my $task (@$tasks) {
-    if (ref $task eq 'ARRAY') {
-      ## process parallel tasks group ##
-      # $task = [[@tasks], ...]
-      dbg1 and dprint("## start parallel section ##");
-      my @thrs;
-      push @thrs, ForkedChild->create(\&m_process_tasks, $_, $output) for @$task;
-      for my $thr (@thrs) {
-        if ($is_master) {
-          $output->flush, m_sleep(0.1) while !$thr->is_joinable;
-        }
-        my ($rs) = $thr->join;
-        $output->flush;
-        push @{$stats->{$_}}, @{$rs->{$_}} for keys %$rs;
-      }
-      dbg1 and dprint("## end parallel section ##");
-      next;
-    }
-
-    ## process task ##
-    my $o = $output->open($task->index);
-    main::process_task($task, $o, $stats);
-    $output->close($task->index);
   }
   $stats
 }

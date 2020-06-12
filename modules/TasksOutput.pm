@@ -81,6 +81,7 @@ sub flush
   my $i = $self->{cur_ind};
   my $outs = $self->{outs};
   for (my $n = @$outs; $i < $n; $i++) {
+    last if !defined $outs->[$i];
     $outs->[$i]{out}->flush;
     last if !$outs->[$i]{closed};
   }
