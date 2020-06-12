@@ -4,6 +4,7 @@ use Test::More tests => 17;
 use File::Spec::Functions qw(catfile);
 BEGIN { eval 'use Time::HiRes qw(time);' }
 
+my @user_args = @ARGV;
 my $pts = '../../bin/pts.pl';
 my $plugins_dir = '-I.';
 my $tasks_dir = '-Ttasks';
@@ -50,7 +51,7 @@ note("seq time = $time1; par time = $time2");
 
 sub run_tasks
 {
-  my $out = qx($^X $pts 2>&1 $plugins_dir $tasks_dir @_);
+  my $out = qx($^X $pts 2>&1 $plugins_dir $tasks_dir @user_args @_);
   $out
 }
 
