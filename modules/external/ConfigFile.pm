@@ -64,6 +64,13 @@ ConfigFile - read and write configuration files aka '.ini'.
 
 =cut
 
+BEGIN {
+  if (!exists &legacy) {
+    my $v = $^V < 5.018;
+    *legacy = sub () { $v }
+  }
+}
+BEGIN{*load = legacy ? *m_load_old : *m_load}
 
 # throws: -
 sub new
@@ -89,7 +96,7 @@ sub init
 }
 
 # throws: Exceptions::OpenFileError, [Exceptions::TextFileError]
-sub load2
+sub m_load_old
 {
   my $self = shift;
   my $decl = $self->{decl};
@@ -237,7 +244,7 @@ sub load2
   }
 }
 
-sub load
+sub m_load
 {
   my $self = shift;
   my $decl = $self->{decl};

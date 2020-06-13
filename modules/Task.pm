@@ -209,6 +209,15 @@ package Task::ID;
 use Exceptions;
 use overload '""' => sub { $_[0]->id };
 
+BEGIN {
+  if (!exists &legacy) {
+    my $v = $^V < 5.018;
+    *legacy = sub () { $v }
+  }
+}
+BEGIN{*m_parse_value = legacy ? *m_parse_value_old : *m_parse_value_re}
+BEGIN{*reset = legacy ? *m_reset_old : *m_reset}
+
 sub new
 {
   my $class = shift;
@@ -230,7 +239,7 @@ sub id { $_[0]{id} }
 sub args { %{$_[0]{args}} }
 sub args_str { $_[0]{args_str} }
 
-sub reset
+sub m_reset
 {
   my ($self, $s) = @_;
   my ($sid, %args);
@@ -266,7 +275,13 @@ sub reset
     my $gr = $_;
     join ',', map {
       my $val = $args{$gr}{$_};
-      "${gr}::$_=".join ' ', map {s/([\\ \$'",])/\\$1/gr =~ s/\n/\\n/gr =~ s/\t/\\t/gr} @$val
+      "${gr}::$_=".join ' ', map {
+        my $v = $_;
+        $v =~ s/([\\ \$'",])/\\$1/g;
+        $v =~ s/\n/\\n/g;
+        $v =~ s/\t/\\t/g;
+        $v
+      } @$val
     } sort keys %{$args{$gr}}
   } sort keys %args;
   $self->{id} .= ':'.$args_str if $args_str;
@@ -274,7 +289,59 @@ sub reset
   $self->{args_str} = $args_str;
 }
 
-sub m_parse_value
+sub m_reset_old
+{
+  local our ($vg, $vn, %args);
+  my ($self, $s) = @_;
+  my $sid;
+  use re 'eval';
+
+  my ($vg, $vn);
+  my $var_name = qr<(\w++)(?{$vn = $^N})>;
+  my $var_group = qr<(\w*)::(?{$vg = $^N})|(?{$vg = ''})>;
+  my $var = qr<$var_group$var_name>;
+  my $arg = qr<\s*+$var\s*+=\s*+
+    (
+      (?:
+        \\. |
+        [^\\,'"]++ |
+        '(?:[^\\']++|\\.)++' |
+        "(?:[^\\"]++|\\.)++"
+      )*+
+    )
+    (?{
+      $args{$vg}{$vn} = [$^N];
+    })
+  >x;
+  if (!($s =~ /^\s*([^:]+?) \s* (?: :(?:$arg(?:,$arg)*+)? )?$/x)) {
+    throw Exception => "wrong task specification '$s'";
+  }
+  while (my ($g, $cnt) = each %args) {
+    while (my ($v, $val) = each %$cnt) {
+      $args{$g}{$v} = [m_parse_value($val->[0])];
+    }
+  }
+  $self->{short_id} = $1;
+  $self->{id} = $1;
+  my $args_str = join ',', map {
+    my $gr = $_;
+    join ',', map {
+      my $val = $args{$gr}{$_};
+      "${gr}::$_=".join ' ', map {
+        my $v = $_;
+        $v =~ s/([\\ \$'",])/\\$1/g;
+        $v =~ s/\n/\\n/g;
+        $v =~ s/\t/\\t/g;
+        $v
+      } @$val
+    } sort keys %{$args{$gr}}
+  } sort keys %args;
+  $self->{id} .= ':'.$args_str if $args_str;
+  $self->{args} = \%args;
+  $self->{args_str} = $args_str;
+}
+
+sub m_parse_value_re
 {
   my $val_str = shift;
   my @ret;
@@ -299,6 +366,51 @@ sub m_parse_value
   my $value = qr<^(?:$space|$normal_word|$q_str|$qq_str)*+$>;
   $val_str =~ /$value/ or throw Exception => "syntax error in string '$val_str'";
   @ret
+}
+
+sub m_parse_value_old
+{
+  my $val_str = shift;
+  my @ret;
+  my $do_concat = 0;
+  my $add_word = sub { $do_concat ? $ret[-1] .= $_[0] : push @ret, $_[0]; $do_concat = 1 };
+  local $_ = $val_str;
+  while ($_ ne '') {
+    if (s/(?:\s++|#.*|\r?\n)\r?\n?//s) {
+      # space
+      $do_concat = 0;
+    }
+    elsif (s/((?:[^\\\'"# \t\n]|\\(?:.|$))++)//s) {
+      # normal word
+      &$add_word(m_interpolate_str($1));
+    }
+    elsif (s/'((?:[^\\']|\\.)*+)'//s) {
+      # q_str
+      &$add_word(m_normalize_str($1));
+    }
+    elsif (s/"((?:[^\\"]|\\.)*+)"//s) {
+      # qq_str
+      &$add_word(m_interpolate_str($1));
+    }
+    else {
+      throw Exception => "syntax error in string '$val_str'"
+    }
+  }
+  @ret
+}
+
+sub m_interpolate_str
+{
+  my $str = shift;
+  $str =~ s/\\(n)|\\(t)|\\(.)/$1 ? "\n" : $2 ? "\t" : $3/ge;
+  $str
+}
+
+sub m_normalize_str
+{
+  my $str = shift;
+  $str =~ s/\\([\\\$'" \t])/$1/g;
+  $str
 }
 
 1;
