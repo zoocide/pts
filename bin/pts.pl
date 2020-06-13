@@ -91,4 +91,7 @@ defined $num_procs && $num_procs <= 0 and die "the number of workers should be a
 {my $v = $args->is_opt('no_mce'); *{no_mce} = sub () { $v } }
 
 ## load module with constants enabled ##
-require 'pts-main.pm';
+my $r = do 'pts-main.pm';
+die $@ if $@;
+die "could not do 'pts-main.pm': $!" if !defined $r;
+$r
