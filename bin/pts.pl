@@ -2,8 +2,8 @@
 use strict;
 #BEGIN { use Carp; $SIG{__WARN__} = sub {confess}; }
 use FindBin;
-use lib "$FindBin::Bin/../modules";
-use lib "$FindBin::Bin/../modules/external";
+use lib "$FindBin::RealBin/../modules";
+use lib "$FindBin::RealBin/../modules/external";
 our $VERSION;
 BEGIN { $VERSION = v0.5.0; }
 use PtsConfig;
