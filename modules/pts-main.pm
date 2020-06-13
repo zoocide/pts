@@ -38,7 +38,7 @@ my ($process_func, $process_func_descr) =
     !$has_parallel ? (\&process_tasks_seq              => 'sequentially'      )
   : use_mce        ? (\&ParallelWithMCE::process_tasks => 'MCE'               )
   : use_threads    ? (\&ParallelWithThreads::process_tasks => 'threads'       )
-  :                  (\&process_tasks                  => 'threads-like forks');
+  :                (\&ParallelWithForks::process_tasks => 'threads-like forks');
 dbg1 and dprint("processing method: $process_func_descr");
 my $stats = $process_func->($prepared);
 my $all     = $stats->{all}    || [];
