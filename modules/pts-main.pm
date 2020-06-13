@@ -12,6 +12,7 @@ use constant use_threads => !use_mce && $^O eq 'MSWin32' && require ParallelWith
 use if !use_mce && !use_threads, 'ParallelWithForks';
 
 ## obtain tasks to execute ##
+dbg2 and dprint("load tasks");
 my @tasks = map { -f $_ ? load_task_set($db, $_) : $db->new_task($_) }
                 @{$args->arg('taskset')};
 
@@ -26,6 +27,7 @@ my $start_time = 0;
 $start_time = time if dbg1;
 
 ## load plugins ##
+dbg2 and dprint("load plugins");
 load_plugins(@tasks);
 
 ## construct task sequence ##

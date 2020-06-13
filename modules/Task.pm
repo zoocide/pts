@@ -15,6 +15,13 @@ BEGIN{
   };
 }
 
+## debug stuff ##
+our $dprint_prefix = __PACKAGE__.':';
+BEGIN{*dprint = sub { print map "DEBUG:$dprint_prefix $_\n", split /\n/, join '', @_ } if !exists &dprint}
+BEGIN{*dbg_level = sub () { 0 } if !exists &dbg_level}
+use constant dbg1 => dbg_level > 0;
+use constant dbg2 => dbg_level > 1;
+
 =head1 SYNOPSIS
 
   my $task = Task->new($Task_ID_obj, 'task.conf', 'task/data/dir');
@@ -44,6 +51,7 @@ BEGIN{
 sub new
 {
   my $self = bless {}, shift;
+  dbg1 and dprint("new(@_)");
   $self->init(@_);
   $self
 }
@@ -137,6 +145,7 @@ sub get_vars
 sub init
 {
   my ($self, $id, $filename, $data_dir) = @_;
+  dbg2 and local $dprint_prefix = $dprint_prefix.'init:';
   croak "$id is not a Task::ID object" if !blessed($id) || !$id->isa('Task::ID');
   $self->{id} = $id;
   $self->{index} = -1;
@@ -158,6 +167,7 @@ sub init
     }
     ## load task ##
     $conf->skip_unrecognized_lines(1);
+    dbg2 and dprint("load config file '$filename'");
     $conf->load;
 
     $self->{ conf } = $conf;

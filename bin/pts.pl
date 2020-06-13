@@ -6,6 +6,8 @@ use lib "$FindBin::RealBin/../modules";
 use lib "$FindBin::RealBin/../modules/external";
 our $VERSION;
 BEGIN { $VERSION = v0.5.0; }
+BEGIN{ *Task::dbg_level = sub () { 0 } }
+BEGIN{ *TaskDB::dbg_level = sub () { 0 } }
 use PtsConfig;
 use CmdArgs;
 use CmdArgs::BasicTypes;

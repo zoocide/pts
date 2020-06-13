@@ -5,6 +5,13 @@ use File::Spec::Functions qw(catfile);
 use Exceptions;
 use Task;
 
+## debug stuff ##
+our $dprint_prefix = __PACKAGE__.':';
+BEGIN{*dprint = sub { print map "DEBUG:$dprint_prefix $_\n", split /\n/, join '', @_ } if !exists &dprint}
+BEGIN{*dbg_level = sub () { 0 } if !exists &dbg_level}
+use constant dbg1 => dbg_level > 0;
+use constant dbg2 => dbg_level > 1;
+
 =head1 SYNOPSIS
 
   my $db = TaskDB->new('tasks_directory', ...);
@@ -41,13 +48,17 @@ sub all_task_ids { keys %{$_[0]{task_files}} }
 sub new_task
 {
   my $self = shift;
+  dbg1 and dprint("new_task($_[0])");
 
   ## load task ##
+  dbg2 and local $dprint_prefix = $dprint_prefix.'new_task:';
+  dbg2 and dprint("make ID");
   my $tid = Task::ID->new($_[0]);
   my $id = $tid->id;
   my $short_id = $tid->short_id;
   exists $self->{task_files}{$short_id} || throw Exception => "unknown task '$short_id'";
   my ($fname, $data_dir) = @{$self->{task_files}{$short_id}}{qw(filename data_dir)};
+  dbg2 and dprint("make new Task");
   my $task = Task->new($tid, $fname, $data_dir);
   push @{$self->{tasks}{$id}}, $task;
   $task
