@@ -34,6 +34,7 @@ sub process_tasks
   dbg1 and dprint("max_par_workers   = $max_par_workers");
   dbg1 and dprint("number_of_workers = $nworkers");
   our %stats = ();
+  return \%stats if !%chunks;
   MCE->new(
     user_tasks => [
       {
