@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(PTS VERSION 0.5.1)
+project(PTS VERSION 0.6.0 LANGUAGES)
 
 set(PTS_INSTALL_DIR ${CMAKE_SOURCE_DIR} CACHE PATH "The directory where PTS will be installed.")
 
