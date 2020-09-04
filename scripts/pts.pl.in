@@ -1,4 +1,4 @@
-#!/bin/env perl
+#!@PERL_EXECUTABLE@
 use strict;
 #BEGIN { use Carp; $SIG{__WARN__} = sub {confess}; }
 use FindBin;

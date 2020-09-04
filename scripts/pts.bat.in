@@ -1,0 +1,2 @@
+@echo off
+@PERL_EXECUTABLE@ @PTS_PL@ %*
