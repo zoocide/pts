@@ -132,7 +132,9 @@ sub load_task_set
     my @sdirs = m_dirs($short_id);
     if (@sdirs && !file_name_is_absolute($short_id)) {
       ## a relative path specified ##
-      $s = canonpath(catfile($cur_dir, $s));
+      if ($cur_dir ne '.' || @sdirs>1 || $sdirs[0] ne '.') {
+        $s = canonpath(catfile($cur_dir, $s));
+      }
     }
 
     ## try to load the task ##
