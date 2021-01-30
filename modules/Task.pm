@@ -206,6 +206,7 @@ sub reload_config
 
 
 package Task::ID;
+use File::Spec::Functions qw(splitdir);
 use Exceptions;
 use overload '""' => sub { $_[0]->id };
 
@@ -224,8 +225,10 @@ sub new
 
   my $self = bless {
     # example:
-    # short_id => 'short_id', #corresponding file short_id.conf
-    # id => 'short_id:arg1=value1,arg2=e1 e2',
+    # short_id => 'a/path/task_name', #corresponding file a/path/task_name.conf
+    # basename => 'task_name',        #corresponding file a/path/task_name.conf
+    # dirs  => ['a', 'path'],         #corresponding file a/path/task_name.conf
+    # id => 'a/path/task_name:arg1=value1,arg2=e1 e2',
     # args => {'' => {arg1 => ['value1'], arg2=['e1', 'e2']}},
     # args_str => 'arg1=value1,arg2=e1 e2',
   }, $class;
@@ -234,6 +237,8 @@ sub new
 }
 
 sub short_id { $_[0]{short_id} }
+sub basename { $_[0]{basename} }
+sub dirs { @{$_[0]{dirs}} }
 sub id { $_[0]{id} }
 # my %args = $tid->args; #< ('gr_1' => {arg1 => ['elm 1',...],...},...)
 sub args { %{$_[0]{args}} }
@@ -264,13 +269,14 @@ sub m_reset
   if (!($s =~ /^\s*([^:]+?) \s* (?: :(?:$arg(?:,$arg)*+)? )?$/x)) {
     throw Exception => "wrong task specification '$s'";
   }
+  my $short_id = $1;
   while (my ($g, $cnt) = each %args) {
     while (my ($v, $val) = each %$cnt) {
       $args{$g}{$v} = [m_parse_value($val->[0])];
     }
   }
-  $self->{short_id} = $1;
-  $self->{id} = $1;
+  $self->{short_id} = $short_id;
+  $self->{id} = $short_id;
   my $args_str = join ',', map {
     my $gr = $_;
     join ',', map {
@@ -287,6 +293,9 @@ sub m_reset
   $self->{id} .= ':'.$args_str if $args_str;
   $self->{args} = \%args;
   $self->{args_str} = $args_str;
+  my @dirs = splitdir($short_id);
+  $self->{basename} = pop @dirs;
+  $self->{dirs} = \@dirs;
 }
 
 sub m_reset_old
@@ -316,13 +325,14 @@ sub m_reset_old
   if (!($s =~ /^\s*([^:]+?) \s* (?: :(?:$arg(?:,$arg)*+)? )?$/x)) {
     throw Exception => "wrong task specification '$s'";
   }
+  my $short_id = $1;
   while (my ($g, $cnt) = each %args) {
     while (my ($v, $val) = each %$cnt) {
       $args{$g}{$v} = [m_parse_value($val->[0])];
     }
   }
-  $self->{short_id} = $1;
-  $self->{id} = $1;
+  $self->{short_id} = $short_id;
+  $self->{id} = $short_id;
   my $args_str = join ',', map {
     my $gr = $_;
     join ',', map {
@@ -339,6 +349,9 @@ sub m_reset_old
   $self->{id} .= ':'.$args_str if $args_str;
   $self->{args} = \%args;
   $self->{args_str} = $args_str;
+  my @dirs = splitdir($short_id);
+  $self->{basename} = pop @dirs;
+  $self->{dirs} = \@dirs;
 }
 
 sub m_parse_value_re

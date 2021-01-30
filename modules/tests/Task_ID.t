@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 use lib '..', '../external';
-use Test::More tests => 28;
+use Test::More tests => 44;
 use File::Temp qw(tempfile);
 
 BEGIN{ use_ok('Task') }
@@ -11,11 +11,15 @@ BEGIN{ use_ok('Task') }
 my $id = Task::ID->new('task');
 isa_ok($id, 'Task::ID');
 is($id->short_id, 'task');
+is($id->basename, 'task');
+is_deeply([$id->dirs], []);
 is($id->id, 'task');
 is_deeply({$id->args}, {});
 eval { $id->reset('test : arg1 = v, ::arg2 = a b, gr::arg3 = "hello world" ') };
 is (defined $@ ? "$@" : '', '');
 is($id->short_id, 'test');
+is($id->basename, 'test');
+is_deeply([$id->dirs], []);
 is("$id", $id->id);
 is($id->id, 'test:::arg1=v,::arg2=a b,gr::arg3=hello\ world');
 is($id->args_str, '::arg1=v,::arg2=a b,gr::arg3=hello\ world');
@@ -35,6 +39,8 @@ $id->reset(q( task : a1 = a'bc' "d e f"${foo}, a2 = '\n\t'\' "\n\t", a3 =)."'abc
 };
 is (defined $@ ? "$@" : '', '');
 is($id->short_id, 'task');
+is($id->basename, 'task');
+is_deeply([$id->dirs], []);
 is($id->id, qq(task:::a1=abc d\\ e\\ f\\\${foo},::a2=\\\\n\\\\t\\' \\n\\t,::a3=abc\\ndef\\n));
 is($id->args_str, qq(::a1=abc d\\ e\\ f\\\${foo},::a2=\\\\n\\\\t\\' \\n\\t,::a3=abc\\ndef\\n));
 is_deeply({$id->args}, {
@@ -49,6 +55,8 @@ is_deeply({$id->args}, {
 eval { $id->reset($id->id) };
 is (defined $@ ? "$@" : '', '');
 is($id->short_id, 'task');
+is($id->basename, 'task');
+is_deeply([$id->dirs], []);
 is("$id", $id->id);
 is($id->id, qq(task:::a1=abc d\\ e\\ f\\\${foo},::a2=\\\\n\\\\t\\' \\n\\t,::a3=abc\\ndef\\n));
 is($id->args_str, qq(::a1=abc d\\ e\\ f\\\${foo},::a2=\\\\n\\\\t\\' \\n\\t,::a3=abc\\ndef\\n));
@@ -64,6 +72,8 @@ is_deeply({$id->args}, {
 eval { $id->reset('t:a= ,v=') };
 is (defined $@ ? "$@" : '', '');
 is($id->short_id, 't');
+is($id->basename, 't');
+is_deeply([$id->dirs], []);
 is("$id", $id->id);
 is($id->id, 't:::a=,::v=');
 is($id->args_str, '::a=,::v=');
@@ -73,3 +83,12 @@ is_deeply({$id->args}, {
     v => [],
   },
 });
+
+## check file path ##
+eval { $id->reset('a/path/t:a= ,v=') };
+is (defined $@ ? "$@" : '', '');
+is($id->short_id, 'a/path/t');
+is($id->basename, 't');
+is_deeply([$id->dirs], [qw(a path)]);
+is("$id", $id->id);
+is($id->id, 'a/path/t:::a=,::v=');
