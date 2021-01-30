@@ -462,7 +462,7 @@ Method returns path to the directory containing task configuration file.
 
 =item set_name($name)
 
-Set task display name.
+Set the task display name.
 It does not affect variable I<name>.
 
 =item set_index($ind)
@@ -471,8 +471,8 @@ Set task index.
 
 =item make_data_dir($dir)
 
-Creates task data directory.
-If C<$dir> is specified, method changes task data directory to that value.
+Creates the task data directory.
+If C<$dir> is specified, method changes the task data directory to that value.
 
 =item clear_data_dir()
 
@@ -480,7 +480,7 @@ Delete all content of the task data directory.
 
 =item has_var($group_name, $var_name)
 
-Return true if configuration file contains specified variable.
+Return true if configuration file contains the specified variable.
 
 =item get_var($group_name, $var_name, $default_value)
 
@@ -490,17 +490,17 @@ It raises exception when variable is not set and $default_value is not specified
 
 =item get_arr($group_name, $var_name, @default_value)
 
-Return list value of the specified variable.
+Return a list value of the specified variable.
 Method returns @defualt_value if the variable is not set.
 Also, default value can be specified as a list reference, e.g
 C<$task->get_arr('', 'var', [])>.
-It is useful to specify empty list as default value.
+It is useful to specify empty list as a default value.
 Method raises exception when variable is not set and $default_value is not specified.
 
 =item reload_config(SCHEME)
 
 Reload config file with the specified SCHEME.
-SCHEME could be a ConfigFileScheme object or scheme specification, e.g.:
+SCHEME could be a ConfigFileScheme object or a scheme specification, e.g.:
 
 C<< $task->reload_config(multiline => 1, ...); >>
 
