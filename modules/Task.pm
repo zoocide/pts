@@ -159,7 +159,7 @@ sub init
     $conf = ConfigFile->new($filename, required => {'' => ['plugin']});
     ## set name ##
     $conf->set_group('');
-    $conf->set_var('name', $id->short_id);
+    $conf->set_var('name', $id->basename);
     ## set task arguments ##
     for (my ($gr, $vars) = $id->args) {
       $conf->set_group($gr);
@@ -193,7 +193,7 @@ sub reload_config
   my $conf = ConfigFile->new($self->{filename}, $scheme);
   ## set name ##
   $conf->set_group('');
-  $conf->set_var('name', $self->{id}->short_id);
+  $conf->set_var('name', $self->{id}->basename);
   ## set task arguments ##
   for (my ($gr, $vars) = $self->{id}->args) {
     $conf->set_group($gr);
