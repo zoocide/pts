@@ -1,5 +1,6 @@
 use strict;
 use warnings;
+use File::Spec::Functions qw(catfile splitdir canonpath file_name_is_absolute);
 use ForkedOutput;
 
 our $db;
@@ -88,9 +89,26 @@ sub dprint
   print "DEBUG: $_\n" for split /\n/, join '', @_;
 }
 
+sub m_dirs
+{
+  my $fname = shift;
+  my @dirs = splitdir($fname);
+  pop @dirs;
+  @dirs
+}
+
 sub load_task_set
 {
-  my ($db, $fname) = @_;
+  my $db = shift;
+  my $fname = shift;
+  my $cur_dir = shift // '.';
+
+  if (my @dirs = m_dirs($fname)) {
+    $cur_dir = file_name_is_absolute($fname)
+             ? catfile(@dirs)
+             : canonpath(catfile($cur_dir, @dirs));
+  }
+
   dbg1 and dprint("load task set from file $fname");
   my @ret;
   open(my $f, '<', $fname) || throw OpenFileError => $fname;
@@ -105,6 +123,19 @@ sub load_task_set
     $s =~ s/^\s*(?:#.*)?//;
     next if !$s;
     $s =~ s/^\\([#\\])/$1/; #< rules 2 and 3
+
+    ## get a filename from the specification string ##
+    my $short_id = $s;
+    $short_id =~ s/\s*:(?:[^\\]|$).*//;
+
+    ## set the path relative to the  $cur_dir ##
+    my @sdirs = m_dirs($short_id);
+    if (@sdirs && !file_name_is_absolute($short_id)) {
+      ## a relative path specified ##
+      $s = canonpath(catfile($cur_dir, $s));
+    }
+
+    ## try to load the task ##
     try { push @ret, $db->new_task($s) }
     catch { throw TextFileError => $fname, $ln, $@ };
   }
