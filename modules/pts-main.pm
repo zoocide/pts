@@ -215,12 +215,12 @@ sub process_task
   dbg1 and $o->push('----- ', $task->fullname, " -----\n");
   dbg1 and $task->set_debug(1);
   dbg1 and $task->DEBUG_RESET('main_task_timer');
-  my ($res, $msg);
+  my ($res, @msg);
   try {
     $res = ('Plugins::'.$task->plugin)->process_wrp($o, $task, $db);
   }
   catch {
-    $msg = format_msg($@);
+    push @msg, format_msg($@);
     $res = 0;
   };
   dbg1 and $task->DEBUG_T('main_task_timer', 'task \''.$task->fullname.'\' finished');
@@ -233,10 +233,11 @@ sub process_task
   } elsif ($res) {
     $status = 'ok.............';
   } else {
-    $status = 'failed ['.$task->id.']........';
+    push @msg, '# task failed ['.$task->id."]\n";
+    $status = 'not ok.........';
     push @{$stats->{failed}}, $task;
   }
-  $o->push((defined $msg ? $msg : ()), $status, $task->fullname, "\n") if !$res || !quiet;
+  $o->push(@msg, $status, $task->fullname, "\n") if !$res || !quiet;
 }
 
 # my $stats = process_tasks_seq(\@prepared_tasks);
