@@ -212,7 +212,7 @@ sub m_sleep
 sub process_task
 {
   my ($task, $o, $stats) = @_;
-  dbg1 and $o->push('----- ', $task->name, " -----\n");
+  dbg1 and $o->push('----- ', $task->fullname, " -----\n");
   dbg1 and $task->set_debug(1);
   dbg1 and $task->DEBUG_RESET('main_task_timer');
   my ($res, $msg);
@@ -223,7 +223,7 @@ sub process_task
     $msg = format_msg($@);
     $res = 0;
   };
-  dbg1 and $task->DEBUG_T('main_task_timer', 'task \''.$task->name.'\' finished');
+  dbg1 and $task->DEBUG_T('main_task_timer', 'task \''.$task->fullname.'\' finished');
 
   push @{$stats->{all}}, $task;
   my $status;
@@ -236,7 +236,7 @@ sub process_task
     $status = 'failed ['.$task->id.']........';
     push @{$stats->{failed}}, $task;
   }
-  $o->push((defined $msg ? $msg : ()), $status, $task->name, "\n") if !$res || !quiet;
+  $o->push((defined $msg ? $msg : ()), $status, $task->fullname, "\n") if !$res || !quiet;
 }
 
 # my $stats = process_tasks_seq(\@prepared_tasks);

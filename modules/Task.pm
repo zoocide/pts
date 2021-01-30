@@ -58,11 +58,14 @@ sub new
 
 sub id     { $_[0]{id} }
 sub name   { $_[0]{name} }
+sub name_prefix { $_[0]{name_prefix} }
+sub fullname { $_[0]{name_prefix}.$_[0]{name} }
 sub index  { $_[0]{index} }
 sub plugin { $_[0]{plugin} }
 sub data_dir { $_[0]{data_dir} }
 sub task_dir { $_[0]{task_dir} }
 sub set_name { $_[0]{name} = $_[1] }
+sub set_name_prefix { $_[0]{name} = $_[1] }
 sub set_debug { $_[0]{debug} = $_[1] }
 sub set_index { $_[0]{index} = $_[1] }
 
@@ -154,6 +157,7 @@ sub init
   $self->{data_dir} = $data_dir;
   my @task_path = splitdir($filename);
   $self->{task_dir} = catdir(@task_path[0..$#task_path-1]);
+  $self->{name_prefix} = $id->dirs ? join('/', $id->dirs).'/' : '';
   my $conf;
   try{
     $conf = ConfigFile->new($filename, required => {'' => ['plugin']});
