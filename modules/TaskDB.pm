@@ -96,7 +96,7 @@ sub add_tasks_dir
 
   for my $tname (readdir $d){
     my $fname = catfile($dir, $tname);
-    next if $tname !~ s/\.conf$//i;
+    next if $tname !~ s/\.conf$//i || !$tname;
 
     $self->{task_files}{$tname} = {
       filename => $fname,
