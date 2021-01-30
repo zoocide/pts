@@ -270,7 +270,7 @@ sub m_reset
       $args{$vg}{$vn} = [$^N];
     })
   >x;
-  if (!($s =~ /^\s*([^:]+?) \s* (?: :(?:$arg(?:,$arg)*+)? )?$/x)) {
+  if (!($s =~ /^\s*([^:]+?)(?:\.conf)? \s* (?: :(?:$arg(?:,$arg)*+)? )?$/x)) {
     throw Exception => "wrong task specification '$s'";
   }
   my $short_id = $1;
@@ -326,7 +326,7 @@ sub m_reset_old
       $args{$vg}{$vn} = [$^N];
     })
   >x;
-  if (!($s =~ /^\s*([^:]+?) \s* (?: :(?:$arg(?:,$arg)*+)? )?$/x)) {
+  if (!($s =~ /^\s*([^:]+?)(?:\.conf)? \s* (?: :(?:$arg(?:,$arg)*+)? )?$/x)) {
     throw Exception => "wrong task specification '$s'";
   }
   my $short_id = $1;

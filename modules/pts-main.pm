@@ -14,7 +14,7 @@ use if !use_mce && !use_threads, 'ParallelWithForks';
 
 ## obtain tasks to execute ##
 dbg2 and dprint("load tasks");
-my @tasks = map { -f $_ ? load_task_set($db, $_) : $db->new_task($_) }
+my @tasks = map { is_task_set($_) ? load_task_set($db, $_) : $db->new_task($_) }
                 @{$args->arg('taskset')};
 
 ## open file $failed_fname ##
@@ -95,6 +95,12 @@ sub m_dirs
   my @dirs = splitdir($fname);
   pop @dirs;
   @dirs
+}
+
+sub is_task_set
+{
+  my $spec = shift;
+  $spec !~ /.\.conf$/ && -f $spec
 }
 
 sub load_task_set
