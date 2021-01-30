@@ -1,9 +1,9 @@
 simple_2:ok
-ok.............simple_2
+ok............ simple_2
 foo:ok
-ok.............foo
+ok............ foo
 bar:ok
-ok.............bar
+ok............ bar
 
 statistics:
 num total    = 3

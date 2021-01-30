@@ -1,9 +1,9 @@
 ok
-ok.............simple_1
+ok............ simple_1
 ok
-ok.............simple_1
+ok............ simple_1
 simple_2:ok
-ok.............simple_2
+ok............ simple_2
 
 statistics:
 num total    = 3
