@@ -1,0 +1,4 @@
+tasks/task_2
+../examples/tasks/task_3
+./tasks/task_5: name = task number 5, content = 1 2 3 42
+
