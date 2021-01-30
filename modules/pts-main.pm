@@ -262,13 +262,13 @@ sub process_task
   push @{$stats->{all}}, $task;
   my $status;
   if ($res eq 'skipped') {
-    $status = 'skipped........';
+    $status = 'skipped....... ';
     push @{$stats->{skipped}}, $task;
   } elsif ($res) {
-    $status = 'ok.............';
+    $status = 'ok............ ';
   } else {
     push @msg, '# task failed ['.$task->id."]\n";
-    $status = 'not ok.........';
+    $status = 'not ok........ ';
     push @{$stats->{failed}}, $task;
   }
   $o->push(@msg, $status, $task->fullname, "\n") if !$res || !quiet;
