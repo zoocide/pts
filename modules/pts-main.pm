@@ -104,6 +104,7 @@ sub load_task_set
     chomp $s;
     $s =~ s/^\s*(?:#.*)?//;
     next if !$s;
+    $s =~ s/^\\([#\\])/$1/; #< rules 2 and 3
     try { push @ret, $db->new_task($s) }
     catch { throw TextFileError => $fname, $ln, $@ };
   }
