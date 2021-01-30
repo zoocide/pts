@@ -54,14 +54,7 @@ sub new_task
   dbg2 and local $dprint_prefix = $dprint_prefix.'new_task:';
   dbg2 and dprint("make ID");
   my $tid = Task::ID->new($_[0]);
-  my $id = $tid->id;
-  my $short_id = $tid->short_id;
-  exists $self->{task_files}{$short_id} || throw Exception => "unknown task '$short_id'";
-  my ($fname, $data_dir) = @{$self->{task_files}{$short_id}}{qw(filename data_dir)};
-  dbg2 and dprint("make new Task");
-  my $task = Task->new($tid, $fname, $data_dir);
-  push @{$self->{tasks}{$id}}, $task;
-  $task
+  $self->m_mk_new_task($tid);
 }
 
 # my $task = $db->get_task($task_spec_str);
@@ -71,17 +64,13 @@ sub get_task
   my $self = shift;
   ## return loaded task ##
   return $self->{tasks}{$_[0]}[0] if exists $self->{tasks}{$_[0]};
+  dbg2 and local $dprint_prefix = $dprint_prefix.'new_task:';
   my $tid = Task::ID->new($_[0]);
   my $id = $tid->id;
   return $self->{tasks}{$id}[0] if exists $self->{tasks}{$id};
 
   ## load task ##
-  my $short_id = $tid->short_id;
-  exists $self->{task_files}{$short_id} || throw Exception => "unknown task '$short_id'";
-  my ($fname, $data_dir) = @{$self->{task_files}{$short_id}}{qw(filename data_dir)};
-  my $task = Task->new($tid, $fname, $data_dir);
-  push @{$self->{tasks}{$id}}, $task;
-  $task
+  $self->m_mk_new_task($tid)
 }
 
 # my @tasks = $db->get_tasks($tid);
@@ -117,6 +106,30 @@ sub add_tasks_dir
   closedir $d;
 
   push @{$self->{dirs}}, $dir;
+}
+
+sub m_mk_new_task
+{
+  my ($self, $tid) = @_;
+
+  ## load task ##
+  my $short_id = $tid->short_id;
+  my ($fname, $data_dir);
+  if (exists $self->{task_files}{$short_id}) {
+    ($fname, $data_dir) = @{$self->{task_files}{$short_id}}{qw(filename data_dir)};
+  }
+  elsif ($tid->dirs) {
+    $fname = "$short_id.conf";
+    -e $fname || throw Exception => "file '$fname' does not exist";
+    $data_dir = catfile($tid->dirs, 'data', $tid->basename);
+  }
+  else {
+    throw Exception => "unknown task '$short_id'";
+  }
+  dbg2 and dprint("make new Task");
+  my $task = Task->new($tid, $fname, $data_dir);
+  push @{$self->{tasks}{$tid->id}}, $task;
+  $task
 }
 
 1;
