@@ -1,0 +1,4 @@
+./task_t_1:name='## tasks/task.set ##'
+./task_t_2
+./task_t_2.conf
+../simple_1

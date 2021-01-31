@@ -1,0 +1,12 @@
+root simple_1:ok
+ok............ ./root simple_1
+simple_2:ok
+ok............ tasks/simple_2
+simple_2:ok
+ok............ ./tasks/simple_2
+
+statistics:
+num total    = 3
+num complete = 3
+num skipped  = 0
+num failed   = 0
