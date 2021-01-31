@@ -97,6 +97,13 @@ sub m_dirs
   @dirs
 }
 
+# 'filename' => './filename'
+sub rel_fname
+{
+  my $fname = shift;
+  $fname =~ /[\\\/]/ ? $fname : ('./'.$fname)
+}
+
 sub is_task_set
 {
   my $spec = shift;
@@ -141,7 +148,8 @@ sub load_task_set
     if (@sdirs && !file_name_is_absolute($short_id)) {
       ## a relative path specified ##
       if ($cur_dir ne '.' || @sdirs>1 || $sdirs[0] ne '.') {
-        $s = canonpath(catfile($cur_dir, $short_id)).$args;
+        $s = canonpath(catfile($cur_dir, $short_id));
+        $s = rel_fname($s).$args;
       }
     }
 
