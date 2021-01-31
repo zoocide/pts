@@ -132,14 +132,16 @@ sub load_task_set
 
     ## get a filename from the specification string ##
     my $short_id = $s;
-    $short_id =~ s/\s*:(?:[^\\]|$).*//;
+    my $args = ($short_id =~ s/\s*:(?:[^\\]|$).*//)
+             ? substr $s, $-[0]
+             : '';
 
     ## set the path relative to the  $cur_dir ##
     my @sdirs = m_dirs($short_id);
     if (@sdirs && !file_name_is_absolute($short_id)) {
       ## a relative path specified ##
       if ($cur_dir ne '.' || @sdirs>1 || $sdirs[0] ne '.') {
-        $s = canonpath(catfile($cur_dir, $s));
+        $s = canonpath(catfile($cur_dir, $short_id)).$args;
       }
     }
 
