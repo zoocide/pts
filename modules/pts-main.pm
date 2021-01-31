@@ -1,6 +1,7 @@
 use strict;
 use warnings;
-use File::Spec::Functions qw(catfile splitdir canonpath file_name_is_absolute);
+use Cwd qw(realpath);
+use File::Spec::Functions qw(catfile splitdir canonpath file_name_is_absolute abs2rel);
 use ForkedOutput;
 
 our $db;
@@ -148,7 +149,7 @@ sub load_task_set
     if (@sdirs && !file_name_is_absolute($short_id)) {
       ## a relative path specified ##
       if ($cur_dir ne '.' || @sdirs>1 || $sdirs[0] ne '.') {
-        $s = canonpath(catfile($cur_dir, $short_id));
+        $s = abs2rel(realpath(catfile($cur_dir, $short_id)));
         $s = rel_fname($s).$args;
       }
     }
