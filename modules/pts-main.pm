@@ -145,11 +145,13 @@ sub load_task_set
              : '';
 
     ## set the path relative to the  $cur_dir ##
-    my @sdirs = m_dirs($short_id);
+    my @sdirs = splitdir($short_id);
+    my $sfname = pop @sdirs;
     if (@sdirs && !file_name_is_absolute($short_id)) {
       ## a relative path specified ##
       if ($cur_dir ne '.' || @sdirs>1 || $sdirs[0] ne '.') {
-        $s = abs2rel(realpath(catfile($cur_dir, $short_id)));
+        $s = realpath(catfile($cur_dir, @sdirs));
+        $s = abs2rel(catfile($s, $sfname));
         $s = rel_fname($s).$args;
       }
     }
