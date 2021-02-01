@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Cwd qw(realpath);
-use File::Spec::Functions qw(catfile splitdir canonpath file_name_is_absolute abs2rel);
+use File::Spec::Functions qw(:ALL);
 use ForkedOutput;
 
 our $db;
@@ -90,19 +90,24 @@ sub dprint
   print "DEBUG: $_\n" for split /\n/, join '', @_;
 }
 
-sub m_dirs
+sub dirname
 {
-  my $fname = shift;
-  my @dirs = splitdir($fname);
-  pop @dirs;
-  @dirs
+  catpath((splitpath($_[0]))[0,1])
+}
+
+sub m_realpath
+{
+  my $r = realpath($_[0]);
+  file_name_is_absolute($_[0])
+    ? ($r // $_[0])
+    : (defined $r ? abs2rel($r) : canonpath($_[0]))
 }
 
 # 'filename' => './filename'
 sub rel_fname
 {
-  my $fname = shift;
-  $fname =~ /[\\\/]/ ? $fname : ('./'.$fname)
+  my ($disk, $dirs, $f) = splitpath($_[0]);
+  $disk eq '' && $dirs eq '' ? catpath('', curdir, $f) : $_[0]
 }
 
 sub is_task_set
@@ -115,13 +120,11 @@ sub load_task_set
 {
   my $db = shift;
   my $fname = shift;
-  my $cur_dir = shift // '.';
+  my $cur_dir = shift // curdir;
 
-  if (my @dirs = m_dirs($fname)) {
-    $cur_dir = file_name_is_absolute($fname)
-             ? catfile(@dirs)
-             : canonpath(catfile($cur_dir, @dirs));
-  }
+  $cur_dir = file_name_is_absolute($fname)
+           ? dirname($fname)
+           : canonpath(catdir($cur_dir, dirname($fname)));
 
   dbg1 and dprint("load task set from file $fname");
   my @ret;
@@ -145,14 +148,15 @@ sub load_task_set
              : '';
 
     ## set the path relative to the  $cur_dir ##
-    my @sdirs = splitdir($short_id);
-    my $sfname = pop @sdirs;
-    if (@sdirs && !file_name_is_absolute($short_id)) {
-      ## a relative path specified ##
-      if ($cur_dir ne '.' || @sdirs>1 || $sdirs[0] ne '.') {
-        $s = realpath(catfile($cur_dir, @sdirs));
-        $s = abs2rel(catfile($s, $sfname));
-        $s = rel_fname($s).$args;
+    if (!file_name_is_absolute($short_id)) {
+      my (undef, $t_dir, $t_fname) = splitpath($short_id);
+      if ($t_dir ne '') {
+        ## a relative path specified ##
+        # `length $t_dir > 2` - Is a reason for $t_dir to be optimized?
+        if ($cur_dir ne curdir || length $t_dir > 2) {
+          $t_dir = m_realpath(catdir($cur_dir, $t_dir));
+          $s = catpath('', $t_dir, $t_fname).$args;
+        }
       }
     }
 
