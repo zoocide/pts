@@ -1,6 +1,6 @@
 #!/bin/env perl
 use strict;
-use Test::More tests => 21;
+use Test::More tests => 23;
 use File::Spec::Functions qw(catfile);
 BEGIN { eval 'use Time::HiRes qw(time);' }
 
@@ -28,7 +28,8 @@ test_run('t_args', qw(simple_2 simple_2:name=foo simple_2:name=bar));
 
 ## test task specification by path ##
 test_run('path_task', qw(./simple_1 tasks/simple_2 ./tasks/simple_2));
-test_run('path_task_set', qw(task.set ./task.set tasks/task.set));
+test_run('path_task_set', qw(./task.set tasks/task.set));
+test_run('path_task_set_spec', qw(simple_2 ./simple_2));
 
 ## test command: parallel ##
 my @tasks = map "t_par:name=t$_,n=$_", 1..3;

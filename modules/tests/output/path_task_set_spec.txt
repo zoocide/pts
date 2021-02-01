@@ -1,0 +1,10 @@
+simple_2:ok
+ok............ simple_2
+from task-set ./simple_2:ok
+ok............ tasks/from task-set ./simple_2
+
+statistics:
+num total    = 2
+num complete = 2
+num skipped  = 0
+num failed   = 0

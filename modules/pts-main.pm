@@ -113,6 +113,8 @@ sub rel_fname
 sub is_task_set
 {
   my $spec = shift;
+  my ($disk, $dir) = splitpath($spec);
+  return 0 if $disk eq '' && $dir eq '';
   $spec !~ /.\.conf$/ && -f $spec
 }
 
