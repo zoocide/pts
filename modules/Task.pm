@@ -144,6 +144,18 @@ sub get_vars
   map $c->get_vars($gr, $_), @_;
 }
 
+# my @group_names = $task->group_names;
+sub group_names
+{
+  $_[0]{conf}->group_names
+}
+
+# my @var_names = $task->var_names('gr');
+sub var_names
+{
+  $_[0]{conf}->var_names($_[1])
+}
+
 # throws: Exceptions::List
 sub init
 {
