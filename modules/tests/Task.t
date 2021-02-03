@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 use lib '..', '../external';
-use Test::More tests => 1;
+use Test::More tests => 47;
 use File::Spec::Functions qw(catfile);
 use File::Path qw(remove_tree);
 
