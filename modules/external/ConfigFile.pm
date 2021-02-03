@@ -6,7 +6,7 @@ use Exceptions::OpenFileError;
 use ConfigFileScheme;
 
 use vars qw($VERSION);
-$VERSION = '0.5.1';
+$VERSION = '0.6.0';
 
 # TODO: allow change comment symbol to ;
 
@@ -54,7 +54,10 @@ ConfigFile - read and write configuration files aka '.ini'.
   ## save configuration file ##
   my $cf = ConfigFile->new($file_name);
   $cf->set_group('group');
-  $cf->set_var('var_name', @values);
+  $cf->set_var('var_name', @values);      #< set the $group::var_name variable.
+  $cf->set('group', 'var_name', @values); #< the same but not changing current group.
+  $cf->set_var('var2', @values);          #< set the $group::var2 variable.
+  $cf->unset('group', 'var_name');        #< remove the $group::var_name variable.
   $cf->save;
 
   --------
@@ -401,8 +404,12 @@ sub save
     my $gr = $self->{content}{$gr_name};
     print $f "\n[$gr_name]\n" if $gr_name;
     for (sort keys %$gr){
-      my $prefix = $self->{decl}->is_multiline($gr, $_) ? "\n  " : ' ';
-      print $f "$_ =", (map $prefix.m_shield_str($_), @{$gr->{$_}}), "\n";
+      if ($self->{decl}->is_multiline($gr_name, $_)) {
+        print $f "$_ @=", (map "\n  ".m_shield_str($_), @{$gr->{$_}}), "\n";
+      }
+      else {
+        print $f "$_ =", (map ' '.m_shield_str($_), @{$gr->{$_}}), "\n";
+      }
     }
   }
   close $f;
@@ -422,6 +429,18 @@ sub set_var_if_not_exists
 {
   $_[0]{content}{$_[0]{cur_group}}{$_[1]} = [@_[2..$#_]] if !exists $_[0]{content}{$_[0]{cur_group}}{$_[1]}
 }
+sub set
+{
+  my $gr = defined $_[1] ? $_[1] : $_[0]{cur_group};
+  $_[0]{content}{$gr}{$_[2]} = [@_[3..$#_]]
+}
+sub unset
+{
+  my $gr = defined $_[1] ? $_[1] : $_[0]{cur_group};
+  defined $_[2]
+    ? delete $_[0]{content}{$gr}{$_[2]}
+    : delete $_[0]{content}{$gr}
+}
 sub skip_unrecognized_lines
 {
   my $self = shift;
@@ -437,6 +456,9 @@ sub m_shield_str
   if ($ret =~ /\s|\n/) {
     $ret =~ s/([\\'])/\\$1/g;
     $ret = '\''.$ret.'\'';
+  }
+  elsif ($ret eq '') {
+    $ret = "''";
   }
   else {
     $ret =~ s/([\\'"\$#])/\\$1/g;
@@ -577,9 +599,20 @@ Set current group to the specified name.
 
 Assign @value to the variable from the current group.
 
+=item set('group', 'variable', @value)
+
+Assign @value to the I<$group::variable>. It does not change the current group.
+When the I<group> is C<undef>, set the variable from the current group.
+
+=item unset('group', 'variable')
+
+Remove the I<$group::variable>. It does not change the current group.
+When the I<group> is C<undef>, remove the variable from the current group.
+When the I<variable> is C<undef>, remove all variables from the group.
+
 =item save
 
-Write configuration into file.
+Write configuration into the file.
 
 =item erase
 
