@@ -156,6 +156,42 @@ sub var_names
   $_[0]{conf}->var_names($_[1])
 }
 
+# $task->set_predefined_var('gr', 'var', @value);
+sub set_predefined_var
+{
+  $_[0]{predefined}{$_[1]}{$_[2]} = [@_[3..$#_]]
+}
+#my $str_value = get_predefined_var('gr', 'var');
+sub get_predefined_var
+{
+  my $p = $_[0]{predefined};
+  exists $p->{$_[1]} && exists $p->{$_[1]}{$_[2]}
+    ? join(' ', @{$p->{$_[1]}{$_[2]}})
+    : undef
+}
+#my @value = get_predefined_arr('gr', 'var');
+sub get_predefined_arr
+{
+  my $p = $_[0]{predefined};
+  exists $p->{$_[1]} && exists $p->{$_[1]}{$_[2]}
+    ? @{$p->{$_[1]}{$_[2]}}
+    : undef
+}
+# $task->remove_predefined_var('gr', 'var');
+sub remove_predefined_var
+{
+  return if !exists $_[0]{predefined}{$_[1]};
+  delete $_[0]{predefined}{$_[1]}{$_[2]};
+}
+sub predefined_group_names
+{
+  keys %{$_[0]{predefined}}
+}
+sub predefined_var_names
+{
+  exists $_[0]{predefined}{$_[1]} ? keys %{$_[0]{predefined}{$_[1]}} : ()
+}
+
 # throws: Exceptions::List
 sub init
 {
@@ -170,6 +206,7 @@ sub init
   my @task_path = splitdir($filename);
   $self->{task_dir} = catdir(@task_path[0..$#task_path-1]);
   $self->{name_prefix} = $id->dirs ? join('/', $id->dirs).'/' : '';
+  $self->{predefined} = {};
   my $conf;
   try{
     $conf = ConfigFile->new($filename, required => {'' => ['plugin']});
@@ -210,6 +247,10 @@ sub reload_config
   ## set name ##
   $conf->set_group('');
   $conf->set_var('name', $self->{id}->basename);
+  ## set predefined variables ##
+  while (my ($gr, $vars) = each %{$self->{predefined}}) {
+    $conf->set($gr, $_, @{$vars->{$_}}) for keys %$vars;
+  }
   ## set task arguments ##
   for (my ($gr, $vars) = $self->{id}->args) {
     $conf->set_group($gr);
