@@ -8,7 +8,11 @@ use Exceptions::InternalError;
 
 use Carp;
 
-our $VERSION = '0.3.0';
+use constant {
+  dbg1 => defined &CmdArgs::DEBUG::ALL ? &CmdArgs::DEBUG::ALL : 0,
+};
+
+our $VERSION = '0.5.1';
 our @EXPORT_OK = qw(ptext);
 
 ## TODO: Add more tests (help and usage! messages).
@@ -25,6 +29,7 @@ our @EXPORT_OK = qw(ptext);
 ## TODO:+options: allow to specify variables references instead of subroutines.
 ## TODO:+allow to have '-parameter'
 ## TODO:+allow to specify '--filename=filename'
+## TODO:+add static variant of CmdArgs
 
 =head1 NAME
 
@@ -93,7 +98,68 @@ CmdArgs - Parse command line arguments and automate help message creation.
     $f = $args->opt('opt_1') if $args->is_opt('opt_1');
   }
 
+  ========================================
+  ## static usage of CmdArgs ##
+  use CmdArgs {
+    version => $version,
+    use_cases => ...
+    options => {
+      opt_1  => ['-f:Filename --filename', 'specify filename'],
+      verbose => ['-v', 'more verbose'],
+    },
+  };
+  # Throw errors as Exceptions::List if any occurred
+  CmdArgs->throw_errors;
+
+  # Statically optimized print. Perl will remove this line if verbose option is not specified.
+  print "something\n" if CmdArgs::OPT_verbose;
+  # CmdArgs::OPT_opt_1 is the constant contained specified filename or undefined otherwise
+  print CmdArgs::OPT_opt_1, "\n";
+
 =cut
+
+sub dprint
+{
+  print "DEBUG: CmdArgs: $_\n" for split /\n/, join '', @_;
+}
+
+our $object;
+
+sub import
+{
+  my $self = shift;
+  if (@_ == 1 && ref $_[0] eq 'HASH') {
+    dprint('compile time parsing of command line arguments is used') if dbg1;
+    my $h = $_[0];
+
+    ## parse specified options ##
+    my $version = delete local $h->{version};
+    croak "version parameter is not specified" if !defined $version;
+    $object = CmdArgs->declare($version, %$h);
+    eval { $object->parse };
+    my $errors = $@;
+
+    ## set static accessors ##
+    no strict 'refs';
+    *CmdArgs::throw_errors = sub () { die $errors if $errors };
+    for my $opt (keys %{$object->{options}}) {
+      my $v = $object->opt_or_default($opt);
+      *{'CmdArgs::OPT_'.$opt} = sub () { $v };
+    }
+    for my $arg (keys %{$object->{arguments}}) {
+      my $v = exists $object->{parsed}{args}{$arg}
+            ? $object->{parsed}{args}{$arg}
+            : undef;
+      *{'CmdArgs::ARG_'.$arg} = sub () { $v };
+    }
+    my $uc = $object->{parsed}{use_case};
+    *CmdArgs::USE_CASE = sub () { $uc };
+  }
+  else {
+    dprint('runtime parsing of command line arguments is used') if dbg1;
+    $self->export_to_level(1, undef, @_)
+  }
+}
 
 ###### PUBLIC FUNCTIONS ######
 
@@ -159,9 +225,11 @@ sub parse
 
   ## obtain @args array ##
   my @args = @_ ? split(/\s+/, $_[0]) : @ARGV;
+  dprint("parse string = '", join(' ', @args)."'") if dbg1;
 
   ## parse ##
   try{
+    # @wrp_iters = ([$uc_name, [$uc_sequence, []]], ...)
     my @wrp_iters = map { [$_, [$self->{use_cases}{$_}{sequence}, []]] }
                         keys %{$self->{use_cases}};
     while (@args){
@@ -199,6 +267,11 @@ sub parse
     $#wrp_iters > 0 && throw Exception => 'internal error: more then one use cases are suitable';
     $self->{parsed}{use_case} = $wrp_iters[0][0];
     $self->m_set_arg_names($wrp_iters[0][1]);
+    if (dbg1) {
+      dprint("use_case = $self->{parsed}{use_case}");
+      my $popts = $self->{parsed}{options};
+      dprint("option $_ = '$popts->{$_}'") for sort keys %$popts;
+    }
   }
   catch{ throw } 'Exceptions::CmdArgsInfo',
   make_exlist
@@ -365,12 +438,15 @@ sub help_custom_option
 # self structure
 # $self = bless {
 #   keys    => { $single_opt_key => $opt_name, },
+#   arguments => { $arg_name => 1 },
 #   options => {
-#     keys => [@keys],
-#     type => $type,  #< Type of the argument. It cortesponds to CmdArgs::Types::Type;
-#     descr => $description_str,
-#     action => $act,  #< action may be sub{} or scalar ref or array ref.
-#     arg_name => $argument_name_str,
+#     $opt_name => {
+#       keys => [@keys],
+#       type => $type,  #< Type of the argument. It corresponds to CmdArgs::Types::Type;
+#       descr => $description_str,
+#       action => $act,  #< action may be sub{} or scalar ref or array ref.
+#       arg_name => $argument_name_str,
+#     },
 #   },
 #   groups => {
 #     $group_name => [@opt_names],
@@ -447,7 +523,7 @@ sub m_use_case_msg
   for(my $seq = $uc->{sequence}; !m_is_p_empty($seq); m_move_next_p($seq)){
     my $cur = m_value_p($seq);
     if    ($cur->[0] eq 'group'){
-      $ret.= ' '.$cur->[1];
+      $ret.= ' '.($cur->[2] eq '~' ? "[$cur->[1]]" : $cur->[1]);
     }
     elsif ($cur->[0] eq 'mopt' ){
       my $o = $self->{options}{$cur->[1]};
@@ -599,9 +675,10 @@ sub m_init_defaults
   $self->{arrangement}{first_keys}{'--help'} = 'HELP';
   $self->{arrangement}{first_keys}{'--version'} = 'VERSION';
   $self->{use_cases}{main} = { use_case => 'OPTIONS args...',
-                               sequence => [['group', 'OPTIONS'],
-                                           [['arg','args','','','...'],
-                                           []]],
+                               sequence => [[['group', 'OPTIONS', ''], {}],
+                                           [[['arg','args','','','...'], {}],
+                                           [[['end'],{}],
+                                           []]]],
                                descr => ''};
   $self->{help}{params}{key_indent} = 2;
   $self->{help}{params}{line_indent} = 0;
@@ -832,11 +909,17 @@ sub m_use_case
   my @seq = split /\s+/, $use_case->[0];
 
   ## parse sequence ##
+  my %cur_opts;
   for my $i (0..$#seq){
     my $w = $seq[$i];
     if (exists $self->{groups}{$w}){
     ## options group ##
-      $seq[$i] = ['group', $w]; #< [type, group_name]
+      $seq[$i] = ['group', $w, '']; #< [type, group_name]
+    }
+    elsif ($w =~ /^~(\w+)$/ && exists $self->{groups}{$1}) {
+      ## any place oprtions group ##
+      $seq[$i] = ['group', $1, '~']; #< [type, group_name]
+      $cur_opts{$_} = 1 for @{$self->{groups}{$1}};
     }
     elsif ($w =~ /^(\w+)(:(.*?))?(\.\.\.)?(\?)?$/){
       my ($n, $t, $mult, $q) = ($1, $3, $4, $5);
@@ -850,15 +933,17 @@ sub m_use_case
       ## argument ##
         $self->m_check_type($t);
         $seq[$i] = ['arg', $n, $t, $q, $mult]; #<[type, arg_name, arg_type, can_absent, array]
+        $self->{arguments}{$n} = 1;
       }
     }
     else{
       throw Exception => "wrong use case '$name' spceification: syntax error in '$w'";
     }
+    $seq[$i] = [$seq[$i], {%cur_opts}] if $seq[$i];
   }
 
-  my $p_seq = [];
-  $p_seq = m_p_add($p_seq, $seq[-$_]) for 1..@seq;
+  my $p_seq = m_p_add([], [['end'],{%cur_opts}]);
+  $p_seq = m_p_add($p_seq, $_) for reverse @seq;
 
   ## return new use_case ##
   my $ret = {
@@ -975,22 +1060,39 @@ sub m_fwd_iter
 
   if ($atom->[0] eq 'opt'){
   # option #
+    my $occurred;
     for(my $seq = $iter->[0]; !m_is_p_empty($seq); m_move_next_p($seq)){
       my $cur = m_value_p($seq);
       if    ($cur->[0] eq 'group'){
         if (grep $atom->[1] eq $_, @{$self->{groups}{$cur->[1]}}){
         # group contains current option
           push @ret, [$seq, $iter->[1]];
+          $occurred = 1;
         }
         next;
       }
       elsif ($cur->[0] eq 'mopt'){
-        push @ret, [m_get_next_p($seq), $iter->[1]] if $atom->[1] eq $cur->[1];
+        if ($atom->[1] eq $cur->[1]) {
+          push @ret, [m_get_next_p($seq), $iter->[1]];
+          $occurred = 1;
+        }
+        elsif (!$occurred && m_is_opt_permitted($seq, $atom->[1])){
+          push @ret, [$seq, $iter->[1]];
+        }
         next if $cur->[2]; #< '?' is present
         last;
       }
-      elsif ($cur->[0] eq 'arg'){
-        next if $cur->[3]; #< '?' is present
+      elsif ($cur->[0] eq 'arg' && $cur->[3]){ #< '?' is presented
+        next;
+      }
+      elsif (!$occurred && m_is_opt_permitted($seq, $atom->[1])) {
+        push @ret, [$seq, $iter->[1]];
+        last;
+      }
+      elsif ($cur->[0] eq 'arg'){ #< '?' is not persented
+        last;
+      }
+      elsif ($cur->[0] eq 'end'){
         last;
       }
       else{
@@ -1010,7 +1112,7 @@ sub m_fwd_iter
         last;
       }
       elsif ($cur->[0] eq 'arg'){
-        my $present = !m_is_p_empty($iter->[1]) && m_value_p($iter->[1]) eq $cur;
+        my $present = !m_is_p_empty($iter->[1]) && m_parsed_value_p($iter->[1]) eq $cur;
         if (!$cur->[2] || eval{$self->m_check_arg($atom->[1], $cur->[2])}){
           push @ret, [$cur->[4] ? $seq : m_get_next_p($seq), m_p_add($iter->[1], $cur)];
         }
@@ -1019,6 +1121,9 @@ sub m_fwd_iter
           push @{$self->{parse}{failed_arg_checks}}, $@;
         }
         next if $cur->[3] || ($cur->[4] && $present);
+        last;
+      }
+      elsif ($cur->[0] eq 'end') {
         last;
       }
       else{
@@ -1039,9 +1144,12 @@ sub m_fwd_iter
         return ();
       }
       elsif ($cur->[0] eq 'arg'){
-        my $present = !m_is_p_empty($iter->[1]) && m_value_p($iter->[1]) eq $cur;
+        my $present = !m_is_p_empty($iter->[1]) && m_parsed_value_p($iter->[1]) eq $cur;
         next if $cur->[3] || ($cur->[4] && $present);
         return ();
+      }
+      elsif ($cur->[0] eq 'end'){
+        next;
       }
       else{
         throw InternalError => "wrong type '$cur->[0]' of sequence";
@@ -1056,11 +1164,14 @@ sub m_fwd_iter
   @ret
 }
 
+# p = [[$value, {%global_options}], $next]
 sub m_is_p_empty  { @{$_[0]} == 0 }                   #< $bool = m_is_p_empty($p);
 sub m_move_next_p { $_[0] = $_[0][1] }                #< m_move_next_p($p);
 sub m_get_next_p  { $_[0][1] }                        #< $next = m_get_next_p($p);
-sub m_value_p     { $_[0][0] }                        #< $value = m_value_p($p);
+sub m_value_p     { $_[0][0][0] }                     #< $value = m_value_p($p);
+sub m_parsed_value_p { $_[0][0] }
 sub m_p_add       { [$_[1], $_[0]] }                  #< $new_p = m_p_add($p, $value)
+sub m_is_opt_permitted { exists ${$_[0][0][1]}{$_[1]} }  #< $bool = m_is_opt_permitted($p, $opt_name);
 
 # m_dbg($condition, caller_depth);
 sub m_dbg
@@ -1089,7 +1200,7 @@ sub m_set_arg_names
 
   ## set arguments values ##
   for (my $p = $iter->[1]; !m_is_p_empty($p); m_move_next_p($p)){
-    my $cur = m_value_p($p);
+    my $cur = m_parsed_value_p($p);
     $cur->[0] eq 'arg' || throw InternalError => "wrong type '$cur->[0]' of arguments sequence";
     if ($cur->[4]){
     # array #
@@ -1110,6 +1221,55 @@ sub init { (my $self = shift)->SUPER::init(@_); chomp($self->{msg}); }
 
 1;
 __END__
+
+=head1 DESCRIPTION
+
+CmdArgs can be used in two ways: static and dynamic.
+Dynamic usage means, that you create an object with L</declare> method and
+then apply L</parse> method to prase the string or command line arguments. For example:
+
+  my $args = CmdArgs->declare('v1.0', options => ...);
+  $args->parse;
+
+Next you can call any methods to obtain an option or argument or do whatever you want.
+
+Another way ot use CmdArgs is compile-time parsing of command line arguments.
+It has advantages in optimization, cause parsed options and arguments are
+represented by constant functions. For example:
+
+  use CmdArgs {
+    version => 'v1.0',
+    use_cases => [main => ['OPTIONS', '']],
+    options => { debug => ['-D'] },
+  };
+  CmdArgs->throw_errors;
+  print "debug option is on\n" if CmdArgs::OPT_debug;
+
+Static use case creates those functions:
+
+=over
+
+=item C<CmdArgs::OPT_*>
+
+Where * is for every option specified in parse declaration.
+This function returns value of the corresponding option or C<undef> if option
+is not provided to the script.
+
+=item C<CmdArgs::ARG_*>
+
+Where * is for every argument specified in parse declaration.
+This function returns value of the corresponding argument or C<undef> if it
+is not provided to the script.
+
+=item C<CmdArgs::USE_CASE>
+
+It returns current parsed use case name.
+
+=item C<CmdArgs::throw_errors>
+
+It dies with error message if any errors occurred during parse.
+
+=back
 
 =head1 METHODS
 
@@ -1182,6 +1342,7 @@ C<atom = group_name | opt_name | arg_name>
 
 C<group_name> - means that at this place an options from specified
 group can appear.
+C<~group_name> can be used to make options from the group to appear at any place after this position.
 
 C<opt_name> - option I<opt_name> must be placed here.
 

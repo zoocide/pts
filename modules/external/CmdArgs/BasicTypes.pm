@@ -38,6 +38,26 @@ sub check
       or throw Exception => "'$_[1]' is not an integer number."
 }
 
+package CmdArgs::Types::PositiveInt;
+use Exceptions;
+use Scalar::Util qw(looks_like_number);
+
+sub check
+{
+  looks_like_number($_[1]) && int($_[1]) == $_[1] && $_[1] > 0
+      or throw Exception => "'$_[1]' is not a positive integer number."
+}
+
+package CmdArgs::Types::NonnegativeInt;
+use Exceptions;
+use Scalar::Util qw(looks_like_number);
+
+sub check
+{
+  looks_like_number($_[1]) && int($_[1]) == $_[1] && $_[1] >= 0
+      or throw Exception => "'$_[1]' is not a non-negative integer number."
+}
+
 
 package CmdArgs::Types::Real;
 use Exceptions;
