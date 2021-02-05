@@ -38,6 +38,7 @@ sub short_id { $_[0]{short_id} }
 sub basename { $_[0]{basename} }
 sub dirs { @{$_[0]{dirs}} }
 sub id { $_[0]{id} }
+sub has_args { !!%{$_[0]{args}} }
 # my %args = $tid->args; #< ('gr_1' => {arg1 => ['elm 1',...],...},...)
 sub args { %{$_[0]{args}} }
 sub args_str { $_[0]{args_str} }
