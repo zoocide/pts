@@ -265,6 +265,7 @@ sub reload_config
 package Task::ID;
 use File::Spec::Functions qw(splitdir);
 use Exceptions;
+use Exporter 'import';
 use overload '""' => sub { $_[0]->id };
 
 BEGIN {
@@ -275,6 +276,10 @@ BEGIN {
 }
 BEGIN{*m_parse_value = legacy ? *m_parse_value_old : *m_parse_value_re}
 BEGIN{*reset = legacy ? *m_reset_old : *m_reset}
+
+our @EXPORT_OK = qw(
+  arg2str
+);
 
 sub new
 {
@@ -300,6 +305,28 @@ sub id { $_[0]{id} }
 # my %args = $tid->args; #< ('gr_1' => {arg1 => ['elm 1',...],...},...)
 sub args { %{$_[0]{args}} }
 sub args_str { $_[0]{args_str} }
+
+# my $arg_str = arg2str($gr, $var, @value);
+# $gr  may be undef => prefix 'gr::' will be ommitted.
+# $var may be undef => prefix 'gr::var=' will be ommited.
+sub arg2str
+{
+  my $gr = shift;
+  my $var = shift;
+
+  my $ret = '';
+  if (defined $var) {
+    $ret = $gr.'::' if defined $gr;
+    $ret .= $var.'=';
+  }
+  $ret.join ' ', map {
+    my $v = $_;
+    $v =~ s/([\\ \$'",])/\\$1/g;
+    $v =~ s/\n/\\n/g;
+    $v =~ s/\t/\\t/g;
+    $v
+  } @_
+}
 
 sub m_reset
 {

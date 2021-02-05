@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 use lib '..', '../external';
-use Test::More tests => 44;
+use Test::More tests => 55;
 use File::Temp qw(tempfile);
 
 BEGIN{ use_ok('Task') }
@@ -92,3 +92,16 @@ is($id->basename, 't');
 is_deeply([$id->dirs], [qw(a path)]);
 is("$id", $id->id);
 is($id->id, 'a/path/t:::a=,::v=');
+
+## check agr2str ##
+is(Task::ID::arg2str('' , a => ), '::a=');
+is(Task::ID::arg2str('g', b => ), 'g::b=');
+is(Task::ID::arg2str(undef, b => ), 'b=');
+is(Task::ID::arg2str(), '');
+is(Task::ID::arg2str(undef, undef, qw(a b)), 'a b');
+is(Task::ID::arg2str('' , arg1 => 'v'), '::arg1=v');
+is(Task::ID::arg2str('_', arg2 => qw(a b)), '_::arg2=a b');
+is(Task::ID::arg2str('gr',arg3 => 'hello world'), 'gr::arg3=hello\ world');
+is(Task::ID::arg2str('' , a1 => 'abc', 'd e f${foo}'), qq(::a1=abc d\\ e\\ f\\\${foo}));
+is(Task::ID::arg2str('' , a2 => '\n\t\'', "\n\t"), qq(::a2=\\\\n\\\\t\\' \\n\\t));
+is(Task::ID::arg2str('' , a3 => "abc\ndef\n"), qq(::a3=abc\\ndef\\n));
