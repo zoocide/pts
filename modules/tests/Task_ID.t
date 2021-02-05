@@ -5,7 +5,7 @@ use lib '..', '../external';
 use Test::More tests => 55;
 use File::Temp qw(tempfile);
 
-BEGIN{ use_ok('Task') }
+BEGIN{ use_ok('Task::ID') }
 
 ## base checks: task name, simple arguments, list arguments ##
 my $id = Task::ID->new('task');
