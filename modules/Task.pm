@@ -215,7 +215,9 @@ sub init
     $conf->set_group('');
     $conf->set_var('name', $id->basename);
     ## set task arguments ##
-    for (my ($gr, $vars) = $id->args) {
+    my $h = $id->args_hash;
+    keys %$h; #< reset each
+    while (my ($gr, $vars) = each %$h) {
       $conf->set_group($gr);
       $conf->set_var($_, @{$vars->{$_}}) for keys %$vars;
     }
@@ -253,7 +255,9 @@ sub reload_config
     $conf->set($gr, $_, @{$vars->{$_}}) for keys %$vars;
   }
   ## set task arguments ##
-  for (my ($gr, $vars) = $self->{id}->args) {
+  my $h = $self->{id}->args_hash;
+  keys %$h; #< reset each
+  while (my ($gr, $vars) = each %$h) {
     $conf->set_group($gr);
     $conf->set_var($_, @{$vars->{$_}}) for keys %$vars;
   }
