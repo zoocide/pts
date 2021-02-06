@@ -17,7 +17,7 @@ use Exceptions::TextFileError;
 use TaskDB;
 use File::Spec::Functions qw(catfile);
 
-BEGIN{ eval{ require 'Time/HiRes.pm'; Time::HiRes->import('time') } }
+BEGIN{ eval{ require Time::HiRes; Time::HiRes->import('time') } }
 
 our $script_start_time = time;
 
