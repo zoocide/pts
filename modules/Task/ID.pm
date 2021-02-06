@@ -41,6 +41,8 @@ sub id { $_[0]{id} }
 sub has_args { !!%{$_[0]{args}} }
 # my %args = $tid->args; #< ('gr_1' => {arg1 => ['elm 1',...],...},...)
 sub args { %{$_[0]{args}} }
+# my $args = $tid->args_hash; #< {'gr_1' => {arg1 => ['elm 1',...],...},...}
+sub args_hash { $_[0]{args} }
 sub args_str { $_[0]{args_str} }
 
 # my $arg_str = arg2str($gr, $var, @value);
