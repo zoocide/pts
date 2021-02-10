@@ -318,6 +318,14 @@ If C<$dir> is specified, method changes the task data directory to that value.
 
 Delete all content of the task data directory.
 
+=item group_names()
+
+Return all defined group names.
+
+=item var_names($group_name)
+
+Return all defined variable names in the group.
+
 =item has_var($group_name, $var_name)
 
 Return true if configuration file contains the specified variable.
@@ -349,6 +357,41 @@ Task name, plugin will not change even if the corresponding variables change.
 Before configuration file read, the following actions will be performed.
 1 - variable I<name> will be set to task short_id.
 2 - variables from task arguments will be set.
+
+=back
+
+=head2 Predefined variables
+
+Predefined variables are a set of variables used to provide values into the configuration file.
+These variables should be set before reading the configuration file.
+You can refer to them inside the configuration file to get the defined values.
+There is a bunch of methods to manipulate them:
+
+=over
+
+=item predefined_group_names()
+
+Return all predefined group names.
+
+=item predefined_var_names($group_name)
+
+Return all predefined variable names from the group.
+
+=item set_predefined_var($group_name, $var_name, @value)
+
+Set the predefined variable.
+
+=item get_predefined_var($group_name, $var_name)
+
+Get a string value of the predefined variable.
+
+=item get_predefined_arr($group_name, $var_name)
+
+Get a list value of the predefined variable.
+
+=item remove_predefined_var($group_name, $var_name)
+
+Remove the predefined variable.
 
 =back
 
