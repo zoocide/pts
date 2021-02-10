@@ -22,3 +22,21 @@ sub get_package_dir
 }
 
 1
+
+__END__
+
+=head1 NAME
+
+Plugins::Base::Util - A selection of useful utility functions to write your own plugin for the PTS system.
+
+=head1 FUNCTIONS
+
+=over
+
+=item get_package_dir($package)
+
+Return the directory containing the package I<.pm> file.
+By default $package is the caller's __PACKAGE__.
+E.g., C<get_package_dir()> returns I</a/lib/path> for the path I</a/lib/path/Plugins/Your/Plugin/Name.pm>.
+
+=back
