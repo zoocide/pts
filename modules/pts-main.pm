@@ -190,6 +190,7 @@ sub load_plugins
     eval {
       no strict 'refs';
       *{"Plugins::${pname}::dbg1"} = *dbg1;
+      *{"Plugins::${pname}::dbg2"} = *dbg2;
       require "Plugins/$req_pname.pm"
     };
     if ($@){
