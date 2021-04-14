@@ -25,8 +25,7 @@ if ($failed_fname) {
       or die "Can not write to file '$failed_fname': $!\n";
 }
 
-my $start_time = 0;
-$start_time = time if dbg1;
+my $start_time = time if dbg1;
 
 ## load plugins ##
 dbg2 and dprint("load plugins");
