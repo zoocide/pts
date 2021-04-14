@@ -72,6 +72,8 @@ our $args = CmdArgs->declare(
 );
 $args->parse;
 
+printf "DEBUG [%.6fs]: arguments parsed\n", time - $script_start_time if $debug >=2;
+
 ## list tasks ##
 if ($args->use_case eq 'list'){
   my @list = $db->all_task_ids;
