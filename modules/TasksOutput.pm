@@ -22,6 +22,16 @@ use Thread::Queue;
     my $n = $q->pending or return;
     print $q->dequeue_nb($n);
   }
+  sub close
+  {
+    my $self = shift;
+    $self->[0]->end;
+  }
+  sub is_closed
+  {
+    my $self = shift;
+    !defined $self->[0]->pending
+  }
 }
 
 {
@@ -38,6 +48,14 @@ use Thread::Queue;
   }
   sub flush
   {
+  }
+  sub close
+  {
+    ${$_[0]} = 1 # $self is the 'closed' flag
+  }
+  sub is_closed
+  {
+    ${$_[0]}
   }
 }
 
@@ -66,7 +84,6 @@ sub open
   my $out_class = $self->is_main_thread ? 'MainThreadOutput' : 'QueuedOutput';
   my $out = shared_clone($out_class->new);
   $self->{outs}[$ind] = shared_clone({
-    closed => 0,
     out => $out,
   });
   $out
@@ -83,7 +100,7 @@ sub flush
   for (my $n = @$outs; $i < $n; $i++) {
     last if !defined $outs->[$i];
     $outs->[$i]{out}->flush;
-    last if !$outs->[$i]{closed};
+    last if !$outs->[$i]{out}->is_closed;
   }
   $self->{cur_ind} = $i;
 }
@@ -93,7 +110,7 @@ sub close
 {
   my $self = shift;
   my $ind = shift;
-  $self->{outs}[$ind]{closed} = 1;
+  $self->{outs}[$ind]{out}->close;
   $self->flush;
 }
 
