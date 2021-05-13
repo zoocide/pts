@@ -66,7 +66,7 @@ sub plugin { $_[0]{plugin} }
 sub data_dir { $_[0]{data_dir} }
 sub task_dir { $_[0]{task_dir} }
 sub set_name { $_[0]{name} = $_[1] }
-sub set_name_prefix { $_[0]{name} = $_[1] }
+sub set_name_prefix { $_[0]{name_prefix} = $_[1] }
 sub set_debug { $_[0]{debug} = $_[1] }
 sub set_index { $_[0]{index} = $_[1] }
 
