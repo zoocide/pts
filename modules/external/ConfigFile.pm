@@ -6,7 +6,7 @@ use Exceptions::OpenFileError;
 use ConfigFileScheme;
 
 use vars qw($VERSION);
-$VERSION = '0.6.0';
+$VERSION = '0.7.0';
 
 # TODO: allow change comment symbol to ;
 
@@ -105,8 +105,9 @@ sub m_load_old
   my $decl = $self->{decl};
   my @errors;
 
-  open(my $f, '<', $self->{fname}) || throw OpenFileError => $self->{fname};
+  open(my $f, '<:crlf', $self->{fname}) || throw OpenFileError => $self->{fname};
 
+  my $section = '';
   my $gr = '';
   my $interpolate_str = sub {
     my $str = shift;
@@ -116,7 +117,7 @@ sub m_load_old
       |
       # interpolate variables
       \$(\{(?:(\w*)::)?)?(\w++)(?(4)\})
-    /$1 ? "\n" : $2 ? "\t" : $3 ? $3 : $self->get_var(defined $5 ? $5||'' : $gr, $6, '')/gex;
+    /$1 ? "\n" : $2 ? "\t" : $3 ? $3 : $self->get_var(defined $5 ? $5||'' : $section, $6, '')/gex;
     $str
   };
   my $normalize_str = sub {
@@ -148,19 +149,20 @@ sub m_load_old
         # comment string
         next;
       }
-      elsif ($s =~ /^\s*\[(\w+)\]\s*$/) {
+      elsif ($s =~ /^\s*\[(\w*)\]\s*$/) {
         # group declaration
         $self->{content}{$gr}{$var} = $parr if defined $var;
         undef $var;
-        $gr = $1;
+        $section = $1;
         $multiline = 0;
         next;
       }
-      elsif ($s =~ s/^\s*(\w+)\s*(\@?)=//) {
+      elsif ($s =~ s/^\s*(?:(\w*)::)?(\w+)\s*(\@?)=//) {
         # assignment statement
         $self->{content}{$gr}{$var} = $parr if defined $var;
-        $var = $1;
-        $multiline = $decl->is_multiline($gr, $var) || $2;
+        $gr = defined $1 ? $1 : $section;
+        $var = $2;
+        $multiline = $decl->is_multiline($gr, $var) || $3;
         if (!$decl->is_valid($gr, $var)) {
           push @errors, Exceptions::TextFileError->new($self->{fname}, $ln, "declaration of variable '${gr}::$var' is not permitted");
         }
@@ -206,7 +208,7 @@ sub m_load_old
         }
         elsif ($1 =~ /^\$(\{(?:(\w*)::)?)?(\w++)(?(1)\})(?=\s|#|$)/) {
           # array interpolation
-          push @$parr, $self->get_arr(defined $2 ? $2||'' : $gr, $3);
+          push @$parr, $self->get_arr(defined $2 ? $2||'' : $section, $3);
         }
         else {
           push @$parr, &$interpolate_str($1);
@@ -253,10 +255,11 @@ sub m_load
   my $decl = $self->{decl};
   my @errors;
 
-  open(my $f, '<', $self->{fname}) || throw OpenFileError => $self->{fname};
+  open(my $f, '<:crlf', $self->{fname}) || throw OpenFileError => $self->{fname};
 
   my $inside_string = 0;
   my $multiline = 0;
+  my $section = '';
   my $gr = '';
   my $do_concat = 0;
   my ($ln, $s, $var, $parr, $str_beg_ln, $is_first, $q);
@@ -270,7 +273,7 @@ sub m_load
       |
       # interpolate variables
       \$(\{(?:(\w*)::)?)?(\w++)(?(4)\})
-    /$1 ? "\n" : $2 ? "\t" : $3 ? $3 : $self->get_var(defined $5 ? $5||'' : $gr, $6, '')/gex;
+    /$1 ? "\n" : $2 ? "\t" : $3 ? $3 : $self->get_var(defined $5 ? $5||'' : $section, $6, '')/gex;
     $str
   };
   my $normalize_str = sub {
@@ -288,7 +291,7 @@ sub m_load
   my $qq_str = qr<$qq_str_beg$qq_str_end>;
   my ($vg, $vn);
   my $as_vn = qr<(\w++)(?{$vn = $^N})>;
-  my $as_vg = qr<(?:(\w*)::(?{$vg = $^N})|(?{$vg = $gr}))>;
+  my $as_vg = qr<(?:(\w*)::(?{$vg = $^N})|(?{$vg = $section}))>;
   my $array_substitution = qr~(?(?{$do_concat})(?!))\$(?:\{$as_vg$as_vn\}|$as_vn)(?:$space|$)(?{
     push @$parr, $self->get_arr($vg, $vn);
   })~;
@@ -301,11 +304,12 @@ sub m_load
     $str_beg_ln = $ln;
     $inside_string = 1;
   })|$qq_str_end))*+$>;
-  my $var_decl_beg = qr~^\s*(\w+)\s*(\@?)=(?{
+  my $var_decl_beg = qr~^\s*$as_vg$as_vn\s*(\@?)=(?{
     $self->{content}{$gr}{$var}= $parr if defined $var;
-    $var = $1;
+    $gr = $vg;
+    $var = $vn;
     $parr = [];
-    $multiline = $decl->is_multiline($gr, $var) || $2;
+    $multiline = $decl->is_multiline($gr, $var) || $3;
     if (!$decl->is_valid($gr, $var)) {
       push @errors, Exceptions::TextFileError->new($self->{fname}, $ln, "declaration of variable '${gr}::$var' is not permitted");
     }
@@ -328,10 +332,10 @@ sub m_load
       # skip comment and blank string
       next if $s =~ /^\s*(#|$)/;
       # process group declaration
-      next if $s =~ /^\s*\[(\w+)\]\s*$(?{
+      next if $s =~ /^\s*\[(\w*)\]\s*$(?{
         $self->{content}{$gr}{$var} = $parr if defined $var;
         undef $var;
-        $gr = $1;
+        $section = $1;
         $multiline = 0;
       })/;
       # process variable declaration
@@ -472,18 +476,18 @@ __END__
 
 =head1 CONFIGURATION FILE
 
-File consist of groups and variables definition lines.
+The file consists of groups and variables definition lines.
 One file line for one definition.
 Also, there can be blank lines and comment lines.
-Comments begins with # and ends with the line.
-Two lines can be joined by placing a I<\> at the end of the first one.
+Comments begin with # and end with the line.
+Two lines can be joined by placing a backslash I<\> at the end of the first one.
 
 =head2 Group
 
  [group_name]
 
-I<group_name> is one word matching B<\w+> pattern.
-Group definition splits the file on sections.
+I<group_name> is one word matching B<\w*> pattern.
+Group definition splits the file into sections.
 Each group has its own variables set.
 Different groups can have variables with the same name, but it still different
 variables.
@@ -495,44 +499,47 @@ variables.
  var_name @= elem1 elem2
  elem3
  ...
+ # or
+ group::var = value
 
 I<var_name> is one word matching B<\w+> pattern.
-Value part of the string begins just after the assignment symbol and ends with
-the line.
-Value is a space separated list of words.
-There is special words such as string literal and variable substitution.
-Sequence of words without any space between them is the one word.
+The value part of the string begins just after the assignment symbol and ends
+with the line.
+Value is a space-separated list of words.
+There are special words such as string literal and variable substitution.
+A sequence of words without any space between them is one word.
 Variable declaration parsed into a list of words, which can be accessed by the
 L</get_arr> and L</get_var> methods.
 By default, variable declaration ends with the line (except string literal,
-which can have line feeding inside), but there is special case when parser
+which can have line feeding inside), but there is a special case when the parser
 treats all next lines as the value part continuation until the next declaration
 occurred.
-This behaviour is enabled by telling the parser that variable is B<multiline>
+This behavior is enabled by telling the parser that the variable is B<multiline>
 or by using the variable declaration second form (C<var_name @= ...>).
+If specified the group, the variable is considered from that group.
 
 =head3 Variables substitution
 
  $var or ${var} or ${group::var}
 
-Variables substitution is performed after value part parsed into the list.
+Variables substitution is performed after the value part parsed into the list.
 Once encountered such a construct it is replaced with the string value of the
 corresponding variable existing at that moment.
-In the first and second forms the group treated as the current group.
+In the first and second forms, the group was treated as the current group.
 If the whole word is the one variable substitution, this word will be replaced
 by the list value of the variable.
 
 =head3 String literal "", ''
 
-String literal begins with the qoute ' or " and ends with the corresponding
-quote.
+String literal begins with the quote I<'> or I<"> and ends with the
+corresponding quote.
 String literal is treated as one word.
-All spaces in quoted string are preserved.
-Symbol # inside the quoted string has no special meaning.
-Like in Perl inside a '' string parser will not interpolate variables and
-symbol \ will have special meaning only just before another \ or '.
-In double qouted string "" variables interpolation is enabled and symbol \ will
-shield any next symbol or have special meaning, like "\n".
+All spaces in a quoted-string are preserved.
+Symbol I<#> inside the quoted-string has no special meaning.
+Like in Perl inside a I<''> string parser will not interpolate variables and
+symbol I<\> will have special meaning only just before another I<\> or I<'>.
+In the double-quoted string I<""> variables interpolation is enabled and symbol
+I<\> will shield any next symbol or have a special meaning, like I<"\n">.
 
 =head1 METHODS
 
