@@ -12,6 +12,6 @@ my %c = (
 sub tasks_dir {$c{tasks_dir} ||= catfile($FindBin::RealBin, '..', 'tasks')}
 sub plugins_parent_dirs {@{$c{plugins_parent_dirs}}}
 # PtsConfig->add_plugins_parent_dir($dir);
-sub add_plugins_parent_dir { push @{$c{plugins_parent_dirs}}, $_[1] }
+sub add_plugins_parent_dir { push @{$c{plugins_parent_dirs}}, catfile($_[1]) }
 
 1
