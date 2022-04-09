@@ -18,6 +18,21 @@ use TaskDB;
 use File::Spec::Functions qw(catfile);
 
 BEGIN{ eval{ require Time::HiRes; Time::HiRes->import('time') } }
+BEGIN{
+  my $v = -t STDOUT && ($^O ne 'Win32' || eval{ require Win32::Console::ANSI });
+  *use_colors = sub () { $v }
+}
+use constant {
+  clr_end    => use_colors ? "\e[m" : '',
+  clr_red    => use_colors ? "\e[31m" : '',
+  clr_green  => use_colors ? "\e[32m" : '',
+  clr_blue   => use_colors ? "\e[34m" : '',
+  clr_bg_red => use_colors ? "\e[41m" : '',
+};
+use constant {
+  #clr_dbg => clr_blue,
+  clr_dbg => "\e[36m",
+};
 
 our $script_start_time = time;
 
@@ -72,7 +87,7 @@ our $args = CmdArgs->declare(
 );
 $args->parse;
 
-printf "DEBUG [%.6fs]: arguments parsed\n", time - $script_start_time if $debug >=2;
+printf clr_dbg."DEBUG [%.6fs]: arguments parsed".clr_end."\n", time - $script_start_time if $debug >=2;
 
 ## list tasks ##
 if ($args->use_case eq 'list'){

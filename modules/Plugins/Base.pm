@@ -56,7 +56,7 @@ sub print_out
 
 sub dprint
 {
-  my $msg = join '', map "DEBUG: $_\n", split "\n", join '', @_;
+  my $msg = join '', map main::clr_dbg()."DEBUG: $_".main::clr_end()."\n", split "\n", join '', @_;
   defined $out or return print $msg;
   $out->push($msg);
 }
@@ -65,7 +65,7 @@ sub dprint_t
 {
   my $timer = shift;
   my $t = sprintf '%.6f', time - $timers{$timer};
-  print_out("DEBUG [${t}s]: ", @_, "\n");
+  print_out(main::clr_dbg()."DEBUG [${t}s]: ", @_, main::clr_end()."\n");
 }
 
 sub dprint_tr

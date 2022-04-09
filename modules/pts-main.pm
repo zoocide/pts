@@ -86,7 +86,7 @@ if ($failed_file){
 
 sub dprint
 {
-  print "DEBUG: $_\n" for split /\n/, join '', @_;
+  print clr_dbg."DEBUG: $_".clr_end."\n" for split /\n/, join '', @_;
 }
 
 sub dirname
@@ -257,7 +257,7 @@ sub dprint_tasks
 
 sub format_msg
 {
-  join '', map "# $_\n", split /\n/, join '', @_
+  join '', map clr_red."# $_".clr_end."\n", split /\n/, join '', @_
 }
 
 sub m_sleep
@@ -293,10 +293,10 @@ sub process_task
     $status = 'skipped....... ';
     push @{$stats->{skipped}}, $task;
   } elsif ($res) {
-    $status = 'ok............ ';
+    $status = clr_green."ok............ ".clr_end;
   } else {
-    push @msg, '# task failed ['.$task->id."]\n";
-    $status = 'not ok........ ';
+    push @msg, clr_bg_red.'# task failed ['.$task->id."]".clr_end."\n";
+    $status = clr_red."not ok........ ".clr_end;
     push @{$stats->{failed}}, $task;
   }
   $o->push(@msg, $status, $task->fullname, "\n") if !$res || !quiet;
