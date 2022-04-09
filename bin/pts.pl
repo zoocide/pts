@@ -27,11 +27,11 @@ use constant {
   clr_red    => use_colors ? "\e[31m" : '',
   clr_green  => use_colors ? "\e[32m" : '',
   clr_blue   => use_colors ? "\e[34m" : '',
+  clr_cyan   => use_colors ? "\e[36m" : '',
   clr_bg_red => use_colors ? "\e[41m" : '',
 };
 use constant {
-  #clr_dbg => clr_blue,
-  clr_dbg => "\e[36m",
+  clr_dbg => clr_cyan,
 };
 
 our $script_start_time = time;
