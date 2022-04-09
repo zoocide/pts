@@ -19,7 +19,7 @@ use File::Spec::Functions qw(catfile);
 
 BEGIN{ eval{ require Time::HiRes; Time::HiRes->import('time') } }
 BEGIN{
-  my $v = -t STDOUT && ($^O ne 'Win32' || eval{ require Win32::Console::ANSI });
+  my $v = -t STDOUT && ($^O ne 'MSWin32' || eval{ require Win32::Console::ANSI });
   *use_colors = sub () { $v }
 }
 use constant {
