@@ -9,6 +9,9 @@ our $args;
 our $failed_fname;
 our $script_start_time;
 
+my $delete_failed_file = defined $failed_fname;
+my $failed_fname_abs = defined $failed_fname ? m_realpath(rel2abs($failed_fname)) : '';
+
 use constant use_mce => !no_mce && (eval{ require ParallelWithMCE; 'ParallelWithMCE' } || (force_mce && die $@));
 use constant use_threads => !use_mce && $^O eq 'MSWin32' && require ParallelWithThreads;
 use if !use_mce && !use_threads, 'ParallelWithForks';
@@ -18,11 +21,11 @@ dbg2 and dprint("load tasks");
 my @tasks = map { is_task_set($_) ? load_task_set($db, $_) : $db->new_task($_) }
                 @{$args->arg('taskset')};
 
-## open file $failed_fname ##
-my $failed_file;
+## try to open file $failed_fname ##
 if ($failed_fname) {
-  open $failed_file, '>', $failed_fname
+  open my $fh, '>>', $failed_fname
       or die "Can not write to file '$failed_fname': $!\n";
+  close $fh;
 }
 
 my $start_time = time if dbg1;
@@ -69,17 +72,19 @@ print "\nstatistics:"
 ## write failed tasks ##
 if (@$failed){
   if ($failed_fname){
-    print $failed_file $_->id."\n" for @$failed;
-    close $failed_file;
+    open my $fh, '>', $failed_fname
+      or die "Can not write to file '$failed_fname': $!\n";
+    print $fh $_->id."\n" for @$failed;
+    close $fh;
     dbg1 and dprint("Failed tasks were written to file '$failed_fname'.\n");
   }
   exit 1
 }
-
-## remove failed file on success ##
-if ($failed_file){
-  close $failed_file;
-  unlink $failed_fname;
+else {
+  ## remove failed file on success ##
+  if ($failed_fname && $delete_failed_file && -e $failed_fname){
+    unlink $failed_fname;
+  }
 }
 
 ##### END #####
@@ -127,8 +132,9 @@ sub load_task_set
            ? dirname($fname)
            : canonpath(catdir($cur_dir, dirname($fname)));
 
-  dbg1 and dprint("load task set from file $fname");
+  dbg1 and dprint("load task set from file '$fname'");
   my @ret;
+  $delete_failed_file &&= $failed_fname_abs ne m_realpath(rel2abs($fname));
   open(my $f, '<', $fname) || throw OpenFileError => $fname;
   ### rules ###
   #1)  # comment
