@@ -8,7 +8,6 @@ use File::Path qw(make_path remove_tree);
 use File::Spec::Functions qw(splitdir catdir);
 use Scalar::Util qw(blessed);
 use Task::ID;
-use Plugins::Base qw(print_out);
 BEGIN{
   eval {
     require 'Time/HiRes.pm';
@@ -83,12 +82,12 @@ sub clear_data_dir
   remove_tree( $_[0]{data_dir}, {keep_root => 1} );
 }
 
-sub DEBUG   { $_[0]->{debug} && print_out 'DEBUG: ', @_[1..$#_], "\n" }
+sub DEBUG   { $_[0]->{debug} && Plugins::Base::print_out('DEBUG: ', @_[1..$#_], "\n") }
 sub DEBUG_T
 {
   return if !$_[0]->{debug};
   my $t = sprintf '%.6f', time - $_[0]->{debug_time}{$_[1]};
-  print_out "DEBUG [${t}s]: ", @_[2..$#_], "\n";
+  Plugins::Base::print_out("DEBUG [${t}s]: ", @_[2..$#_], "\n");
 }
 sub DEBUG_RESET{ my $t = time; $_[0]->{debug_time}{$_} = $t for @_[1..$#_] }
 sub DEBUG_TR{ $_[0]->DEBUG_T(@_[1..$#_]); $_[0]->DEBUG_RESET($_[1]) }

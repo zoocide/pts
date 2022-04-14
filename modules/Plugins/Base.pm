@@ -12,6 +12,8 @@ our $VERSION = $::VERSION;
 
 our @EXPORT = qw(
   print_out
+  dbg1
+  dbg2
   dprint
   dprint_t
   dprint_tr
@@ -44,6 +46,11 @@ our @EXPORT = qw(
 This is the base of all plugins.
 
 =cut
+
+use constant {
+  dbg1 => main::dbg1(),
+  dbg2 => main::dbg2(),
+};
 
 our $out;
 our %timers;
@@ -88,6 +95,7 @@ sub process_wrp
   $class->process(@_)
 }
 
+# $status = $class->process($task, $tasksDB);
 sub process
 {
   die $_[0].' is not implemented. Task \''.$_[1]->name."' can not be processed.\n";

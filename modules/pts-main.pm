@@ -193,9 +193,6 @@ sub load_plugins
     dbg1 and dprint("load plugin $pname");
     (my $req_pname = $pname) =~ s#::#/#g;
     eval {
-      no strict 'refs';
-      *{"Plugins::${pname}::dbg1"} = *dbg1;
-      *{"Plugins::${pname}::dbg2"} = *dbg2;
       require "Plugins/$req_pname.pm"
     };
     if ($@){
