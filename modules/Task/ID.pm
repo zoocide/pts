@@ -88,6 +88,7 @@ sub m_reset
     (?{
       $args{$vg}{$vn} = [$^N];
     })
+    | \s*+$var\s*+ (?{$args{$vg}{$vn} = [1]})
   >x;
   if (!($s =~ /^\s*([^:]+?)(?:\.conf)? \s* (?: :(?:$arg(?:,$arg)*+)? )?$/x)) {
     throw Exception => "wrong task specification '$s'";
@@ -144,6 +145,7 @@ sub m_reset_old
     (?{
       $args{$vg}{$vn} = [$^N];
     })
+    | \s*+$var\s*+ (?{$args{$vg}{$vn} = [1]})
   >x;
   if (!($s =~ /^\s*([^:]+?)(?:\.conf)? \s* (?: :(?:$arg(?:,$arg)*+)? )?$/x)) {
     throw Exception => "wrong task specification '$s'";

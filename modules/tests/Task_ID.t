@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 use lib '..', '../external';
-use Test::More tests => 55;
+use Test::More tests => 63;
 use File::Temp qw(tempfile);
 
 #use constant "Task::ID::legacy" => 1;
@@ -106,3 +106,25 @@ is(Task::ID::arg2str('gr',arg3 => 'hello world'), 'gr::arg3=hello\ world');
 is(Task::ID::arg2str('' , a1 => 'abc', 'd e f${foo}'), qq(::a1=abc d\\ e\\ f\\\${foo}));
 is(Task::ID::arg2str('' , a2 => '\n\t\'', "\n\t"), qq(::a2=\\\\n\\\\t\\' \\n\\t));
 is(Task::ID::arg2str('' , a3 => "abc\ndef\n"), qq(::a3=abc\\ndef\\n));
+
+## check 'task:var,var1' as a shorthand for 'task:var=1,var1=1' ##
+eval { $id->reset('t:a') };
+is (defined $@ ? "$@" : '', '');
+is($id->short_id, 't');
+is($id->id, 't:::a=1');
+is_deeply({$id->args}, {
+  '' => {
+    a => ['1'],
+  },
+});
+eval { $id->reset('t:init,b=1 2,c') };
+is (defined $@ ? "$@" : '', '');
+is($id->short_id, 't');
+is($id->id, 't:::b=1 2,::c=1,::init=1');
+is_deeply({$id->args}, {
+  '' => {
+    init => [1],
+    b => [1, 2],
+    c => [1],
+  },
+});
