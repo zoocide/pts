@@ -212,19 +212,19 @@ sub m_parse_value_old
   my $add_word = sub { $do_concat ? $ret[-1] .= $_[0] : push @ret, $_[0]; $do_concat = 1 };
   local $_ = $val_str;
   while ($_ ne '') {
-    if (s/(?:\s++|#.*|\r?\n)\r?\n?//s) {
+    if (s/^(?:\s++|#.*)\r?\n?//s) {
       # space
       $do_concat = 0;
     }
-    elsif (s/((?:[^\\\'"# \t\n]|\\(?:.|$))++)//s) {
+    elsif (s/^((?:[^\\\'"# \t\n]|\\(?:.|$))++)//s) {
       # normal word
       &$add_word(m_interpolate_str($1));
     }
-    elsif (s/'((?:[^\\']|\\.)*+)'//s) {
+    elsif (s/^'((?:[^\\']|\\.)*+)'//s) {
       # q_str
       &$add_word(m_normalize_str($1));
     }
-    elsif (s/"((?:[^\\"]|\\.)*+)"//s) {
+    elsif (s/^"((?:[^\\"]|\\.)*+)"//s) {
       # qq_str
       &$add_word(m_interpolate_str($1));
     }

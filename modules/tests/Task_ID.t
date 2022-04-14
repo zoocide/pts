@@ -5,6 +5,7 @@ use lib '..', '../external';
 use Test::More tests => 55;
 use File::Temp qw(tempfile);
 
+#use constant "Task::ID::legacy" => 1;
 BEGIN{ use_ok('Task::ID') }
 
 ## base checks: task name, simple arguments, list arguments ##
