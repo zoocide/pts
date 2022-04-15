@@ -293,7 +293,7 @@ sub process_task
   push @{$stats->{all}}, $task;
   my $status;
   if ($res eq 'skipped') {
-    $status = 'skipped....... ';
+    $status = clr_gray.'skipped....... '.clr_end;
     push @{$stats->{skipped}}, $task;
   } elsif ($res) {
     $status = clr_green."ok............ ".clr_end;
