@@ -101,7 +101,7 @@ sub dirname
 
 sub m_realpath
 {
-  my $r = realpath($_[0]);
+  my $r = -e $_[0] ? realpath($_[0]) : $_[0];
   file_name_is_absolute($_[0])
     ? ($r // $_[0])
     : (defined $r ? abs2rel($r) : canonpath($_[0]))
