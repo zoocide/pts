@@ -18,8 +18,10 @@ use if !use_mce && !use_threads, 'ParallelWithForks';
 
 ## obtain tasks to execute ##
 dbg2 and dprint("load tasks");
+dbg2 and my $lt_time = time;
 my @tasks = map { is_task_set($_) ? load_task_set($db, $_) : $db->new_task($_) }
                 @{$args->arg('taskset')};
+dbg2 and dprint_t(time - $lt_time, 'tasks loaded');
 
 ## try to open file $failed_fname ##
 if ($failed_fname) {
@@ -92,6 +94,12 @@ else {
 sub dprint
 {
   print clr_dbg."DEBUG: $_".clr_end."\n" for split /\n/, join '', @_;
+}
+
+sub dprint_t
+{
+  my $t = sprintf '%.6f', shift;
+  print clr_dbg, "DEBUG [${t}s]: ", @_, clr_end, "\n";
 }
 
 sub dirname
@@ -179,6 +187,7 @@ sub load_task_set
 sub load_plugins
 {
   my @tasks = @_;
+  dbg2 and my $tstart = time;
   for my $plugins_pdir (PtsConfig->plugins_parent_dirs) {
     eval "use lib '$plugins_pdir'";
     die $@ if $@;
@@ -206,6 +215,7 @@ sub load_plugins
       print $d->coderef2text(\&{"Plugins::${pname}::process"}), "\n";
     }
   }
+  dbg2 and dprint_t(time - $tstart, 'plugins loaded');
   @failed and die "ERROR! Can not load plugins: ".join(', ', @failed)."\n";
 }
 
