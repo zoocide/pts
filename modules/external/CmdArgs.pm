@@ -12,7 +12,7 @@ use constant {
   dbg1 => defined &CmdArgs::DEBUG::ALL ? &CmdArgs::DEBUG::ALL : 0,
 };
 
-our $VERSION = '0.5.1';
+our $VERSION = '0.6.0';
 our @EXPORT_OK = qw(ptext);
 
 ## TODO: Add more tests (help and usage! messages).
@@ -115,6 +115,13 @@ CmdArgs - Parse command line arguments and automate help message creation.
   print "something\n" if CmdArgs::OPT_verbose;
   # CmdArgs::OPT_opt_1 is the constant contained specified filename or undefined otherwise
   print CmdArgs::OPT_opt_1, "\n";
+
+  ========================================
+  ## partial parsing of arguments ##
+  $args->parse_begin;
+  $args->parse_part(\@ARGV);
+  $args->parse_part(\@additional_options);
+  $args->parse_end;
 
 =cut
 
@@ -280,6 +287,102 @@ sub parse
     throw;
   };
 }
+
+# $args->parse_begin();
+# throws:
+sub parse_begin
+{
+  my $self = shift;
+  dbg1 and dprint("begin arguments parsing");
+
+  ## initialize ##
+  $self->{parsed} = { options => {}, args => {}, args_arr => [] };
+  $self->{options_end} = 0;
+
+  # @wrp_iters = ([$uc_name, [$uc_sequence, []]], ...)
+  $self->{parse}{wrp_iters} = [
+    map { [$_, [$self->{use_cases}{$_}{sequence}, []]] }
+      keys %{$self->{use_cases}}
+  ];
+}
+
+# $args->parse_part(\@ARGV);
+# throws: Exceptions::List
+sub parse_part
+{
+  my $self = shift;
+  my @args = @{shift()};
+  my $wrp_iters = $self->{parse}{wrp_iters};
+
+  dbg1 and dprint("parse arguments = '", join(' ', @args)."'");
+
+  ## parse ##
+  try{
+    while (@args){
+      my $atom = $self->m_get_atom(\@args);
+
+      ## for error handling ##
+      $self->{parse}{failed_arg_checks} = [];
+
+      @$wrp_iters = map {
+        my $u = $_->[0];
+        map [$u, $_], $self->m_fwd_iter($atom, $_->[1])
+      } @$wrp_iters;
+
+      ## handle errors ##
+      if (!@$wrp_iters){
+        if (@{$self->{parse}{failed_arg_checks}}){
+          my @uniq_errors;
+          for my $e (@{$self->{parse}{failed_arg_checks}}){
+            push @uniq_errors, $e if !grep "$e" eq "$_", @uniq_errors;
+          }
+          throw List => @uniq_errors;
+        }
+        throw Exception => 'unexpected '.(  $atom->[0] eq 'opt'
+                                        ? "option '$atom->[2]'"
+                                        : "argument '$atom->[1]'");
+      }
+    }
+  }
+  catch{ throw } 'Exceptions::CmdArgsInfo',
+  make_exlist
+  catch{
+    push @{$@}, Exceptions::CmdArgsInfo->new($self->m_usage_message);
+    throw;
+  };
+}
+
+# $args->parse_end();
+# throws: Exceptions::List
+sub parse_end
+{
+  my $self = shift;
+  my $wrp_iters = $self->{parse}{wrp_iters};
+
+  try {
+    # finish with 'end' atom
+    @$wrp_iters = map {
+      my $u = $_->[0];
+      map [$u, $_], $self->m_fwd_iter(['end'], $_->[1])
+    } @$wrp_iters;
+    $#$wrp_iters < 0 && throw Exception => 'wrong arguments';
+    $#$wrp_iters > 0 && throw Exception => 'internal error: more then one use cases are suitable';
+    $self->{parsed}{use_case} = $wrp_iters->[0][0];
+    $self->m_set_arg_names($wrp_iters->[0][1]);
+    if (dbg1) {
+      dprint("use_case = $self->{parsed}{use_case}");
+      my $popts = $self->{parsed}{options};
+      dprint("option $_ = '$popts->{$_}'") for sort keys %$popts;
+    }
+  }
+  catch{ throw } 'Exceptions::CmdArgsInfo',
+  make_exlist
+  catch{
+    push @{$@}, Exceptions::CmdArgsInfo->new($self->m_usage_message);
+    throw;
+  };
+}
+
 
 sub print_help
 {
@@ -491,6 +594,7 @@ sub help_custom_option
 #   parse => {
 #     failed_arg_checks => [@exceptions], #< for error handling
 #     split_one_char_options => $bool,
+#     wrp_iters => [...], #< the current parse state of the partial parsing.
 #   },
 # }, CmdArgs;
 
@@ -745,6 +849,7 @@ sub m_groups
     ref $gr eq 'ARRAY' || throw Exception => "worng group '$gr_name' specification:"
                                            .' group must be an array of options';
 
+    $self->{groups}{$gr_name} = [];
     for my $name (@$gr){
       my $to_del = ($name =~ s/^\^//);
       if ($name eq '*'){
@@ -1379,6 +1484,36 @@ And I<opt_4> and I<opt_1> also can not appear simultaneously.
 throws: C<Exceptions::List>
 
 Parse C<$string> or C<@ARGV> array if C<$string> is not specified.
+
+=item C<parse_begin>
+
+Start the partial parsing.
+It should be followed by calls of C<parse_part> and the final C<parse_end>.
+For example,
+
+  $args->parse_begin;
+  $args->parse_part(\@ARGV);
+  $args->parse_end;
+
+That code is doing the same thing as the single call C<$args-E<gt>parse>.
+
+=item C<parse_part(\@args)>
+
+throws: C<Exceptions::List>
+
+Parse the specified portion of arguments.
+Before the first call, the state of the parser should be cleared with
+C<parse_begin>.
+This method allows to parse the part of arguments and make a decision to parse
+the next or not.
+Use C<parse_end> to finish arguments parsing.
+
+=item C<parse_end>
+
+throws: C<Exceptions::List>
+
+The method completes arguments partial parsing and throws any exceptions occurred.
+See C<parse_begin> and C<parse_part> methods.
 
 =item C<arg($name)>
 
