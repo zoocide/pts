@@ -11,11 +11,13 @@ BEGIN{ *TaskDB::dbg_level = sub () { 0 } }
 use PtsConfig;
 use CmdArgs;
 use CmdArgs::BasicTypes;
+use Cwd;
 use Exceptions;
 use Exceptions::OpenFileError;
 use Exceptions::TextFileError;
 use TaskDB;
-use File::Spec::Functions qw(catfile);
+use File::Basename qw(dirname);
+use File::Spec::Functions qw(splitpath catpath splitdir catdir catfile);
 
 BEGIN{ eval{ require Time::HiRes; Time::HiRes->import('time') } }
 BEGIN{
@@ -64,6 +66,7 @@ our $failed_fname;
 our $num_procs;
 my $debug = 0;
 my $quiet;
+my $config_fname = '.ptsconfig';
 
 our $args = CmdArgs->declare(
   sprintf('%vd',$VERSION),
@@ -75,6 +78,7 @@ our $args = CmdArgs->declare(
     debug => ['-D --debug', 'Print debug information. -DD produces even more information.', sub { $debug++ }],
     list  => ['-l --list',  'Print all tasks in database.'],
     stat  => ['-s --stat',  'Force to print statistics even for one task.'],
+    global => ['-g', "Do not load local $config_fname. Use global configuration."],
     plugins_dir => ['-I:Dir<<plugins_dir>>', 'Include plugins from directory.',
                     sub{ PtsConfig->add_plugins_parent_dir($_) }],
     failed  => ['--failed:<<file>>', 'Put failed tasks into <file>.',
@@ -86,7 +90,7 @@ our $args = CmdArgs->declare(
   },
   groups => {
     OPTIONS => [qw(
-      quiet stat debug
+      global quiet stat debug
       tasks_dir plugins_dir
       failed
       ttime
@@ -104,9 +108,11 @@ our $args = CmdArgs->declare(
     'force_mce|no_mce',
   ],
 );
-$args->parse;
-
-printf clr_dbg."DEBUG [%.6fs]: arguments parsed".clr_end."\n", time - $script_start_time if $debug >=2;
+$args->parse_begin;
+$args->parse_part(\@ARGV);
+m_dprint_t(time - $script_start_time, 'command line arguments parsed') if $debug >=2;
+load_config($config_fname, $args) if !$args->is_opt('global');
+$args->parse_end;
 
 ## list tasks ##
 if ($args->use_case eq 'list'){
@@ -130,4 +136,55 @@ defined $num_procs && $num_procs <= 0 and die "the number of workers should be a
 my $r = do 'pts-main.pm';
 die $@ if $@;
 die "could not do 'pts-main.pm': $!" if !defined $r;
-$r
+$r;
+
+
+sub m_dprint
+{
+  print clr_dbg."DEBUG: $_".clr_end."\n" for split /\n/, join '', @_;
+}
+
+sub m_dprint_t
+{
+  my $t = sprintf '%.6f', shift;
+  print clr_dbg, "DEBUG [${t}s]: ", @_, clr_end, "\n";
+}
+
+sub load_config
+{
+  my $fname = shift;
+  my $args = shift;
+
+  my $config_path = find_config_path($fname) or return;
+  m_dprint("read configuration from '$config_path'") if $debug >=1;
+  my $time = time if $debug >=2;
+  my $config_dir = dirname($config_path);
+  my $cf = ConfigFile->new($config_path, {
+    struct => {'pts' => [qw(options)]},
+    #strict => {'pts' => 1},
+  });
+  $cf->set('', 'PTS_CONFIG_DIR', $config_dir);
+  $cf->load;
+  my @pts_opts = $cf->get_arr('pts', 'options');
+  $args->parse_part(\@pts_opts);
+  m_dprint_t(time - $time, 'configuration loaded') if $debug >=2;
+}
+
+sub find_config_path
+{
+  my $fname = shift;
+  my $path = catfile(cwd(), $fname);
+  m_dprint("check path '$path'") if $debug >=2;
+  return $path if -e $path;
+  my ($drive, $dirs) = splitpath($path);
+  my @dirs = splitdir($dirs); # '/d/i/r/s/' => ('', 'd', 'i', 'r', 's', '');
+  pop @dirs; # remove the last empty dir;
+  pop @dirs; # remove the first parent already checked.
+  while (@dirs) {
+    $path = catpath($drive, catdir(@dirs), $fname);
+    m_dprint("check path '$path'") if $debug >=2;
+    return $path if -e $path;
+    pop @dirs;
+  }
+  undef
+}

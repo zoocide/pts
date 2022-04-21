@@ -1,13 +1,13 @@
 #!/bin/env perl
 use strict;
-use Test::More tests => 23;
+use Test::More tests => 25;
 use File::Spec::Functions qw(catfile);
 BEGIN { eval 'use Time::HiRes qw(time);' }
 
 my @user_args = @ARGV;
 my $pts = '../../bin/pts.pl';
-my $plugins_dir = '-I.';
-my $tasks_dir = '-Ttasks';
+our $plugins_dir = '-I.';
+our $tasks_dir = '-Ttasks';
 my $out_dir = 'output';
 my $make_reference = 0;
 
@@ -30,6 +30,13 @@ test_run('t_args', qw(simple_2 simple_2:name=foo simple_2:name=bar));
 test_run('path_task', qw(./simple_1 tasks/simple_2 ./tasks/simple_2));
 test_run('path_task_set', qw(./task.set tasks/task.set));
 test_run('path_task_set_spec', qw(simple_2 ./simple_2));
+
+## test .ptsconfig ##
+{
+  local $plugins_dir = '';
+  local $tasks_dir = '';
+  test_run('.ptsconfig', qw(simple_2 ./simple_2));
+}
 
 ## test command: parallel ##
 my @tasks = map "t_par:name=t$_,n=$_", 1..3;
