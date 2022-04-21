@@ -102,7 +102,7 @@ sub dprint_t
   print clr_dbg, "DEBUG [${t}s]: ", @_, clr_end, "\n";
 }
 
-sub dirname
+sub m_dirname
 {
   catpath((splitpath($_[0]))[0,1])
 }
@@ -137,8 +137,8 @@ sub load_task_set
   my $cur_dir = shift // curdir;
 
   $cur_dir = file_name_is_absolute($fname)
-           ? dirname($fname)
-           : canonpath(catdir($cur_dir, dirname($fname)));
+           ? m_dirname($fname)
+           : canonpath(catdir($cur_dir, m_dirname($fname)));
 
   dbg1 and dprint("load task set from file '$fname'");
   my @ret;
