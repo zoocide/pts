@@ -6,7 +6,7 @@ use Exceptions::OpenFileError;
 use ConfigFileScheme;
 
 use vars qw($VERSION);
-$VERSION = '0.7.0';
+$VERSION = '0.7.1';
 
 # TODO: allow change comment symbol to ;
 
@@ -292,7 +292,7 @@ sub m_load
   my ($vg, $vn);
   my $as_vn = qr<(\w++)(?{$vn = $^N})>;
   my $as_vg = qr<(?:(\w*)::(?{$vg = $^N})|(?{$vg = $section}))>;
-  my $array_substitution = qr~(?(?{$do_concat})(?!))\$(?:\{$as_vg$as_vn\}|$as_vn)(?:$space|$)(?{
+  my $array_substitution = qr~(?(?{$do_concat})(?!))\$(?:\{$as_vg$as_vn\}|(?{$vg = $section})$as_vn)(?:$space|$)(?{
     push @$parr, $self->get_arr($vg, $vn);
   })~;
   my $value_part = qr<^(?:$array_substitution|$space|$normal_word|$q_str_beg(?:$(?{
