@@ -166,6 +166,7 @@ sub load_config
   $cf->set('', 'PTS_CONFIG_DIR', $config_dir);
   $cf->load;
   my @pts_opts = $cf->get_arr('pts', 'options');
+  m_dprint('pts::options = ', join ', ', map "'$_'", @pts_opts) if $debug >=2;
   $args->parse_part(\@pts_opts);
   m_dprint_t(time - $time, 'configuration loaded') if $debug >=2;
 }
