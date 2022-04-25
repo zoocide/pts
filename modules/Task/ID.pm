@@ -127,7 +127,7 @@ sub m_reset_old
   local our ($vg, $vn, %args);
   my ($self, $s) = @_;
   my $sid;
-  use re 'eval';
+  use if legacy, re => 'eval';
 
   my ($vg, $vn);
   my $var_name = qr<(\w++)(?{$vn = $^N})>;

@@ -210,7 +210,7 @@ sub load_plugins
     }
     $plugins{$pname} = !$@;
     if (dbg2 && exists &{"Plugins::${pname}::process"}) {
-      use B::Deparse;
+      use if dbg2, 'B::Deparse';
       my $d = B::Deparse->new();
       print $d->coderef2text(\&{"Plugins::${pname}::process"}), "\n";
     }
