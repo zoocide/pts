@@ -1,0 +1,1 @@
+pts::options = -T$PTS_CONFIG_DIR/tasks -I$PTS_CONFIG_DIR
