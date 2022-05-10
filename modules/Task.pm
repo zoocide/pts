@@ -62,6 +62,7 @@ sub name_prefix { $_[0]{name_prefix} }
 sub fullname { $_[0]{name_prefix}.$_[0]{name} }
 sub index  { $_[0]{index} }
 sub plugin { $_[0]{plugin} }
+sub plugin_isa { "Plugins::$_[0]{plugin}"->isa($_[1]) }
 sub data_dir { $_[0]{data_dir} }
 sub task_dir { $_[0]{task_dir} }
 sub set_name { $_[0]{name} = $_[1] }
@@ -290,6 +291,10 @@ Method returns index of the task.
 =item plugin()
 
 Method returns plugin name.
+
+=item plugin_isa($class)
+
+Method executes I<isa($class)> method of the plugin.
 
 =item data_dir()
 
