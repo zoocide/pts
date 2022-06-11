@@ -287,6 +287,9 @@ sub process_task
   dbg1 and $o->push('----- ', $task->fullname, " -----\n");
   dbg1 and $task->set_debug(1);
   dbg1 and Plugins::Base::dtimer_reset('main_task_timer');
+  dbg1 and local $Plugins::Base::out = $o;
+  dbg2 and Plugins::Base::dprint('plugin = '.$task->plugin);
+
   my ($res, @msg);
   try {
     $res = ('Plugins::'.$task->plugin)->process_wrp($o, $task, $db);
@@ -295,10 +298,7 @@ sub process_task
     push @msg, format_msg($@);
     $res = 0;
   };
-  if (dbg1) {
-    local $Plugins::Base::out = $o;
-    Plugins::Base::dprint_t('main_task_timer', 'task \''.$task->fullname.'\' finished');
-  }
+  dbg1 and Plugins::Base::dprint_t('main_task_timer', 'task \''.$task->fullname.'\' finished');
 
   push @{$stats->{all}}, $task;
   my $status;
