@@ -12,7 +12,7 @@ use constant {
   dbg1 => defined &CmdArgs::DEBUG::ALL ? &CmdArgs::DEBUG::ALL : 0,
 };
 
-our $VERSION = '0.6.0';
+our $VERSION = '0.6.1';
 our @EXPORT_OK = qw(ptext);
 
 ## TODO: Add more tests (help and usage! messages).
@@ -315,6 +315,9 @@ sub parse_part
   my $wrp_iters = $self->{parse}{wrp_iters};
 
   dbg1 and dprint("parse arguments = '", join(' ', @args)."'");
+
+  # Reset '--' only arguments state.
+  $self->{options_end} = 0;
 
   ## parse ##
   try{
