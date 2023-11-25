@@ -3,6 +3,15 @@ use strict;
 
 our $in_parallel = 0;
 
+sub help_message
+{
+  my $class = shift;
+  my $task = shift;
+  my $name = $task->id;
+  return $task->get_var('', 'help_message', undef) //
+    "The task '$name' refers to tasks parallel execution engine.";
+}
+
 # Plugins::Parallel->on_prepare($task, $cur_ind, \@all_tasks, \@task_list, $db);
 sub on_prepare
 {
