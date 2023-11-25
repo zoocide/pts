@@ -10,7 +10,9 @@ sub help_message
   my $class = shift;
   my $task = shift;
   my $name = $task->id;
-  return "The task '$name' shows information about the first following task and interrupts execution.";
+  return "The task '$name' shows information about the first following task and interrupts execution."
+    ."\nUse command 'pts help a_task' to see the description of 'a_task' task."
+    ."\nUse command 'pts --help' to see the help message about 'pts' itself.";
 }
 
 # Plugins::PluginHelp->on_prepare($task, $cur_ind, \@all_tasks, \@task_list, $db);
