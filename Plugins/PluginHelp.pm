@@ -25,8 +25,6 @@ sub on_prepare
   # $_[1] - $tasks_list
   # $_[2] - $db
 
-  dbg1 and dprint(join ', ', @{$_[0]});
-
   my $next_task = $_[0][$$pind+1];
   my $help_msg =
     !defined $next_task ? $class->help_message($task) :
