@@ -62,7 +62,9 @@ sub name_prefix { $_[0]{name_prefix} }
 sub fullname { $_[0]{name_prefix}.$_[0]{name} }
 sub index  { $_[0]{index} }
 sub plugin { $_[0]{plugin} }
+sub plugin_class { "Plugins::$_[0]{plugin}" }
 sub plugin_isa { "Plugins::$_[0]{plugin}"->isa($_[1]) }
+sub plugin_can { "Plugins::$_[0]{plugin}"->can($_[1]) }
 sub data_dir { $_[0]{data_dir} }
 sub task_dir { $_[0]{task_dir} }
 sub set_name { $_[0]{name} = $_[1] }
