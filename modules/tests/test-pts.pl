@@ -31,6 +31,9 @@ test_run('path_task', qw(./simple_1 tasks/simple_2 ./tasks/simple_2));
 test_run('path_task_set', qw(./task.set tasks/task.set));
 test_run('path_task_set_spec', qw(simple_2 ./simple_2));
 
+## test nested task-set files ##
+test_run('nested_taskset', qw(tasks/nested/task.set));
+
 ## test .ptsconfig ##
 {
   local $plugins_dir = '';

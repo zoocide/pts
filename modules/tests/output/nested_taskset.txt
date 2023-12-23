@@ -1,0 +1,24 @@
+ok
+ok............ tasks/## tasks/task.set ##
+foo:ok
+ok............ tasks/foo
+foo:ok
+ok............ tasks/foo
+root simple_1:ok
+ok............ ./root simple_1
+ok
+ok............ #################
+ok
+ok............ tasks/## tasks/task.set ##
+foo:ok
+ok............ tasks/foo
+foo:ok
+ok............ tasks/foo
+root simple_1:ok
+ok............ ./root simple_1
+
+statistics:
+num total    = 9
+num complete = 9
+num skipped  = 0
+num failed   = 0
