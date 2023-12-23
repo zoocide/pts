@@ -1,6 +1,9 @@
 #!/bin/env perl
 use strict;
 #BEGIN { use Carp; $SIG{__WARN__} = sub {confess}; }
+my $begin_time;
+BEGIN{ eval{ require Time::HiRes; Time::HiRes->import('time') } }
+BEGIN{ $begin_time = time; }
 use FindBin;
 use lib "$FindBin::RealBin/../modules";
 use lib "$FindBin::RealBin/../modules/external";
@@ -19,7 +22,6 @@ use TaskDB;
 use File::Basename qw(dirname);
 use File::Spec::Functions qw(splitpath catpath splitdir catdir catfile);
 
-BEGIN{ eval{ require Time::HiRes; Time::HiRes->import('time') } }
 BEGIN{
   my $v = -t STDOUT && ($^O ne 'MSWin32' || eval{ require Win32::Console::ANSI });
   *use_colors = sub () { $v }
@@ -110,6 +112,8 @@ our $args = CmdArgs->declare(
 );
 $args->parse_begin;
 $args->parse_part(\@ARGV);
+m_dprint_t($script_start_time - $begin_time, 'measured compilation time') if $debug >=2;
+m_dprint('args = ', join ', ', map "'$_'", @ARGV) if $debug >=2;
 m_dprint_t(time - $script_start_time, 'command line arguments parsed') if $debug >=2;
 load_config($config_fname, $args) if !$args->is_opt('global');
 $args->parse_end;
@@ -136,6 +140,7 @@ defined $num_procs && $num_procs <= 0 and die "the number of workers should be a
 my $r = do 'pts-main.pm';
 die $@ if $@;
 die "could not do 'pts-main.pm': $!" if !defined $r;
+m_dprint_t(time - $begin_time, 'measured overall time') if $debug >=2;
 $r;
 
 
