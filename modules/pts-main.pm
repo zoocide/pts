@@ -161,6 +161,7 @@ sub load_task_set
     my $args = ($short_id =~ s/\s*:(?:[^\\]|$).*//)
              ? substr $s, $-[0]
              : '';
+    my $short_decl = $short_id eq $s;
 
     ## set the path relative to the  $cur_dir ##
     if (!file_name_is_absolute($short_id)) {
@@ -173,6 +174,13 @@ sub load_task_set
           $s = catpath('', $t_dir, $t_fname).$args;
         }
       }
+    }
+
+    ## try to load the nested task-set file ##
+    if ($short_decl && is_task_set($s)) {
+      try { push @ret, load_task_set($db, $s) }
+      catch { throw TextFileError => $fname, $ln, $@ };
+      next;
     }
 
     ## try to load the task ##
