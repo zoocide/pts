@@ -6,7 +6,7 @@ use Exceptions::OpenFileError;
 use ConfigFileScheme;
 
 use vars qw($VERSION);
-$VERSION = '0.7.1';
+$VERSION = '0.8.0';
 
 # TODO: allow change comment symbol to ;
 
@@ -67,6 +67,8 @@ ConfigFile - read and write configuration files aka '.ini'.
 
 =cut
 
+# Use legacy code because it is significantly faster. (5500op/s vs 1200op/s)
+use constant legacy => 1;
 BEGIN {
   if (!exists &legacy) {
     my $v = $^V < 5.018;
@@ -109,15 +111,30 @@ sub m_load_old
 
   my $section = '';
   my $gr = '';
-  my $interpolate_str = sub {
+  my $var_flat_spec = qr~(?:(\w*+)::)?(\w++)~;
+  my $var_nested_spec = qr~((?:\$\{(?-1)\}|\$?[\w:]++)++)~;
+  my $substitute_flat_var = sub {
+    my $spec = shift;
+    $spec =~ /^$var_flat_spec$/ ? $self->get_var($1 // $section, $2) : undef
+  };
+  my $interpolate_str;
+  $interpolate_str = sub {
     my $str = shift;
-    $str =~ s/
+    $str =~ s~
       # normalize string
       \\(n) | \\(t) | \\(.)
       |
       # interpolate variables
       \$(\{(?:(\w*)::)?)?(\w++)(?(4)\})
-    /$1 ? "\n" : $2 ? "\t" : $3 ? $3 : $self->get_var(defined $5 ? $5||'' : $section, $6, '')/gex;
+      |
+      # interpolate nested variables
+      \$\{$var_nested_spec\}
+    ~
+      my $t;
+      $1 ? "\n" : $2 ? "\t" : $3 ? $3
+        : $6 ? $self->get_var(defined $5 ? $5||'' : $section, $6, '')
+        : $substitute_flat_var->($t = $interpolate_str->($7)) // "\${$t}"
+    ~gex;
     $str
   };
   my $normalize_str = sub {
@@ -210,6 +227,11 @@ sub m_load_old
           # array interpolation
           push @$parr, $self->get_arr(defined $2 ? $2||'' : $section, $3);
         }
+        elsif ($1 =~ /^\$\{$var_nested_spec\}(?=\s|#|$)/) {
+          # array interpolation for nested variable
+          my $spec = $interpolate_str->($1);
+          push @$parr, $spec =~ /^$var_flat_spec$/ ? $self->get_arr($1 // $section, $2) : "\${$spec}";
+        }
         else {
           push @$parr, &$interpolate_str($1);
         }
@@ -265,15 +287,41 @@ sub m_load
   my ($ln, $s, $var, $parr, $str_beg_ln, $is_first, $q);
   my $add_word = sub { $do_concat ? $parr->[-1] .= $_[0] : push @$parr, $_[0]; $do_concat = 1 };
 
-  my $interpolate_str = sub {
+  # NOTE: Using (?{ code }) inside another (?{ code }) breaks the thing.
+  my $vg_spec = qr~(?<vg>\w*)::~;
+  my $vn_spec = qr~(?<vn>\w++)~;
+  my $v_spec = qr~$vg_spec?$vn_spec~;
+  my $v_symb = qr~[\w:]~;
+  my $var_use = qr~
+    (?'var_use'
+      \$ (?:
+        (?>$vn_spec) |
+        \{ (?:
+          (?>$v_spec) |
+          (?'nested' (?:(?&var_use)|$v_symb++)++ )
+        ) \}
+      )
+    )
+  ~x;
+  my $substitute_flat_var = sub {
+    my $s = shift;
+    $s =~ /^$v_spec$/ ? $self->get_var($+{vg}//$section, $+{vn}, '') : undef
+  };
+  my $interpolate_str;
+  $interpolate_str = sub {
     my $str = shift;
-    $str =~ s/
+    $str =~ s~
       # normalize string
-      \\(n) | \\(t) | \\(.)
+      \\(.)
       |
       # interpolate variables
-      \$(\{(?:(\w*)::)?)?(\w++)(?(4)\})
-    /$1 ? "\n" : $2 ? "\t" : $3 ? $3 : $self->get_var(defined $5 ? $5||'' : $section, $6, '')/gex;
+      $var_use
+    ~
+      my $t;
+      defined $1 ? ($1 eq 'n' ? "\n" : $1 eq 't' ? "\t" : $1)
+        : defined $+{vn} ? $self->get_var($+{vg}//$section, $+{vn}, '')
+        : $substitute_flat_var->($t = $interpolate_str->($+{nested})) // "\${$t}"
+    ~gex;
     $str
   };
   my $normalize_str = sub {
@@ -289,11 +337,33 @@ sub m_load
   my $qq_str_end = qr~((?:[^\\"]|\\(?:.|$))*+)"(?{ $parr->[-1].=&$interpolate_str($^N)})~s;
   my $q_str = qr<$q_str_beg$q_str_end>;
   my $qq_str = qr<$qq_str_beg$qq_str_end>;
-  my ($vg, $vn);
+  my ($vg, $vn, $not_spec);
   my $as_vn = qr<(\w++)(?{$vn = $^N})>;
   my $as_vg = qr<(?:(\w*)::(?{$vg = $^N})|(?{$vg = $section}))>;
-  my $array_substitution = qr~(?(?{$do_concat})(?!))\$(?:\{$as_vg$as_vn\}|(?{$vg = $section})$as_vn)(?:$space|$)(?{
-    push @$parr, $self->get_arr($vg, $vn);
+  my $as_var_use = qr`
+    (?&as_var_use) #< recursion is used to clean %+ values after a match.
+    (?(DEFINE)
+      (?'as_var_use' $var_use (?{
+        undef $not_spec;
+        if (defined $+{vn}) {
+          $vg = $+{vg} // $section;
+          $vn = $+{vn};
+        }
+        else {
+          my $spec = $interpolate_str->($+{nested});
+          if ($spec =~ /^$v_spec$/) {
+            $vg = $+{vg} // $section;
+            $vn = $+{vn};
+          }
+          else {
+            $not_spec = "\${$spec}";
+          }
+        }
+      }))
+    )
+  `x;
+  my $array_substitution = qr~(?(?{$do_concat})(?!))$as_var_use(?:$space|$)(?{
+    push @$parr, defined $not_spec ? $not_spec : $self->get_arr($vg, $vn);
   })~;
   my $value_part = qr<^(?:$array_substitution|$space|$normal_word|$q_str_beg(?:$(?{
     $q = '\'';
@@ -528,6 +598,14 @@ corresponding variable existing at that moment.
 In the first and second forms, the group was treated as the current group.
 If the whole word is the one variable substitution, this word will be replaced
 by the list value of the variable.
+
+=head3 Nested variables substitution
+
+ ${var${suffix}}
+
+When construct is encountered in a value part, parser attempts to recursivle
+substitute inner variables to gain the variable name. If the name corresponds the
+I<group::var> form, the expression is replaced by its value.
 
 =head3 String literal "", ''
 
