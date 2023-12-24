@@ -1,6 +1,6 @@
 #!/bin/env perl
 use strict;
-use Test::More tests => 25;
+use Test::More tests => 27;
 use File::Spec::Functions qw(catfile);
 BEGIN { eval 'use Time::HiRes qw(time);' }
 
