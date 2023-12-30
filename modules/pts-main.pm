@@ -250,6 +250,8 @@ sub prepare_tasks
     my $t = $_[$i];
     my $class = 'Plugins::'.$t->plugin;
     if ($class->can('on_prepare')) {
+      dbg2 and dprint("prepare '", $t->id, "' task[$i]");
+      # An exception is not captured to abort the execution.
       $class->on_prepare($t, $i, \@_, \@ret, $db);
       next;
     }
