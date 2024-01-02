@@ -278,21 +278,21 @@ __END__
 
 =item id()
 
-Method returns object Task::ID for this task.
+Method returns an object L<Task::ID> for this task.
 
 =item name()
 
-Method returns display name of the task.
+Method returns the display name of the task.
 It is constructed while task creation, based on I<name> variable from configuration file
 and can be changed by I<set_name> method.
 
 =item index()
 
-Method returns index of the task.
+Method returns the index of the task.
 
 =item plugin()
 
-Method returns plugin name.
+Method returns the plugin name.
 
 =item plugin_isa($class)
 
@@ -300,11 +300,11 @@ Method executes I<isa($class)> method of the plugin.
 
 =item data_dir()
 
-Method returns path to the task data directory.
+Method returns a path to the task data directory.
 
 =item task_dir()
 
-Method returns path to the directory containing task configuration file.
+Method returns a path to the directory containing task configuration file.
 
 =item set_name($name)
 
@@ -313,7 +313,7 @@ It does not affect variable I<name>.
 
 =item set_index($ind)
 
-Set task index.
+Set the task index.
 
 =item make_data_dir($dir)
 
@@ -338,7 +338,7 @@ Return true if configuration file contains the specified variable.
 
 =item get_var($group_name, $var_name, $default_value)
 
-Return string value of the specified variable.
+Return a string value of the specified variable.
 Method returns $defualt_value if the variable is not set.
 It raises exception when variable is not set and $default_value is not specified.
 
@@ -353,8 +353,8 @@ Method raises exception when variable is not set and $default_value is not speci
 
 =item reload_config(SCHEME)
 
-Reload config file with the specified SCHEME.
-SCHEME could be a ConfigFileScheme object or a scheme specification, e.g.:
+Reload the config file with the specified SCHEME.
+SCHEME could be a L<ConfigFileScheme> object or a scheme specification, e.g.:
 
 C<< $task->reload_config(multiline => 1, ...); >>
 
