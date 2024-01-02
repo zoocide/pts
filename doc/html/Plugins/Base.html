@@ -1,0 +1,50 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title></title>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" type="text/css" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:" />
+</head>
+
+<body>
+
+
+
+<ul id="index">
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+</ul>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  my $result = Plugins::PluginName-&gt;process($task, $task_database);
+  print &#39;task &#39;, ($result ? &#39;complete&#39; : &#39;failed&#39;), &quot;\n&quot;;
+
+  #########################
+
+  use Plugins::Base v0.4;
+  sub process {
+    dbg1 and dprint(&quot;debug message&quot;);
+    print_out(&quot;normal output\n&quot;);
+  }
+
+  #########################
+
+  use Plugins::Base v0.4.1;
+
+  dbg1 and dtimer_reset(&#39;timer1&#39;);
+  #... do something ...
+  dgb1 and dpirnt_t(&#39;timer1&#39;, &quot;something is done&quot;);</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p>This is the base of all plugins.</p>
+
+
+</body>
+
+</html>
+
+

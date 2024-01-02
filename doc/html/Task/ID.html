@@ -1,0 +1,112 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title></title>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" type="text/css" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:" />
+</head>
+
+<body>
+
+
+
+<ul id="index">
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#METHODS">METHODS</a></li>
+  <li><a href="#FUNCTIONS">FUNCTIONS</a></li>
+</ul>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<h1 id="METHODS">METHODS</h1>
+
+<dl>
+
+<dt id="Task::ID-new-s">Task::ID-&gt;new($s)</dt>
+<dd>
+
+<p>It returns the object constructed from the <i>$s</i> string.</p>
+
+</dd>
+<dt id="reset-s">reset($s)</dt>
+<dd>
+
+<p>It replaces the object content to correspond the specified <i>$s</i> string.</p>
+
+</dd>
+<dt id="id">id</dt>
+<dd>
+
+<p>The string of form <i>&#39;a/path/task_name:arg1=value1,arg2=e1 e2&#39;</i>.</p>
+
+</dd>
+<dt id="short_id">short_id</dt>
+<dd>
+
+<p>The string of form <i>&#39;a/path/task_name&#39;</i>.</p>
+
+</dd>
+<dt id="basename">basename</dt>
+<dd>
+
+<p>The string of form <i>&#39;task_name&#39;</i>.</p>
+
+</dd>
+<dt id="dirs">dirs</dt>
+<dd>
+
+<p>It returns a list <code>(&#39;a&#39;, &#39;path&#39;)</code> for the task path <i>&#39;a/path/task_name.conf&#39;</i>.</p>
+
+</dd>
+<dt id="args">args</dt>
+<dd>
+
+<p>It returns a hash with the task arguments (e.g. <code>(arg1 =&gt; [&#39;value1&#39;], arg2=[&#39;e1&#39;, &#39;e2&#39;]})</code>).</p>
+
+</dd>
+<dt id="args_hash">args_hash</dt>
+<dd>
+
+<p>Similar to the <i>args</i> method, but returns a hashref instead of a hash (e.g. <code>{arg1 =&gt; [&#39;value1&#39;], arg2=[&#39;e1&#39;, &#39;e2&#39;]}}</code>).</p>
+
+</dd>
+<dt id="args_str">args_str</dt>
+<dd>
+
+<p>It returns the argument part of the ID string (e.g. <i>&#39;arg1=value1,arg2=e1 e2&#39;</i>).</p>
+
+</dd>
+<dt id="has_args">has_args</dt>
+<dd>
+
+<p>It returns true if the task has any arguments.</p>
+
+</dd>
+<dt id="has_arg-group-var">has_arg($group, $var)</dt>
+<dd>
+
+<p>It returns true if the argument is specified for the task.</p>
+
+</dd>
+</dl>
+
+<h1 id="FUNCTIONS">FUNCTIONS</h1>
+
+<dl>
+
+<dt id="arg2str-gr-var-value">arg2str($gr, $var, @value)</dt>
+<dd>
+
+<p>It makes an argument-like string with the specified vairiable and value. The <code>&quot;${gr}::&quot;</code> prefix will be ommited, if the <i>$gr</i> is <i>undef</i>. The <code>&quot;${gr}::${var}=&quot;</code> part will be ommited, if the <i>$var</i> is <i>undef</i>.</p>
+
+</dd>
+</dl>
+
+
+</body>
+
+</html>
+
+

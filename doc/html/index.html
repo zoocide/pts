@@ -1,0 +1,194 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title></title>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" type="text/css" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:" />
+</head>
+
+<body>
+
+
+
+<ul id="index">
+  <li><a href="#Decription">Decription</a>
+    <ul>
+      <li><a href="#Implementation">Implementation</a></li>
+    </ul>
+  </li>
+  <li><a href="#Plugin-development">Plugin development</a>
+    <ul>
+      <li><a href="#Virtual-methods">Virtual methods</a></li>
+    </ul>
+  </li>
+</ul>
+
+<h1 id="Decription">Decription</h1>
+
+<p><b>PTS</b> is a task processing system. It is designed to make routine tasks easy. It was originally created to simplify functional testing of programs. Thus, the first definitions of the tasks and goals of the system appeared:</p>
+
+<ul>
+
+<li><p>All tasks were considered independent but in future it may change.</p>
+
+</li>
+<li><p>A task is some work that needs to be completed and display its status.</p>
+
+</li>
+<li><p>Usually, there is a set of tasks that do the same work, but with the different parameters.</p>
+
+</li>
+<li><p>The user requires to see the status of each task, especially for the failed ones.</p>
+
+</li>
+<li><p>The user can easily handle different sets of tasks.</p>
+
+</li>
+<li><p>The user can easily rerun the failed tasks only.</p>
+
+</li>
+<li><p>It is desirable to be able to perform tasks in parallel to speedup the execution.</p>
+
+</li>
+<li><p>It should be cross-platform.</p>
+
+</li>
+</ul>
+
+<h2 id="Implementation">Implementation</h2>
+
+<p>The task in the system is defined as a pair of a configuration file and a plugin that do the work. A configuration file (.conf) is a text file that look like ini-file. It has extended syntax to make it more convenient (see <a href="external/ConfigFile.html">ConfigFile</a> for syntax rules). A configuration file must specify the <i>::plugin</i> variable, to set the plugin to process the task. A string <code>plugin=PluginName</code> defines to use the <code>Plugins::PluginName</code> package written in Perl to process the task. The user may develop own plugin or use one of an existing. So, the task is defined by the configuration file, which in turn defines the plugin.</p>
+
+<p><i>PTS</i> accepts three different ways to select tasks to process:</p>
+
+<ul>
+
+<li><p>The path to the task definition config file. It may be relative or absolute. When the file is inside the current directory, the <i>./</i> prefix is required for the relative path. The filename must ends with <i>.conf</i>.</p>
+
+</li>
+<li><p>The name of the task. A name of the task is the basename of its definition config file. In this case, <i>PTS</i> searches the specified name inside known task directories. The first found will be processed.</p>
+
+</li>
+<li><p>The task-set filename. An absolute or relative path of the file should be specified. When the file is inside the current directory, the <i>./</i> prefix is required for the relative path. The filename must <b>not</b> ends with <i>.conf</i>.</p>
+
+</li>
+</ul>
+
+<p>It is possible to specify arguments for a task. The synax as following: <code>pts &quot;task:arg1=value1,gr::arg2=value2,array=elem1 elem2&quot;</code>. This example assigns the specified variables before the task configuration file is read. These values are accessible inside the configuration file as normal variables.</p>
+
+<p>The form of an argument assignment <code>task:flag</code> is the shortcut of the <code>task:flag=1</code>.</p>
+
+<h1 id="Plugin-development">Plugin development</h1>
+
+<p>The plugin must inherit from the <a href="Plugins/Base.html">Plugins::Base</a> package.</p>
+
+<h2 id="Virtual-methods">Virtual methods</h2>
+
+<dl>
+
+<dt id="on_prepare-class-task-index-all_tasks-prepared_tasks-db">on_prepare($class, $task, $index, $all_tasks, $prepared_tasks, $db)</dt>
+<dd>
+
+<p><i>PTS</i> calls this method for every task from the input task sequence before the start of the processing stage. The method should add the <i>$task</i> to the <i>$prepared_tasks</i> list if it should be processed on the next stage. The default implementation does it for you.</p>
+
+<ul>
+
+<li><p><i>$class</i> - the class name for which this method is called (<code>$class-&gt;on_prepare(...)</code>).</p>
+
+</li>
+<li><p><i>$task</i> - the object of a <a href="./.\Task.html">Task</a> type.</p>
+
+<p>It represents the current task to prepare and has a <i>$class</i> plugin specified.</p>
+
+</li>
+<li><p><i>$index</i> - the index of the <i>$task</i> in the <i>$all_tasks</i> list.</p>
+
+<p>It is used to get other tasks from the input list. For example, <i>Parallel</i> plugin does its own preparation for the next parallel section. So it uses the code <code>$$pind = $last_prepared_index</code> to advance the index for prepared tasks. Where <i>$pind</i> is set by <code>my $pind = \shift;</code>.</p>
+
+</li>
+<li><p><i>$all_tasks</i> - the list of all input tasks.</p>
+
+<p>All of them are meant to be prepared and then processed.</p>
+
+</li>
+<li><p><i>$prepared_tasks</i> - the list of tasks to be processed.</p>
+
+<p>The default <i>on_prepare</i> method appends the <i>$task</i> to the <i>$prepared_tasks</i> list. When you override this method, you must do this yourself if it meant to be.</p>
+
+<p>Actually, it is not exactly a flat list. It can contain nested lists which tasks should be processed in parallel. But that is not important if you do not want to change the parallel execution organization.</p>
+
+</li>
+<li><p><i>$db</i> - the task database. See <a href="./.\TaskDB.html">TaskDB</a>.</p>
+
+</li>
+</ul>
+
+<p>The return value is not used.</p>
+
+</dd>
+<dt id="process-class-task-db">process($class, $task, $db)</dt>
+<dd>
+
+<p>The processing stage begins after the preparation stage. It implies the execution of <i>process</i> method for every prepared task.</p>
+
+<p>Use <i>print_out</i> function (see <a href="Plugins/Base.html">Plugins::Base</a>) to gain the consistent output of the tasks executed in parallel.</p>
+
+<ul>
+
+<li><p><i>$class</i> - the class name for which this method is called (<code>$class-&gt;on_process(...)</code>).</p>
+
+</li>
+<li><p><i>$task</i> - the object of a <a href="./.\Task.html">Task</a> type.</p>
+
+<p>It represents the current task to process and has a <i>$class</i> plugin specified.</p>
+
+</li>
+<li><p><i>$db</i> - the task database. See <a href="./.\TaskDB.html">TaskDB</a>.</p>
+
+</li>
+</ul>
+
+<p>The return value indicates the status of the task. It may be one of the following:</p>
+
+<ul>
+
+<li><p><i>&#39;skipped&#39;</i> - indicates that task is intentionally skipped.</p>
+
+</li>
+<li><p>A Perl true value. It indicates the successful processing.</p>
+
+</li>
+<li><p>A Perl false value. It indicates a failure.</p>
+
+</li>
+</ul>
+
+<p>An exception raised during the task processing indicates the failed task status and sets the exception content as the failure reason.</p>
+
+</dd>
+<dt id="help_message-class-task">help_message($class, $task)</dt>
+<dd>
+
+<p>The method returns a string with the task description. The incorporated <i>help</i> task calls this method and show the result to the user.</p>
+
+<ul>
+
+<li><p><i>$class</i> - the class name for which this method is called (<code>$class-&gt;help_message(...)</code>).</p>
+
+</li>
+<li><p><i>$task</i> - the <a href="./.\Task.html">Task</a> object which message is requested.</p>
+
+</li>
+</ul>
+
+</dd>
+</dl>
+
+
+</body>
+
+</html>
+
+

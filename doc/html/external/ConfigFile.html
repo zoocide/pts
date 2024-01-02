@@ -1,0 +1,251 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>ConfigFile - read and write configuration files aka '.ini'.</title>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" type="text/css" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:" />
+</head>
+
+<body>
+
+
+
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#CONFIGURATION-FILE">CONFIGURATION FILE</a>
+    <ul>
+      <li><a href="#Group">Group</a></li>
+      <li><a href="#Variable">Variable</a>
+        <ul>
+          <li><a href="#Variables-substitution">Variables substitution</a></li>
+          <li><a href="#Nested-variables-substitution">Nested variables substitution</a></li>
+          <li><a href="#String-literal">String literal &quot;&quot;, &#39;&#39;</a></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><a href="#METHODS">METHODS</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#LICENSE">LICENSE</a></li>
+</ul>
+
+<h1 id="NAME">NAME</h1>
+
+<p>ConfigFile - read and write configuration files aka &#39;.ini&#39;.</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  ## load configuration file ##
+  my $decl = ConfigFileScheme-&gt;new( multiline =&gt; 1,... );
+  my $cf   = ConfigFile-&gt;new($filename, $decl);
+  # &lt;=&gt;
+  my $cf = ConfigFile-&gt;new($filename, { multiline =&gt; 1,... });
+  # &lt;=&gt;
+  my $cf = ConfigFile-&gt;new($filename,   multiline =&gt; 1,...  );
+  # or
+  my $cf = ConfigFile-&gt;new($filename);
+
+  # Ignoring unrecognized lines is useful when you want to read some scalar
+  # variables, but there can be multiline variables and you are not interested
+  # in these values.
+  $cf-&gt;skip_unrecognized_lines(1);
+
+  try{
+    $cf-&gt;load; #&lt; all checks are included
+  }
+  catch{
+    print map &quot;warning: $_\n&quot;, @{$@};
+  } &#39;List&#39;;
+  # &lt;=&gt;
+  print &quot;warning: $_\n&quot; for $cf-&gt;load; #&lt; It raises exception if can not open file.
+
+  ## access variables ##
+  my $str = $cf-&gt;get_var(&#39;group&#39;, &#39;var&#39;, &#39;default value&#39;);
+  my @array = $cf-&gt;get_arr(&#39;group&#39;, &#39;var&#39;, @default_value);
+
+  my $value;
+  $value = $cf-&gt;get_var(&#39;group&#39;, &#39;var&#39;, &#39;default value&#39;);
+  # &lt;=&gt;
+  $value = $cf-&gt;is_set(&#39;group&#39;, &#39;var&#39;) ? $cf-&gt;get_var(&#39;group&#39;, &#39;var&#39;)
+                                       : &#39;default value&#39;;
+
+  ## save configuration file ##
+  my $cf = ConfigFile-&gt;new($file_name);
+  $cf-&gt;set_group(&#39;group&#39;);
+  $cf-&gt;set_var(&#39;var_name&#39;, @values);      #&lt; set the $group::var_name variable.
+  $cf-&gt;set(&#39;group&#39;, &#39;var_name&#39;, @values); #&lt; the same but not changing current group.
+  $cf-&gt;set_var(&#39;var2&#39;, @values);          #&lt; set the $group::var2 variable.
+  $cf-&gt;unset(&#39;group&#39;, &#39;var_name&#39;);        #&lt; remove the $group::var_name variable.
+  $cf-&gt;save;
+
+  --------
+  $cf-&gt;check_required;         ##&lt; according to declaration
+  $cf-&gt;check_required($hash);  ##&lt; according to $hash, defining required variables
+  $cf-&gt;check_required(&#39;gr&#39; =&gt; [@vars],...); ##&lt; hash constructor</code></pre>
+
+<h1 id="CONFIGURATION-FILE">CONFIGURATION FILE</h1>
+
+<p>The file consists of groups and variables definition lines. One file line for one definition. Also, there can be blank lines and comment lines. Comments begin with # and end with the line. Two lines can be joined by placing a backslash <i>\</i> at the end of the first one.</p>
+
+<h2 id="Group">Group</h2>
+
+<pre><code> [group_name]</code></pre>
+
+<p><i>group_name</i> is one word matching <b>\w*</b> pattern. Group definition splits the file into sections. Each group has its own variables set. Different groups can have variables with the same name, but it still different variables.</p>
+
+<h2 id="Variable">Variable</h2>
+
+<pre><code> var_name = value
+ # or
+ var_name @= elem1 elem2
+ elem3
+ ...
+ # or
+ group::var = value</code></pre>
+
+<p><i>var_name</i> is one word matching <b>\w+</b> pattern. The value part of the string begins just after the assignment symbol and ends with the line. Value is a space-separated list of words. There are special words such as string literal and variable substitution. A sequence of words without any space between them is one word. Variable declaration parsed into a list of words, which can be accessed by the <a href="#get_arr">&quot;get_arr&quot;</a> and <a href="#get_var">&quot;get_var&quot;</a> methods. By default, variable declaration ends with the line (except string literal, which can have line feeding inside), but there is a special case when the parser treats all next lines as the value part continuation until the next declaration occurred. This behavior is enabled by telling the parser that the variable is <b>multiline</b> or by using the variable declaration second form (<code>var_name @= ...</code>). If specified the group, the variable is considered from that group.</p>
+
+<h3 id="Variables-substitution">Variables substitution</h3>
+
+<pre><code> $var or ${var} or ${group::var}</code></pre>
+
+<p>Variables substitution is performed after the value part parsed into the list. Once encountered such a construct it is replaced with the string value of the corresponding variable existing at that moment. In the first and second forms, the group was treated as the current group. If the whole word is the one variable substitution, this word will be replaced by the list value of the variable.</p>
+
+<h3 id="Nested-variables-substitution">Nested variables substitution</h3>
+
+<pre><code> ${var${suffix}}</code></pre>
+
+<p>When construct is encountered in a value part, parser attempts to recursivle substitute inner variables to gain the variable name. If the name corresponds the <i>group::var</i> form, the expression is replaced by its value.</p>
+
+<h3 id="String-literal">String literal &quot;&quot;, &#39;&#39;</h3>
+
+<p>String literal begins with the quote <i>&#39;</i> or <i>&quot;</i> and ends with the corresponding quote. String literal is treated as one word. All spaces in a quoted-string are preserved. Symbol <i>#</i> inside the quoted-string has no special meaning. Like in Perl inside a <i>&#39;&#39;</i> string parser will not interpolate variables and symbol <i>\</i> will have special meaning only just before another <i>\</i> or <i>&#39;</i>. In the double-quoted string <i>&quot;&quot;</i> variables interpolation is enabled and symbol <i>\</i> will shield any next symbol or have a special meaning, like <i>&quot;\n&quot;</i>.</p>
+
+<h1 id="METHODS">METHODS</h1>
+
+<dl>
+
+<dt id="new-filename-declaration">new($filename, declaration)</dt>
+<dd>
+
+<pre><code>  my $decl = ConfigFileScheme-&gt;new( multiline =&gt; 1,... );
+  my $cf   = ConfigFile-&gt;new($filename, $decl);
+  # the same as #
+  my $cf = ConfigFile-&gt;new($filename, { multiline =&gt; 1,... });
+  # the same as #
+  my $cf = ConfigFile-&gt;new($filename,   multiline =&gt; 1,...  );
+  # or #
+  my $cf = ConfigFile-&gt;new($filename);</code></pre>
+
+</dd>
+<dt id="load">load</dt>
+<dd>
+
+<p>Read and parse the file. All occurred errors will be thrown as exceptions. If used in list context, it returns parse errors as a list, but open file error will be thrown.</p>
+
+</dd>
+<dt id="check_required">check_required</dt>
+<dd>
+
+</dd>
+<dt id="check_required-hash">check_required($hash)</dt>
+<dd>
+
+</dd>
+<dt id="check_required-hash1">check_required(%hash)</dt>
+<dd>
+
+<p>This method checks all required variables are set. As the parameter it can recieve <i>required</i> part of the scheme. This method is included into <a href="#load">&quot;load&quot;</a> method.</p>
+
+</dd>
+<dt id="filename">filename</dt>
+<dd>
+
+<p>Method returns associated filename.</p>
+
+</dd>
+<dt id="group_names">group_names</dt>
+<dd>
+
+<p>Method returns an array of all group names.</p>
+
+</dd>
+<dt id="var_names-group">var_names(&#39;group&#39;)</dt>
+<dd>
+
+<p>Method returns an array of all variable names from the specified group.</p>
+
+</dd>
+<dt id="get_var-group-variable-default-value">get_var(&#39;group&#39;, &#39;variable&#39;, &#39;default value&#39;)</dt>
+<dd>
+
+<p>Get group::variable value as a string. If the variable is not set, method returns &#39;default value&#39;.</p>
+
+</dd>
+<dt id="get_arr-group-variable-default_value">get_arr(&#39;group&#39;, &#39;variable&#39;, @default_value)</dt>
+<dd>
+
+<p>Get group::variable value as an array. If the variable is not set, method returns @default_value.</p>
+
+</dd>
+<dt id="set_filename-filename">set_filename(&#39;filename&#39;)</dt>
+<dd>
+
+<p>Set the filename.</p>
+
+</dd>
+<dt id="set_group-group">set_group(&#39;group&#39;)</dt>
+<dd>
+
+<p>Set current group to the specified name.</p>
+
+</dd>
+<dt id="set_var-variable-value">set_var(&#39;variable&#39;, @value)</dt>
+<dd>
+
+<p>Assign @value to the variable from the current group.</p>
+
+</dd>
+<dt id="set-group-variable-value">set(&#39;group&#39;, &#39;variable&#39;, @value)</dt>
+<dd>
+
+<p>Assign @value to the <i>$group::variable</i>. It does not change the current group. When the <i>group</i> is <code>undef</code>, set the variable from the current group.</p>
+
+</dd>
+<dt id="unset-group-variable">unset(&#39;group&#39;, &#39;variable&#39;)</dt>
+<dd>
+
+<p>Remove the <i>$group::variable</i>. It does not change the current group. When the <i>group</i> is <code>undef</code>, remove the variable from the current group. When the <i>variable</i> is <code>undef</code>, remove all variables from the group.</p>
+
+</dd>
+<dt id="save">save</dt>
+<dd>
+
+<p>Write configuration into the file.</p>
+
+</dd>
+<dt id="erase">erase</dt>
+<dd>
+
+<p>Remove all variables and groups. Also it resets current group to default value.</p>
+
+</dd>
+</dl>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Alexander Smirnov &lt;zoocide@gmail.com&gt;</p>
+
+<h1 id="LICENSE">LICENSE</h1>
+
+<p>This module is free software; you can redistribute it and/or modify it under the same terms as Perl itself.</p>
+
+
+</body>
+
+</html>
+
+

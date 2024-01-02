@@ -1,0 +1,258 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title></title>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" type="text/css" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:" />
+</head>
+
+<body>
+
+
+
+<ul id="index">
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#METHODS">METHODS</a>
+    <ul>
+      <li><a href="#Predefined-variables">Predefined variables</a></li>
+      <li><a href="#DEPRECATED-METHODS">DEPRECATED METHODS</a></li>
+    </ul>
+  </li>
+</ul>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  my $task = Task-&gt;new($Task_ID_obj, &#39;task.conf&#39;, &#39;task/data/dir&#39;);
+
+  # reload config file of the task using your scheme.
+  $task-&gt;reload_config(multiline =&gt; 1, ...);
+
+  $task-&gt;make_data_dir;
+  # or
+  $task-&gt;make_data_dir($new_task_dir);
+
+  chdir $task-&gt;data_dir;
+
+  my $var = &#39;default_value&#39;;
+  $var = $task-&gt;get_var(&#39;&#39;, &#39;var&#39;) if $task-&gt;has_var(&#39;&#39;, &#39;var&#39;);
+
+  $var = $task-&gt;get_var(&#39;&#39;, &#39;var&#39;, &#39;default_value&#39;);
+  @arr = $task-&gt;get_arr(&#39;&#39;, &#39;var&#39;, @default_value);
+
+  ======== DEBUG ========
+  $task-&gt;DEBUG(@messages_to_print);      ##&lt; print debug messages
+  $task-&gt;DEBUG_RESET(1, 2, 3);           ##&lt; reset timers 1, 2, 3
+  $task-&gt;DEBUG_T(2, @messages);          ##&lt; print messages and time of timer 2
+  $task-&gt;DEBUG_TR(2, @messages);         ##&lt; print messages and time of timer 2; reset timer 2</code></pre>
+
+<h1 id="METHODS">METHODS</h1>
+
+<dl>
+
+<dt id="id">id()</dt>
+<dd>
+
+<p>Method returns an object <a href="Task/ID.html">Task::ID</a> for this task.</p>
+
+</dd>
+<dt id="name">name()</dt>
+<dd>
+
+<p>Method returns the display name of the task. It is constructed while task creation, based on <i>name</i> variable from configuration file and can be changed by <i>set_name</i> method.</p>
+
+</dd>
+<dt id="index">index()</dt>
+<dd>
+
+<p>Method returns the index of the task.</p>
+
+</dd>
+<dt id="plugin">plugin()</dt>
+<dd>
+
+<p>Method returns the plugin name.</p>
+
+</dd>
+<dt id="plugin_isa-class">plugin_isa($class)</dt>
+<dd>
+
+<p>Method executes <i>isa($class)</i> method of the plugin.</p>
+
+</dd>
+<dt id="data_dir">data_dir()</dt>
+<dd>
+
+<p>Method returns a path to the task data directory.</p>
+
+</dd>
+<dt id="task_dir">task_dir()</dt>
+<dd>
+
+<p>Method returns a path to the directory containing task configuration file.</p>
+
+</dd>
+<dt id="set_name-name">set_name($name)</dt>
+<dd>
+
+<p>Set the task display name. It does not affect variable <i>name</i>.</p>
+
+</dd>
+<dt id="set_index-ind">set_index($ind)</dt>
+<dd>
+
+<p>Set the task index.</p>
+
+</dd>
+<dt id="make_data_dir-dir">make_data_dir($dir)</dt>
+<dd>
+
+<p>Creates the task data directory. If <code>$dir</code> is specified, method changes the task data directory to that value.</p>
+
+</dd>
+<dt id="clear_data_dir">clear_data_dir()</dt>
+<dd>
+
+<p>Delete all content of the task data directory.</p>
+
+</dd>
+<dt id="group_names">group_names()</dt>
+<dd>
+
+<p>Return all defined group names.</p>
+
+</dd>
+<dt id="var_names-group_name">var_names($group_name)</dt>
+<dd>
+
+<p>Return all defined variable names in the group.</p>
+
+</dd>
+<dt id="has_var-group_name-var_name">has_var($group_name, $var_name)</dt>
+<dd>
+
+<p>Return true if configuration file contains the specified variable.</p>
+
+</dd>
+<dt id="get_var-group_name-var_name-default_value">get_var($group_name, $var_name, $default_value)</dt>
+<dd>
+
+<p>Return a string value of the specified variable. Method returns $defualt_value if the variable is not set. It raises exception when variable is not set and $default_value is not specified.</p>
+
+</dd>
+<dt id="get_arr-group_name-var_name-default_value">get_arr($group_name, $var_name, @default_value)</dt>
+<dd>
+
+<p>Return a list value of the specified variable. Method returns @defualt_value if the variable is not set. Also, default value can be specified as a list reference, e.g <code>$task-</code>get_arr(&#39;&#39;, &#39;var&#39;, [])&gt;. It is useful to specify empty list as a default value. Method raises exception when variable is not set and $default_value is not specified.</p>
+
+</dd>
+<dt id="reload_config-SCHEME">reload_config(SCHEME)</dt>
+<dd>
+
+<p>Reload the config file with the specified SCHEME. SCHEME could be a <a href="external/ConfigFileScheme.html">ConfigFileScheme</a> object or a scheme specification, e.g.:</p>
+
+<p><code>$task-&gt;reload_config(multiline =&gt; 1, ...);</code></p>
+
+<p>Task name, plugin will not change even if the corresponding variables change.</p>
+
+<p>Before configuration file read, the following actions will be performed. 1 - variable <i>name</i> will be set to task short_id. 2 - variables from task arguments will be set.</p>
+
+</dd>
+</dl>
+
+<h2 id="Predefined-variables">Predefined variables</h2>
+
+<p>Predefined variables are a set of variables used to provide values into the configuration file. These variables should be set before reading the configuration file. You can refer to them inside the configuration file to get the defined values. There is a bunch of methods to manipulate them:</p>
+
+<dl>
+
+<dt id="predefined_group_names">predefined_group_names()</dt>
+<dd>
+
+<p>Return all predefined group names.</p>
+
+</dd>
+<dt id="predefined_var_names-group_name">predefined_var_names($group_name)</dt>
+<dd>
+
+<p>Return all predefined variable names from the group.</p>
+
+</dd>
+<dt id="set_predefined_var-group_name-var_name-value">set_predefined_var($group_name, $var_name, @value)</dt>
+<dd>
+
+<p>Set the predefined variable.</p>
+
+</dd>
+<dt id="get_predefined_var-group_name-var_name">get_predefined_var($group_name, $var_name)</dt>
+<dd>
+
+<p>Get a string value of the predefined variable.</p>
+
+</dd>
+<dt id="get_predefined_arr-group_name-var_name">get_predefined_arr($group_name, $var_name)</dt>
+<dd>
+
+<p>Get a list value of the predefined variable.</p>
+
+</dd>
+<dt id="remove_predefined_var-group_name-var_name">remove_predefined_var($group_name, $var_name)</dt>
+<dd>
+
+<p>Remove the predefined variable.</p>
+
+</dd>
+</dl>
+
+<h2 id="DEPRECATED-METHODS">DEPRECATED METHODS</h2>
+
+<dl>
+
+<dt id="set_debug-bool">set_debug($bool)</dt>
+<dd>
+
+<p>Method turns on and off debug messages. Affected methods are: <code>DEBUG</code>, <code>DEBUG_T</code>, <code>DEBUG_TR</code>.</p>
+
+</dd>
+<dt id="DEBUG-list">DEBUG(@list)</dt>
+<dd>
+
+<p>When debug mode is on, print debug message.</p>
+
+</dd>
+<dt id="DEBUG_T-timer_name-list">DEBUG_T($timer_name, @list)</dt>
+<dd>
+
+<p>Print debug message and elapsed time from last $timer_name reset.</p>
+
+</dd>
+<dt id="DEBUG_RESET-timer_names">DEBUG_RESET(@timer_names)</dt>
+<dd>
+
+<p>Reset specified timers.</p>
+
+</dd>
+<dt id="DEBUG_TR-timer_name-list">DEBUG_TR($timer_name, @list)</dt>
+<dd>
+
+<p>Same as</p>
+
+<pre><code>  $task-&gt;DEBUG_T($timer_name, @list);
+  $task-&gt;DEBUG_RESET($timer_name);</code></pre>
+
+</dd>
+<dt id="get_vars-group_name-var_names">get_vars($group_name, @var_names)</dt>
+<dd>
+
+<p>Return string values of the specified variables. It raises exception when any variable is not set.</p>
+
+</dd>
+</dl>
+
+
+</body>
+
+</html>
+
+
