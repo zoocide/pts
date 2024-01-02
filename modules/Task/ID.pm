@@ -254,3 +254,71 @@ sub m_normalize_str
 }
 
 1
+
+__END__
+
+=head1 DESCRIPTION
+
+=head1 METHODS
+
+=over
+
+=item Task::ID->new($s)
+
+It returns the object constructed from the I<$s> string.
+
+=item reset($s)
+
+It replaces the object content to correspond the specified I<$s> string.
+
+=item id
+
+The string of form I<'a/path/task_name:arg1=value1,arg2=e1 e2'>.
+
+=item short_id
+
+The string of form I<'a/path/task_name'>.
+
+=item basename
+
+The string of form I<'task_name'>.
+
+=item dirs
+
+It returns a list C<('a', 'path')> for the task path I<'a/path/task_name.conf'>.
+
+=item args
+
+It returns a hash with the task arguments (e.g. C<< (arg1 => ['value1'], arg2=['e1', 'e2']}) >>).
+
+=item args_hash
+
+Similar to the I<args> method, but returns a hashref instead of a hash (e.g. C<< {arg1 => ['value1'], arg2=['e1', 'e2']}} >>).
+
+=item args_str
+
+It returns the argument part of the ID string (e.g. I<'arg1=value1,arg2=e1 e2'>).
+
+=item has_args
+
+It returns true if the task has any arguments.
+
+=item has_arg($group, $var)
+
+It returns true if the argument is specified for the task.
+
+=back
+
+=head1 FUNCTIONS
+
+=over
+
+=item arg2str($gr, $var, @value)
+
+It makes an argument-like string with the specified vairiable and value.
+The C<"${gr}::"> prefix will be ommited, if the I<$gr> is I<undef>.
+The C<"${gr}::${var}="> part will be ommited, if the I<$var> is I<undef>.
+
+=back
+
+=cut
