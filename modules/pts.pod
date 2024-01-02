@@ -1,0 +1,167 @@
+=head1 Decription
+
+B<PTS> is a task processing system.
+It is designed to make routine tasks easy.
+It was originally created to simplify functional testing of programs.
+Thus, the first definitions of the tasks and goals of the system appeared:
+
+=over
+
+=item * All tasks were considered independent but in future it may change.
+
+=item * A task is some work that needs to be completed and display its status.
+
+=item * Usually, there is a set of tasks that do the same work, but with the different parameters.
+
+=item * The user requires to see the status of each task, especially for the failed ones.
+
+=item * The user can easily handle different sets of tasks.
+
+=item * The user can easily rerun the failed tasks only.
+
+=item * It is desirable to be able to perform tasks in parallel to speedup the execution.
+
+=item * It should be cross-platform.
+
+=back
+
+=head2 Implementation
+
+The task in the system is defined as a pair of a configuration file and a plugin that do the work.
+A configuration file (.conf) is a text file that look like ini-file.
+It has extended syntax to make it more convenient (see L<ConfigFile> for syntax rules).
+A configuration file must specify the I<::plugin> variable, to set the plugin to process the task.
+A string C<plugin=PluginName> defines to use the C<Plugins::PluginName> package written in Perl to process the task.
+The user may develop own plugin or use one of an existing.
+So, the task is defined by the configuration file, which in turn defines the plugin.
+
+I<PTS> accepts three different ways to select tasks to process:
+
+=over
+
+=item * The path to the task definition config file.
+It may be relative or absolute.
+When the file is inside the current directory, the I<./> prefix is required for the relative path.
+The filename must ends with I<.conf>.
+
+=item * The name of the task.
+A name of the task is the basename of its definition config file.
+In this case, I<PTS> searches the specified name inside known task directories.
+The first found will be processed.
+
+=item * The task-set filename.
+An absolute or relative path of the file should be specified.
+When the file is inside the current directory, the I<./> prefix is required for the relative path.
+The filename must B<not> ends with I<.conf>.
+
+=back
+
+It is possible to specify arguments for a task.
+The synax as following: C<< pts "task:arg1=value1,gr::arg2=value2,array=elem1 elem2" >>.
+This example assigns the specified variables before the task configuration file is read.
+These values are accessible inside the configuration file as normal variables.
+
+The form of an argument assignment C<task:flag> is the shortcut of the C<task:flag=1>.
+
+=head1 Plugin development
+
+The plugin must inherit from the L<Plugins::Base> package.
+
+=head2 Virtual methods
+
+=over
+
+
+=item on_prepare($class, $task, $index, $all_tasks, $prepared_tasks, $db)
+
+I<PTS> calls this method for every task from the input task sequence before the start of the processing stage.
+The method should add the I<$task> to the I<$prepared_tasks> list if it should be processed on the next stage.
+The default implementation does it for you.
+
+=over
+
+=item * I<$class> - the class name for which this method is called (C<< $class->on_prepare(...) >>).
+
+=item * I<$task> - the object of a L<Task> type.
+
+It represents the current task to prepare and has a I<$class> plugin specified.
+
+=item * I<$index> - the index of the I<$task> in the I<$all_tasks> list.
+
+It is used to get other tasks from the input list.
+For example, I<Parallel> plugin does its own preparation for the next parallel section.
+So it uses the code C<$$pind = $last_prepared_index> to advance the index for prepared tasks.
+Where I<$pind> is set by C<my $pind = \shift;>.
+
+=item * I<$all_tasks> - the list of all input tasks.
+
+All of them are meant to be prepared and then processed.
+
+=item * I<$prepared_tasks> - the list of tasks to be processed.
+
+The default I<on_prepare> method appends the I<$task> to the I<$prepared_tasks> list.
+When you override this method, you must do this yourself if it meant to be.
+
+Actually, it is not exactly a flat list.
+It can contain nested lists which tasks should be processed in parallel.
+But that is not important if you do not want to change the parallel execution organization.
+
+=item * I<$db> - the task database. See L<TaskDB>.
+
+=back
+
+The return value is not used.
+
+
+=item process($class, $task, $db)
+
+The processing stage begins after the preparation stage.
+It implies the execution of I<process> method for every prepared task.
+
+Use I<print_out> function (see L<Plugins::Base>) to gain the consistent output of the tasks executed in parallel.
+
+=over
+
+=item * I<$class> - the class name for which this method is called (C<< $class->on_process(...) >>).
+
+=item * I<$task> - the object of a L<Task> type.
+
+It represents the current task to process and has a I<$class> plugin specified.
+
+=item * I<$db> - the task database. See L<TaskDB>.
+
+=back
+
+The return value indicates the status of the task.
+It may be one of the following:
+
+=over
+
+=item * I<'skipped'> - indicates that task is intentionally skipped.
+
+=item * A Perl true value. It indicates the successful processing.
+
+=item * A Perl false value. It indicates a failure.
+
+=back
+
+An exception raised during the task processing indicates the failed task status and sets the exception content as the failure reason.
+
+
+=item help_message($class, $task)
+
+The method returns a string with the task description.
+The incorporated I<help> task calls this method and show the result to the user.
+
+=over
+
+=item * I<$class> - the class name for which this method is called (C<< $class->help_message(...) >>).
+
+=item * I<$task> - the L<Task> object which message is requested.
+
+=back
+
+
+=back
+
+=cut
