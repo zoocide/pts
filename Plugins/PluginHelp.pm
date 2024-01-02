@@ -3,6 +3,8 @@ use strict;
 use Exceptions;
 use Plugins::Base v0.7.2;
 use base qw(Plugins::Base);
+use PtsConfig;
+use File::Spec::Functions qw(catfile);
 
 sub help_message
 {
@@ -11,7 +13,8 @@ sub help_message
   my $name = $task->id;
   return "The task '$name' shows information about the first following task and interrupts execution."
     ."\nUse command 'pts help a_task' to see the description of 'a_task' task."
-    ."\nUse command 'pts --help' to see the help message about 'pts' itself.";
+    ."\nUse command 'pts --help' to see the help message about 'pts' itself."
+    ."\nUse command 'pts help:doc' to see the HTML documentation.";
 }
 
 # Plugins::PluginHelp->on_prepare($task, $cur_ind, \@all_tasks, \@task_list, $db);
@@ -24,7 +27,20 @@ sub on_prepare
   # $_[1] - $tasks_list - output execution tree
   # $_[2] - $db
 
+  if ($self_task->get_var('', 'doc', 0)) {
+    my $html_fname = catfile(PtsConfig::doc_dir, 'html', 'index.html');
+    if (-f $html_fname) {
+      system($html_fname);
+    } else {
+      warn "File '$html_fname' does not exist.\n";
+    }
 
+    ## erase task list ##
+    @{$_[0]} = ();
+    @{$_[1]} = ();
+    $$pind = 0;
+    return;
+  }
 
   my $i = $$pind + 1; #< next task index;
   my $next_task = $_[0][$i];
