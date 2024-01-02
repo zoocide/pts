@@ -264,7 +264,7 @@ Check specified %struct to correspond the scheme.
   |# Variables before any group declaration are placed in '' group (general group).
   |var_from_general_group = value
   |[group_1]
-  |var_form_gorup_1 = value
+  |var_form_group_1 = value
   |multiline_variable = elem1 elem2
   |   elem3 elem4
   | # comment
