@@ -31,7 +31,8 @@ sub on_prepare
   if ($self_task->get_var('', 'doc', 0)) {
     my $html_fname = catfile(PtsConfig::doc_dir, 'html', 'index.html');
     if (-f $html_fname) {
-      system_timeout($html_fname, 1);
+      #system_timeout($html_fname, 1);
+      system_timeout_simple($html_fname, 1);
     } else {
       warn "File '$html_fname' does not exist.\n";
     }
@@ -105,6 +106,27 @@ sub system_timeout
     dbg2 and dprint("an unexpected process $wp encountered");
   }
   alarm(0);
+}
+
+sub system_timeout_simple
+{
+  my ($cmd, $timeout) = @_;
+  $timeout >= 1 or die "timeout must be not less than 1 second\n";
+  local $SIG{ALRM} = sub {
+    throw Exception => 'timeout';
+  };
+  try {
+    alarm($timeout);
+    dbg1 and dprint("system($cmd)");
+    system($cmd);
+    alarm(0);
+  }
+  catch {
+    dbg2 and dprint($@);
+  } 'Exception',
+  catch {
+    print_out("$@");
+  };
 }
 
 1
