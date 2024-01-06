@@ -134,3 +134,34 @@ sub m_mk_new_task
 
 1;
 
+__END__
+
+=head1 METHODS
+
+=over
+
+=item all_task_ids()
+
+Returns all the known task names.
+
+=item new_task($task_spec_str)
+
+Construct a new task from the provided task specification string.
+It returns a L<Task> object.
+
+=item get_task($task_spec_str)
+
+It returns an existing task corresponded to the provided task specification string or create a new one.
+
+=item get_tasks($task_spec_str)
+
+It returns all the existing tasks corresponded to the provided task specification string.
+
+=item add_tasks_dir($dir)
+
+Adds the directory to the search path.
+It allows to load a task from the directory, with the basename specified only.
+
+=back
+
+=cut

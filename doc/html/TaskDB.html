@@ -14,6 +14,7 @@
 
 <ul id="index">
   <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#METHODS">METHODS</a></li>
 </ul>
 
 <h1 id="SYNOPSIS">SYNOPSIS</h1>
@@ -26,6 +27,42 @@
   my $task = $db-&gt;new_task($tid);
   my @tasks = $db-&gt;get_tasks($tid);
   my $task = $db-&gt;get_task($tid);</code></pre>
+
+<h1 id="METHODS">METHODS</h1>
+
+<dl>
+
+<dt id="all_task_ids">all_task_ids()</dt>
+<dd>
+
+<p>Returns all the known task names.</p>
+
+</dd>
+<dt id="new_task-task_spec_str">new_task($task_spec_str)</dt>
+<dd>
+
+<p>Construct a new task from the provided task specification string. It returns a <a href="./.\Task.html">Task</a> object.</p>
+
+</dd>
+<dt id="get_task-task_spec_str">get_task($task_spec_str)</dt>
+<dd>
+
+<p>It returns an existing task corresponded to the provided task specification string or create a new one.</p>
+
+</dd>
+<dt id="get_tasks-task_spec_str">get_tasks($task_spec_str)</dt>
+<dd>
+
+<p>It returns all the existing tasks corresponded to the provided task specification string.</p>
+
+</dd>
+<dt id="add_tasks_dir-dir">add_tasks_dir($dir)</dt>
+<dd>
+
+<p>Adds the directory to the search path. It allows to load a task from the directory, with the basename specified only.</p>
+
+</dd>
+</dl>
 
 
 </body>
