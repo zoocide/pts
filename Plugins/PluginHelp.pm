@@ -30,9 +30,14 @@ sub on_prepare
 
   if ($self_task->get_var('', 'doc', 0)) {
     my $html_fname = catfile(PtsConfig::doc_dir, 'html', 'index.html');
+    my $browser = $_[2]->get_task('config')->data->get_var('help', 'browser', '');
     if (-f $html_fname) {
       #system_timeout($html_fname, 1);
-      system_timeout_simple($html_fname, 1);
+      $browser = qq("$browser" ) if $browser;
+      if (my $r = system_timeout_simple("$browser$html_fname", 1)) {
+        ## error ##
+        print_out("You can set the browser to use with the command `pts \"config:help::browser='a path/to browser'\"`.\n");
+      }
     } else {
       warn "File '$html_fname' does not exist.\n";
     }
@@ -115,10 +120,11 @@ sub system_timeout_simple
   local $SIG{ALRM} = sub {
     throw Exception => 'timeout';
   };
+  my $ret = 0;
   try {
     alarm($timeout);
     dbg1 and dprint("system($cmd)");
-    system($cmd);
+    $ret = system($cmd);
     alarm(0);
   }
   catch {
@@ -126,7 +132,9 @@ sub system_timeout_simple
   } 'Exception',
   catch {
     print_out("$@");
+    $ret = -1;
   };
+  $ret
 }
 
 1
