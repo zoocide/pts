@@ -10,7 +10,6 @@ use lib "$FindBin::RealBin/../modules/external";
 our $VERSION;
 BEGIN { $VERSION = v0.8.0; }
 BEGIN{ *Task::dbg_level = sub () { 0 } }
-BEGIN{ *TaskDB::dbg_level = sub () { 0 } }
 use PtsConfig;
 use CmdArgs;
 use CmdArgs::BasicTypes;
@@ -66,7 +65,7 @@ catch{ push @{$@}, Exceptions::Exception->new('can not load tasks database'); th
 
 our $failed_fname;
 our $num_procs;
-my $debug = 0;
+our $debug = 0;
 my $quiet;
 my $config_fname = '.ptsconfig';
 

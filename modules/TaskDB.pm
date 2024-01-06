@@ -7,10 +7,12 @@ use Task;
 
 ## debug stuff ##
 our $dprint_prefix = __PACKAGE__.':';
-BEGIN{*dprint = sub { print map "DEBUG:$dprint_prefix $_\n", split /\n/, join '', @_ } if !exists &dprint}
-BEGIN{*dbg_level = sub () { 0 } if !exists &dbg_level}
-use constant dbg1 => dbg_level > 0;
-use constant dbg2 => dbg_level > 1;
+BEGIN{*dprint = sub { main::m_dprint(map "$dprint_prefix $_\n", split /\n/, join '', @_) } if !exists &dprint}
+BEGIN{
+  ## Define non-inline version of dbg* functions. ##
+  if (!exists &dbg1) { *dbg1 = sub () { $main::debug > 0 } }
+  if (!exists &dbg2) { *dbg2 = sub () { $main::debug > 1 } }
+}
 
 =head1 SYNOPSIS
 
