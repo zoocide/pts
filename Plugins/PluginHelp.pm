@@ -11,7 +11,7 @@ sub help_message
   my $class = shift;
   my $task = shift;
   return $task->get_var('', 'help_message') if $task->has_var('', 'help_message');
-  my $name = $task->id;
+  my $name = $task->id->short_id;
   return "The task '$name' shows information about the first following task and interrupts execution."
     ."\nUse command 'pts help a_task' to see the description of 'a_task' task."
     ."\nUse command 'pts --help' to see the help message about 'pts' itself."
