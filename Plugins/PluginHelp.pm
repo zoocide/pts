@@ -30,13 +30,17 @@ sub on_prepare
 
   if ($self_task->get_var('', 'doc', 0)) {
     my $html_fname = catfile(PtsConfig::doc_dir, 'html', 'index.html');
-    my $browser = $_[2]->get_task('config')->data->get_var('help', 'browser', '');
+    my $conf = $_[2]->get_task('config')->data;
+    my $browser = $conf->get_var('help', 'browser', '');
+    my $timeout = $conf->get_var('help', 'timeout', 1);
     if (-f $html_fname) {
       #system_timeout($html_fname, 1);
       $browser = qq("$browser" ) if $browser;
-      if (my $r = system_timeout_simple("$browser$html_fname", 1)) {
+      if (my $r = system_timeout_simple("$browser$html_fname", $timeout)) {
         ## error ##
-        print_out("You can set the browser to use with the command `pts \"config:help::browser='a path/to browser'\"`.\n");
+        print_out("You can set the browser to use with the command `pts \"config:help::browser='a path/to a browser'\"`.\n");
+        print_out("Also, if you use a console browser (like 'lynx') it is necessary to disable timeout with the command `pts config:help::timeout=0`.\n");
+        print_out("Otherwise, it will be killed after a short time.\n");
       }
     } else {
       warn "File '$html_fname' does not exist.\n";
@@ -116,7 +120,6 @@ sub system_timeout
 sub system_timeout_simple
 {
   my ($cmd, $timeout) = @_;
-  $timeout >= 1 or die "timeout must be not less than 1 second\n";
   local $SIG{ALRM} = sub {
     throw Exception => 'timeout';
   };
