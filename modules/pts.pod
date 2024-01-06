@@ -72,6 +72,27 @@ The plugin must inherit from the L<Plugins::Base> package.
 =over
 
 
+=item on_task_create($class, $task, $db)
+
+It is called just after a new task created.
+The method is used to adjust the task data for later use.
+For example, the I<Configuration> plugin sets this method to load the volatile configuration file
+and store it in C<< $task->data >> as a ConfigFile object.
+It allows to use the I<config> task from another plugin this way:
+
+  my $conf = $db->get_task('config')->data;
+  $conf->get_var('help', 'browser');
+
+=over
+
+=item * I<$class> - the class name for which this method is called.
+
+=item * I<$task> - the object of a L<Task> type.
+
+=item * I<$db> - the task database. See L<TaskDB>.
+
+=back
+
 =item on_prepare($class, $task, $index, $all_tasks, $prepared_tasks, $db)
 
 I<PTS> calls this method for every task from the input task sequence before the start of the processing stage.
@@ -161,6 +182,24 @@ The incorporated I<help> task calls this method and show the result to the user.
 
 =back
 
+
+=back
+
+=head1 SEE ALSO
+
+=over
+
+=item L<CmdArgs>
+
+=item L<ConfigFile>
+
+=item L<ConfigFileScheme>
+
+=item L<Task>
+
+=item L<Task::ID>
+
+=item L<TaskDB>
 
 =back
 

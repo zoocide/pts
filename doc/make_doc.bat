@@ -11,5 +11,6 @@ call pod2html %opts% %mod_dir%Task/ID.pm --outfile=%html_dir%Task/ID.html
 call pod2html %opts% %mod_dir%Plugins/Base.pm --outfile=%html_dir%Plugins/Base.html
 call pod2html %opts% %mod_dir%external/ConfigFile.pm --outfile=%html_dir%external/ConfigFile.html
 call pod2html %opts% %mod_dir%external/ConfigFileScheme.pm --outfile=%html_dir%external/ConfigFileScheme.html
+call pod2html %opts% %mod_dir%external/CmdArgs.pm --outfile=%html_dir%external/CmdArgs.html
 
 rem TODO: Add `body { max-width : 960px; }` to the style.

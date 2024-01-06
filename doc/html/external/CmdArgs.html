@@ -1,0 +1,450 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>CmdArgs - Parse command line arguments and automate help message creation.</title>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" type="text/css" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:" />
+</head>
+
+<body>
+
+
+
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#METHODS">METHODS</a></li>
+  <li><a href="#EXPORT">EXPORT</a></li>
+  <li><a href="#TYPES">TYPES</a></li>
+  <li><a href="#EXAMPLE">EXAMPLE</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+</ul>
+
+<h1 id="NAME">NAME</h1>
+
+<p>CmdArgs - Parse command line arguments and automate help message creation.</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  use CmdArgs;
+
+  ## simple expamle ##
+  my $args = CmdArgs-&gt;declare(
+    &#39;0.1.0&#39;,
+    use_cases =&gt; { main =&gt; [&#39;OPTIONS my_arg&#39;, &#39;Description...&#39;] },
+    options =&gt; { verbose =&gt; [&#39;-v --verbose&#39;, &#39;Print more information.&#39;], }
+  );
+  $args-&gt;parse;
+
+  my $verb = $args-&gt;is_opt(&#39;verbose&#39;);
+  my $arg = $args-&gt;arg(&#39;my_arg&#39;);
+
+  ========================================
+  ## Main capabilities ##
+  use CmdArgs;
+  use CmdArgs::BasicTypes;
+
+  {package CmdArgs::Types::Filename; sub check{my $arg = $_[1]; -f $arg}}
+
+  my $args = CmdArgs-&gt;declare(
+    $version,
+    use_cases =&gt; [
+      main   =&gt; [&#39;OPTIONS arg1:Filename arg2:Int&#39;, &#39;The main use case.&#39;],
+      second =&gt; [&#39;OPTS_GROUP_1 arg_1:Dir OPTS_GROUP_2 arg_2...?&#39;, &#39;The second usage.&#39;],
+    ],
+    groups =&gt; {
+      OPTS_GROUP_1 =&gt; [qw(opt_1 opt_2 silent)],
+      OPTS_GROUP_2 =&gt; [qw(opt_9 opt_17)],
+      OPTIONS =&gt; [qw(name verbose silent)],
+    },
+    options =&gt; {
+      opt_1  =&gt; [&#39;-f:Filename --filename&#39;, &#39;specify filename&#39;],
+      opt_2  =&gt; [&#39;-i:&lt;FILE&gt; --input&#39;     , &#39;read input from FILE&#39;],
+      silent =&gt; [&#39;-s&#39;                    , &#39;silent mode&#39;],
+      opt_9  =&gt; [&#39;-z&#39;                    , &#39;Zzz&#39;],
+      opt_17 =&gt; [&#39;-0 --none --bla-bla&#39;   , &#39;0. simply 0&#39;],
+      verbose=&gt; [&#39;-v&#39; , &#39;more verbose&#39;, sub {$verbose++}],
+      name =&gt; [&#39;-n:&#39;, &#39;set a name&#39;, sub {$name = $_}],
+    },
+    restrictions =&gt; [
+      &#39;verbose|opt_9|silent&#39;,
+      &#39;opt_2|opt_9&#39;,
+    ]
+  );
+
+  $args-&gt;parse;
+  ## or ##
+  $args-&gt;parse(&#39;string args&#39;);
+
+  if ($args-&gt;use_case eq &#39;main&#39;){
+    my $arg1 = $args-&gt;arg(&#39;arg1&#39;);
+    my $silent = $args-&gt;is_opt(&#39;silent&#39;);
+    my $name = $args-&gt;opt_or_default(&#39;name&#39;, &#39;default_name&#39;);
+  }
+  if ($args-&gt;use_case eq &#39;second&#39;){
+    my @arg2 = @{ $args-&gt;arg(&#39;arg_2&#39;) };
+    my $f = &#39;my_filename&#39;;
+    $f = $args-&gt;opt(&#39;opt_1&#39;) if $args-&gt;is_opt(&#39;opt_1&#39;);
+  }
+
+  ========================================
+  ## static usage of CmdArgs ##
+  use CmdArgs {
+    version =&gt; $version,
+    use_cases =&gt; ...
+    options =&gt; {
+      opt_1  =&gt; [&#39;-f:Filename --filename&#39;, &#39;specify filename&#39;],
+      verbose =&gt; [&#39;-v&#39;, &#39;more verbose&#39;],
+    },
+  };
+  # Throw errors as Exceptions::List if any occurred
+  CmdArgs-&gt;throw_errors;
+
+  # Statically optimized print. Perl will remove this line if verbose option is not specified.
+  print &quot;something\n&quot; if CmdArgs::OPT_verbose;
+  # CmdArgs::OPT_opt_1 is the constant contained specified filename or undefined otherwise
+  print CmdArgs::OPT_opt_1, &quot;\n&quot;;
+
+  ========================================
+  ## partial parsing of arguments ##
+  $args-&gt;parse_begin;
+  $args-&gt;parse_part(\@ARGV);
+  $args-&gt;parse_part(\@additional_options);
+  $args-&gt;parse_end;</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p>CmdArgs can be used in two ways: static and dynamic. Dynamic usage means, that you create an object with <a href="#declare">&quot;declare&quot;</a> method and then apply <a href="#parse">&quot;parse&quot;</a> method to prase the string or command line arguments. For example:</p>
+
+<pre><code>  my $args = CmdArgs-&gt;declare(&#39;v1.0&#39;, options =&gt; ...);
+  $args-&gt;parse;</code></pre>
+
+<p>Next you can call any methods to obtain an option or argument or do whatever you want.</p>
+
+<p>Another way ot use CmdArgs is compile-time parsing of command line arguments. It has advantages in optimization, cause parsed options and arguments are represented by constant functions. For example:</p>
+
+<pre><code>  use CmdArgs {
+    version =&gt; &#39;v1.0&#39;,
+    use_cases =&gt; [main =&gt; [&#39;OPTIONS&#39;, &#39;&#39;]],
+    options =&gt; { debug =&gt; [&#39;-D&#39;] },
+  };
+  CmdArgs-&gt;throw_errors;
+  print &quot;debug option is on\n&quot; if CmdArgs::OPT_debug;</code></pre>
+
+<p>Static use case creates those functions:</p>
+
+<dl>
+
+<dt id="CmdArgs::OPT_"><code>CmdArgs::OPT_*</code></dt>
+<dd>
+
+<p>Where * is for every option specified in parse declaration. This function returns value of the corresponding option or <code>undef</code> if option is not provided to the script.</p>
+
+</dd>
+<dt id="CmdArgs::ARG_"><code>CmdArgs::ARG_*</code></dt>
+<dd>
+
+<p>Where * is for every argument specified in parse declaration. This function returns value of the corresponding argument or <code>undef</code> if it is not provided to the script.</p>
+
+</dd>
+<dt id="CmdArgs::USE_CASE"><code>CmdArgs::USE_CASE</code></dt>
+<dd>
+
+<p>It returns current parsed use case name.</p>
+
+</dd>
+<dt id="CmdArgs::throw_errors"><code>CmdArgs::throw_errors</code></dt>
+<dd>
+
+<p>It dies with error message if any errors occurred during parse.</p>
+
+</dd>
+</dl>
+
+<h1 id="METHODS">METHODS</h1>
+
+<dl>
+
+<dt id="declare-version-section-value"><code>declare($version, section =&gt; value, ...)</code></dt>
+<dd>
+
+<p>throws: string</p>
+
+<p><code>$version</code> is a string, for example, <code>&#39;1.0.1&#39;</code>.</p>
+
+<p><b>SECTIONS:</b></p>
+
+<dl>
+
+<dt id="options">options</dt>
+<dd>
+
+<pre><code>  options =&gt; { opt_name =&gt; [&#39;opt_declaration&#39;, &#39;option help message&#39;, \&amp;action], ...}</code></pre>
+
+<p><i>opt_name</i> - is the user-defined name of the option. <i>opt_declaration</i> examples:</p>
+
+<p><code>&#39;key&#39;</code> - switch option (no arguments) <i>key</i>.</p>
+
+<p><code>&#39;key key_2 key_3&#39;</code> - the same. <i>key</i>, <i>key_2</i>, <i>key_3</i> are synonims.</p>
+
+<p><code>&#39;key:&#39;</code> - option with an argument of any type.</p>
+
+<p><code>&#39;key:&lt;ARG_NAME&gt;&#39;</code> - the same, but use <i>ARG_NAME</i> for argument name in help message.</p>
+
+<p><code>&#39;key:type&#39;</code> - option with an argument of <i>type</i> type.</p>
+
+<p><code>&#39;key:type key_2 key_3&#39;</code> - the same. <i>key</i>, <i>key_2</i>, <i>key_3</i> are synonims.</p>
+
+<p><code>&#39;key:type&lt;ARG_NAME&gt; key_2 key_3&#39;</code> - the same, but use ARG_NAME for argument name in help message.</p>
+
+<p>Action-subroutine <code>&amp;action</code> will be executed on each occurance of the option. Being within action-subroutine you can use given option&#39;s argument by accessing <code>$_[0]</code> or <code>$_</code> variables. Their values are identical.</p>
+
+<p>Options &#39;--help&#39; and &#39;--version&#39; are automatically generated.</p>
+
+<p>You can hide an option from the help message, by specifying explicit <code>undef</code> value for its description, e.g.:</p>
+
+<pre><code>  options =&gt; { hiden_opt =&gt; [&#39;--hiden&#39;, undef], }</code></pre>
+
+</dd>
+<dt id="groups">groups</dt>
+<dd>
+
+<p>Named groups of options.</p>
+
+<pre><code>  groups =&gt; { group_name =&gt; [qw(opt_1 opt_2 ...)], }</code></pre>
+
+<p>If <i>groups</i> section is missed, by default there is <i>OPTIONS</i> group contained all options.</p>
+
+</dd>
+<dt id="use_cases">use_cases</dt>
+<dd>
+
+<p>It declares use cases, that is alternate sequences of options and arguments.</p>
+
+<pre><code>  use_cases =&gt; { use_case_name =&gt; [&#39;atoms_list&#39;, &#39;use case help message&#39;], }</code></pre>
+
+<p>where:</p>
+
+<p><code>atoms_list = list of space separated atoms</code></p>
+
+<p><code>atom = group_name | opt_name | arg_name</code></p>
+
+<p><code>group_name</code> - means that at this place an options from specified group can appear. <code>~group_name</code> can be used to make options from the group to appear at any place after this position.</p>
+
+<p><code>opt_name</code> - option <i>opt_name</i> must be placed here.</p>
+
+<p><code>arg_name</code> - an argument named <i>arg_name</i>.</p>
+
+<p><code>arg_name:</code> - an argument with value of any type.</p>
+
+<p><code>arg_name:type</code> - an argument with value of the specified type.</p>
+
+<p><code>arg_name...</code> - array of arguments. One or more arguments are permitted.</p>
+
+<p><code>arg_name...?</code> - array of arguments. Zero or more arguments are permitted.</p>
+
+<p><code>arg_name?</code> - optional argument</p>
+
+<p>To preserve use-cases order you should use [] instead of {}:</p>
+
+<pre><code>  use_cases =&gt; [ use_case_name =&gt; [ ... ], ... ]</code></pre>
+
+<p>If <i>use_cases</i> section is missed, by default there is <i>main</i> use case declared as <code>[&#39;OPTIONS args...&#39;, &#39;&#39;]</code>.</p>
+
+</dd>
+<dt id="restrictions">restrictions</dt>
+<dd>
+
+<pre><code>  restrictions =&gt; [&#39;opt_1|opt_2|opt_3&#39;, &#39;opt_4|opt_1&#39;, ... ]</code></pre>
+
+<p>That is, <i>opt_1</i>, <i>opt_2</i> and <i>opt_3</i> can not appear simultaneously. And <i>opt_4</i> and <i>opt_1</i> also can not appear simultaneously.</p>
+
+</dd>
+</dl>
+
+</dd>
+<dt id="parse-string"><code>parse($string)</code></dt>
+<dd>
+
+<p>throws: <code>Exceptions::List</code></p>
+
+<p>Parse <code>$string</code> or <code>@ARGV</code> array if <code>$string</code> is not specified.</p>
+
+</dd>
+<dt id="parse_begin"><code>parse_begin</code></dt>
+<dd>
+
+<p>Start the partial parsing. It should be followed by calls of <code>parse_part</code> and the final <code>parse_end</code>. For example,</p>
+
+<pre><code>  $args-&gt;parse_begin;
+  $args-&gt;parse_part(\@ARGV);
+  $args-&gt;parse_end;</code></pre>
+
+<p>That code is doing the same thing as the single call <code>$args-&gt;parse</code>.</p>
+
+</dd>
+<dt id="parse_part-args"><code>parse_part(\@args)</code></dt>
+<dd>
+
+<p>throws: <code>Exceptions::List</code></p>
+
+<p>Parse the specified portion of arguments. Before the first call, the state of the parser should be cleared with <code>parse_begin</code>. This method allows to parse the part of arguments and make a decision to parse the next or not. Use <code>parse_end</code> to finish arguments parsing.</p>
+
+</dd>
+<dt id="parse_end"><code>parse_end</code></dt>
+<dd>
+
+<p>throws: <code>Exceptions::List</code></p>
+
+<p>The method completes arguments partial parsing and throws any exceptions occurred. See <code>parse_begin</code> and <code>parse_part</code> methods.</p>
+
+</dd>
+<dt id="arg-name"><code>arg($name)</code></dt>
+<dd>
+
+<p>Get argument with name <code>$name</code>. If argument is specified as <code>name...</code> returns a reference to the array.</p>
+
+</dd>
+<dt id="opt-name"><code>opt($name)</code></dt>
+<dd>
+
+<p>Get value of the <code>$name</code> option.</p>
+
+</dd>
+<dt id="opt_or_default-name-default_value"><code>opt_or_default($name, $default_value)</code></dt>
+<dd>
+
+<p>If option <code>$name</code> is specified, this method returns option <code>$name</code> value. Otherwise, it returns <code>$default_value</code>.</p>
+
+</dd>
+<dt id="is_opt-name"><code>is_opt($name)</code></dt>
+<dd>
+
+<p>Check whether the <code>$name</code> option is appeared.</p>
+
+</dd>
+<dt id="args"><code>args</code></dt>
+<dd>
+
+<p>It returns a hash contained all parsed arguments.</p>
+
+</dd>
+<dt id="opts"><code>opts</code></dt>
+<dd>
+
+<p>Return a hash contained all parsed options.</p>
+
+</dd>
+<dt id="use_case"><code>use_case</code></dt>
+<dd>
+
+<p>Return name of parsed use case.</p>
+
+</dd>
+</dl>
+
+<h1 id="EXPORT">EXPORT</h1>
+
+<p>By default it exports nothing. You may explicitly import folowing:</p>
+
+<dl>
+
+<dt id="ptext-text"><code>ptext($text)</code></dt>
+<dd>
+
+<p>It removes every single end of line from <code>$text</code> and returns result. So you can write something like that:</p>
+
+<pre><code>  use_cases =&gt; [ main =&gt; [&#39;OPTIONS args...&#39;, ptext &lt;&lt;EOF] ],
+  A long
+   description
+   with invisible line breaks.
+
+  New paragraph.
+  EOF</code></pre>
+
+</dd>
+</dl>
+
+<h1 id="TYPES">TYPES</h1>
+
+<p>To declare a new type, a corresponding package should be defined. To define <i>MyType</i> there should be package named <code>CmdArgs::Types::MyType</code>, that contains subroutine <code>check</code>. Subroutine <code>check</code> must validate argument by returning positive boolean value. For example:</p>
+
+<pre><code>  {
+    package CmdArgs::Types::MyTypeName;
+    sub check
+    {
+      my ($class, $arg) = @_;
+      -f $arg or die &quot;&#39;$arg&#39; is not a file\n&quot;
+    }
+  }</code></pre>
+
+<h1 id="EXAMPLE">EXAMPLE</h1>
+
+<pre><code>  #!/usr/bin/perl -w
+  use strict;
+  use CmdArgs;
+  use CmdArgs::BasicTypes;
+
+  # Declare type to fail, when not existing files are specified as source files.
+  {
+    package CmdArgs::Types::EPath;
+    sub check { -e $_[1] or die &quot;file &#39;$_[1]&#39; does not exist\n&quot; }
+  }
+
+  my $verb = 0; #&lt; used as verbose level
+
+  my $args = CmdArgs-&gt;declare(
+    &#39;1.0&#39;,
+    use_cases =&gt; [
+      single =&gt; [&#39;OPTIONS file1:EPath file2:NotDir&#39;, &#39;Copy one file to another.&#39;],
+      multi  =&gt; [&#39;OPTIONS files:EPath... dest_dir:Dir&#39;, &#39;Copy files to directory.&#39;],
+    ],
+    options =&gt; {
+      recursive =&gt; [&#39;-r --recursive&#39;, &#39;Copy directories recursively.&#39;],
+      force =&gt; [&#39;-f --force&#39;, &#39;Force copying.&#39;],
+      log_level =&gt; [&#39;--log_level:Int&lt;&lt;level&gt;&gt;&#39;, &#39;Set log_level to &lt;level&gt;.&#39;],
+      verbose =&gt; [&#39;-v --verbose&#39;, &#39;More verbose. -vv even more.&#39;, sub { $verb++ } ],
+    },
+  );
+
+  # Set parameters to customize help message.
+  $args-&gt;set_help_params(key_indent =&gt; 4, opt_descr_indent =&gt; 25, kd_min_space =&gt; 2);
+
+  # When $args-&gt;parse fails, it will die with help message.
+  $args-&gt;parse;
+
+  ## print information on verbose level 2 ##
+  if ($verb &gt; 1){
+    printf &quot;log_level = %i\n&quot;, $args-&gt;opt_or_default(&#39;log_level&#39;, 3);
+    $args-&gt;is_opt(&#39;force&#39;)     &amp;&amp; print &quot;Force copy.\n&quot;;
+    $args-&gt;is_opt(&#39;recursive&#39;) &amp;&amp; print &quot;Copy directories recursively.\n&quot;;
+  }
+
+  # This script actually does nothing, just prints messages instead of real copying.
+  if ($args-&gt;use_case eq &#39;single&#39;){
+    ## copy one file to another ##
+    my $file1 = $args-&gt;arg(&#39;file1&#39;);
+    my $file2 = $args-&gt;arg(&#39;file2&#39;);
+    print &quot;copy &#39;$file1&#39; to &#39;$file2&#39;\n&quot; if $verb &gt; 0;
+  }
+  else {
+    ## copy files to directory ##
+    my @files = @{ $args-&gt;arg(&#39;files&#39;) };
+    my $dir = $args-&gt;arg(&#39;dest_dir&#39;);
+    print &quot;copy:\n&quot;, map(&quot;  $_\n&quot;, @files), &quot;to directory &#39;$dir&#39;\n&quot; if $verb &gt;0;
+  }
+  print &quot;done\n&quot;;</code></pre>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<pre><code>  Alexander Smirnov &lt;zoocide@gmail.com&gt;</code></pre>
+
+
+</body>
+
+</html>
+
+

@@ -289,11 +289,11 @@ It returns a list C<('a', 'path')> for the task path I<'a/path/task_name.conf'>.
 
 =item args
 
-It returns a hash with the task arguments (e.g. C<< (arg1 => ['value1'], arg2=['e1', 'e2']}) >>).
+It returns a hash with the task arguments (e.g. C<< ('gr_1' => {arg1 => ['elm 1',...],...},...) >>).
 
 =item args_hash
 
-Similar to the I<args> method, but returns a hashref instead of a hash (e.g. C<< {arg1 => ['value1'], arg2=['e1', 'e2']}} >>).
+Similar to the I<args> method, but returns a hashref instead of a hash (e.g. C<< {'gr_1' => {arg1 => ['elm 1',...],...},...} >>).
 
 =item args_str
 

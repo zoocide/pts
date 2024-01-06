@@ -23,6 +23,7 @@
       <li><a href="#Virtual-methods">Virtual methods</a></li>
     </ul>
   </li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
 <h1 id="Decription">Decription</h1>
@@ -88,6 +89,28 @@
 
 <dl>
 
+<dt id="on_task_create-class-task-db">on_task_create($class, $task, $db)</dt>
+<dd>
+
+<p>It is called just after a new task created. The method is used to adjust the task data for later use. For example, the <i>Configuration</i> plugin sets this method to load the volatile configuration file and store it in <code>$task-&gt;data</code> as a ConfigFile object. It allows to use the <i>config</i> task from another plugin this way:</p>
+
+<pre><code>  my $conf = $db-&gt;get_task(&#39;config&#39;)-&gt;data;
+  $conf-&gt;get_var(&#39;help&#39;, &#39;browser&#39;);</code></pre>
+
+<ul>
+
+<li><p><i>$class</i> - the class name for which this method is called.</p>
+
+</li>
+<li><p><i>$task</i> - the object of a <a href="./.\Task.html">Task</a> type.</p>
+
+</li>
+<li><p><i>$db</i> - the task database. See <a href="./.\TaskDB.html">TaskDB</a>.</p>
+
+</li>
+</ul>
+
+</dd>
 <dt id="on_prepare-class-task-index-all_tasks-prepared_tasks-db">on_prepare($class, $task, $index, $all_tasks, $prepared_tasks, $db)</dt>
 <dd>
 
@@ -182,6 +205,36 @@
 
 </li>
 </ul>
+
+</dd>
+</dl>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<dl>
+
+<dt id="CmdArgs"><a href="external/CmdArgs.html">CmdArgs</a></dt>
+<dd>
+
+</dd>
+<dt id="ConfigFile"><a href="external/ConfigFile.html">ConfigFile</a></dt>
+<dd>
+
+</dd>
+<dt id="ConfigFileScheme"><a href="external/ConfigFileScheme.html">ConfigFileScheme</a></dt>
+<dd>
+
+</dd>
+<dt id="Task"><a href="./.\Task.html">Task</a></dt>
+<dd>
+
+</dd>
+<dt id="Task::ID"><a href="Task/ID.html">Task::ID</a></dt>
+<dd>
+
+</dd>
+<dt id="TaskDB"><a href="./.\TaskDB.html">TaskDB</a></dt>
+<dd>
 
 </dd>
 </dl>
