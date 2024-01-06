@@ -72,6 +72,9 @@ sub set_name_prefix { $_[0]{name_prefix} = $_[1] }
 sub set_debug { $_[0]{debug} = $_[1] }
 sub set_index { $_[0]{index} = $_[1] }
 
+sub data { $_[0]{data} }
+sub set_data { $_[0]{data} = $_[1] }
+
 # $task->make_data_dir;
 # # or #
 # $task->make_data_dir('new/data/dir');
@@ -205,6 +208,7 @@ sub init
   $self->{index} = -1;
   $self->{debug} = 0;
   $self->{filename} = $filename;
+  $self->{data} = undef;
   $self->{data_dir} = $data_dir;
   my @task_path = splitdir($filename);
   $self->{task_dir} = catdir(@task_path[0..$#task_path-1]);
@@ -298,6 +302,10 @@ Method returns the plugin name.
 
 Method executes I<isa($class)> method of the plugin.
 
+=item data()
+
+It returns the associated data object.
+
 =item data_dir()
 
 Method returns a path to the task data directory.
@@ -314,6 +322,11 @@ It does not affect variable I<name>.
 =item set_index($ind)
 
 Set the task index.
+
+=item set_data($new_data)
+
+It replaces the task associated data object with the specified one.
+A plugin method I<on_task_create> is the good place to use this method.
 
 =item make_data_dir($dir)
 
