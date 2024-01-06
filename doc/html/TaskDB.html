@@ -50,6 +50,12 @@
 <p>It returns an existing task corresponded to the provided task specification string or create a new one.</p>
 
 </dd>
+<dt id="get_task_light-task_spec_str">get_task_light($task_spec_str)</dt>
+<dd>
+
+<p>It is similar to <i>get_task</i>, but does not load a plugin, does not call <i>on_task_create</i> and does not add the task to the database.</p>
+
+</dd>
 <dt id="get_tasks-task_spec_str">get_tasks($task_spec_str)</dt>
 <dd>
 
@@ -60,6 +66,12 @@
 <dd>
 
 <p>Adds the directory to the search path. It allows to load a task from the directory, with the basename specified only.</p>
+
+</dd>
+<dt id="failed_plugins">failed_plugins()</dt>
+<dd>
+
+<p>It returns a list of plugins that failed to load.</p>
 
 </dd>
 </dl>

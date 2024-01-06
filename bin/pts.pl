@@ -120,7 +120,7 @@ $args->parse_end;
 ## list tasks ##
 if ($args->use_case eq 'list'){
   my @list = $db->all_task_ids;
-  @list = map {my $t = $db->get_task($_); $t->task_dir.": $_"} @list if $debug;
+  @list = map {my $t = $db->get_task_light($_); $t->task_dir.": $_"} @list if $debug;
   print $_, "\n" for sort @list;
   exit 0;
 }

@@ -37,6 +37,7 @@ sub new
     tasks   => {}, #< { 'canonical_id' => [$Task_obj, ...], ... }
     task_files => {}, #< { 'short_id' => {filename => $conf_filename,
                       #                   data_dir => $task_data_dir}, ... }
+    plugins => {}, #< { 'plugin' => $status, ... }
   }, $class;
   $self->add_tasks_dir($_) for @tasks_dirs;
   $self
@@ -64,6 +65,8 @@ sub new_task
 sub get_task
 {
   my $self = shift;
+  # $_[0] - $task_spec_str
+  # $_[1] - $light
   ## return loaded task ##
   return $self->{tasks}{$_[0]}[0] if exists $self->{tasks}{$_[0]};
   dbg2 and local $dprint_prefix = $dprint_prefix.'new_task:';
@@ -72,7 +75,16 @@ sub get_task
   return $self->{tasks}{$id}[0] if exists $self->{tasks}{$id};
 
   ## load task ##
-  $self->m_mk_new_task($tid)
+  $self->m_mk_new_task($tid, $_[1])
+}
+
+
+# my $task = $db->get_task_light($task_spec_str);
+# throws: Exceptions::Exception
+sub get_task_light
+{
+  my $self = shift;
+  return $self->get_task($_[0], 1);
 }
 
 # my @tasks = $db->get_tasks($tid);
@@ -110,9 +122,19 @@ sub add_tasks_dir
   push @{$self->{dirs}}, $dir;
 }
 
+sub failed_plugins
+{
+  my $self = shift;
+  return grep { !$self->{plugins}{$_} } keys %{$self->{plugins}};
+}
+
+# When $light is true, that means:
+#   - do not load plugin.
+#   - do not call on_task_create.
+#   - do not add the task to the database.
 sub m_mk_new_task
 {
-  my ($self, $tid) = @_;
+  my ($self, $tid, $light) = @_;
 
   ## load task ##
   my $short_id = $tid->short_id;
@@ -128,10 +150,34 @@ sub m_mk_new_task
   else {
     throw Exception => "unknown task '$short_id'";
   }
-  dbg2 and dprint("make new Task");
+  dbg2 and dprint("make new ", ($light ? 'light ' : ''), "Task[", $tid, "]");
   my $task = Task->new($tid, $fname, $data_dir);
-  push @{$self->{tasks}{$tid->id}}, $task;
+  if (!$light) {
+    push @{$self->{tasks}{$tid->id}}, $task;
+    if ($self->m_load_plugin($task)) {
+      my $pc = $task->plugin_class;
+      $pc->on_task_create($task, $self) if $pc->can('on_task_create');
+    }
+  }
   $task
+}
+
+sub m_load_plugin
+{
+  my ($self, $task) = @_;
+  my $plugins = $self->{plugins};
+
+  my $pname = $task->plugin;
+  return $plugins->{$pname} if exists $plugins->{$pname};
+  dbg1 and dprint("load plugin $pname");
+  (my $req_pname = $pname) =~ s#::#/#g;
+  eval {
+    require "Plugins/$req_pname.pm"
+  };
+  if ($@){
+    print $@;
+  }
+  return $plugins->{$pname} = !$@;
 }
 
 1;
@@ -155,6 +201,10 @@ It returns a L<Task> object.
 
 It returns an existing task corresponded to the provided task specification string or create a new one.
 
+=item get_task_light($task_spec_str)
+
+It is similar to I<get_task>, but does not load a plugin, does not call I<on_task_create> and does not add the task to the database.
+
 =item get_tasks($task_spec_str)
 
 It returns all the existing tasks corresponded to the provided task specification string.
@@ -163,6 +213,10 @@ It returns all the existing tasks corresponded to the provided task specificatio
 
 Adds the directory to the search path.
 It allows to load a task from the directory, with the basename specified only.
+
+=item failed_plugins()
+
+It returns a list of plugins that failed to load.
 
 =back
 

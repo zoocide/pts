@@ -19,8 +19,12 @@ use if !use_mce && !use_threads, 'ParallelWithForks';
 ## obtain tasks to execute ##
 dbg2 and dprint("load tasks");
 dbg2 and my $lt_time = time;
+update_plugins_path();
 my @tasks = map { is_task_set($_) ? load_task_set($db, $_) : $db->new_task($_) }
                 @{$args->arg('taskset')};
+if (my @failed_plugins = $db->failed_plugins) {
+  die "ERROR! Can not load plugins: ".join(', ', @failed_plugins)."\n";
+}
 dbg2 and dprint_t(time - $lt_time, 'tasks loaded');
 
 ## try to open file $failed_fname ##
@@ -31,10 +35,6 @@ if ($failed_fname) {
 }
 
 my $start_time = time if dbg1;
-
-## load plugins ##
-dbg2 and dprint("load plugins");
-load_plugins(@tasks);
 
 ## construct task sequence ##
 our $has_parallel = 0;
@@ -192,39 +192,13 @@ sub load_task_set
   @ret
 }
 
-sub load_plugins
+sub update_plugins_path
 {
-  my @tasks = @_;
-  dbg2 and my $tstart = time;
   for my $plugins_pdir (PtsConfig->plugins_parent_dirs) {
     eval "use lib '$plugins_pdir'";
     die $@ if $@;
     dbg1 and dprint('plugins dir = '.catfile($plugins_pdir, 'Plugins'));
   }
-
-  my @failed;
-  my %plugins;
-  for my $task (@tasks){
-    my $pname = $task->plugin;
-    next if exists $plugins{$pname};
-    dbg1 and dprint("load plugin $pname");
-    (my $req_pname = $pname) =~ s#::#/#g;
-    eval {
-      require "Plugins/$req_pname.pm"
-    };
-    if ($@){
-      print $@;
-      push @failed, $pname;
-    }
-    $plugins{$pname} = !$@;
-    if (dbg2 && exists &{"Plugins::${pname}::process"}) {
-      use if dbg2, 'B::Deparse';
-      my $d = B::Deparse->new();
-      print $d->coderef2text(\&{"Plugins::${pname}::process"}), "\n";
-    }
-  }
-  dbg2 and dprint_t(time - $tstart, 'plugins loaded');
-  @failed and die "ERROR! Can not load plugins: ".join(', ', @failed)."\n";
 }
 
 sub index_tasks
