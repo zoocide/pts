@@ -20,7 +20,8 @@ use Exceptions::TextFileError;
 use TaskDB;
 use File::Basename qw(dirname);
 use File::Spec::Functions qw(splitpath catpath splitdir catdir catfile);
-use MyConsoleColors qw(:ALL_COLORS clr_dbg color_str);
+use MyConsoleColors qw(:ALL_COLORS color_str);
+use PtsColorScheme;
 
 our $script_start_time = time;
 

@@ -42,7 +42,6 @@ my @all = (
 our @EXPORT_OK = (
   @all,
   qw (
-    clr_dbg
     color_str
   ),
 );
@@ -83,10 +82,6 @@ use constant {
   clr_br_magenta=> use_colors ? "\e[95m" : '',
   clr_br_cyan   => use_colors ? "\e[96m" : '',
   clr_br_white  => use_colors ? "\e[97m" : '',
-};
-
-use constant {
-  clr_dbg => clr_cyan,
 };
 
 sub color_str

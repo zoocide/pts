@@ -5,9 +5,9 @@ use Plugins::Base v0.7.2;
 use base qw(Plugins::Base);
 use PtsConfig;
 use File::Spec::Functions qw(catfile);
-use MyConsoleColors qw(:ALL_COLORS);
+use PtsColorScheme;
 
-my ($ci, $cc, $ce) = (clr_br_blue, clr_br_yellow, clr_end);
+my ($ci, $cc, $ce) = (clr_italic, clr_code, clr_end);
 
 sub help_message
 {
