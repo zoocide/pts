@@ -3,6 +3,9 @@ use Plugins::Base;
 use base 'Plugins::Base';
 use ConfigFile;
 use File::Spec::Functions qw(catfile);
+use PtsColorScheme;
+
+my ($ci, $cc, $ccom, $ce) = (clr_italic, clr_code, clr_comment, clr_end);
 
 sub on_task_create
 {
@@ -18,13 +21,13 @@ sub help_message
 
   my $name = $task->id->short_id;
   return <<EOT;
-The '$name' task writes its argument variables into the configuration file.
-Variables from the default '' group are not saved.
-To see the stored variables use command `pts config:list`.
+The ${ci}$name$ce task writes its argument variables into the configuration file.
+Variables from the default ${ci}''$ce group are not saved.
+To see the stored variables use command ${cc}pts config:list$ce.
 A plugin can use this task to obtain stored values this way:
 
-  my \$conf = \$db->get_task('$name')->data;
-  # now \$conf is a ConfigFile object.
+  ${cc}my \$conf = \$db->get_task('$name')->data;$ce
+  ${ccom}# now \$conf is a ConfigFile object.$ce
 
 EOT
 }
