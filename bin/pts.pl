@@ -20,41 +20,7 @@ use Exceptions::TextFileError;
 use TaskDB;
 use File::Basename qw(dirname);
 use File::Spec::Functions qw(splitpath catpath splitdir catdir catfile);
-
-BEGIN{
-  my $v = -t STDOUT && ($^O ne 'MSWin32' || eval{ require Win32::Console::ANSI });
-  *use_colors = sub () { $v }
-}
-use constant {
-  clr_end    => use_colors ? "\e[m" : '',
-  clr_black  => use_colors ? "\e[30m" : '',
-  clr_red    => use_colors ? "\e[31m" : '',
-  clr_green  => use_colors ? "\e[32m" : '',
-  clr_yellow => use_colors ? "\e[33m" : '',
-  clr_blue   => use_colors ? "\e[34m" : '',
-  clr_magenta=> use_colors ? "\e[35m" : '',
-  clr_cyan   => use_colors ? "\e[36m" : '',
-  clr_white  => use_colors ? "\e[37m" : '',
-  clr_bg_black  => use_colors ? "\e[40m" : '',
-  clr_bg_red    => use_colors ? "\e[41m" : '',
-  clr_bg_green  => use_colors ? "\e[42m" : '',
-  clr_bg_yellow => use_colors ? "\e[43m" : '',
-  clr_bg_blue   => use_colors ? "\e[44m" : '',
-  clr_bg_magenta=> use_colors ? "\e[45m" : '',
-  clr_bg_cyan   => use_colors ? "\e[46m" : '',
-  clr_bg_white  => use_colors ? "\e[47m" : '',
-  clr_gray      => use_colors ? "\e[90m" : '',
-  clr_br_red    => use_colors ? "\e[91m" : '',
-  clr_br_green  => use_colors ? "\e[92m" : '',
-  clr_br_yellow => use_colors ? "\e[93m" : '',
-  clr_br_blue   => use_colors ? "\e[94m" : '',
-  clr_br_magenta=> use_colors ? "\e[95m" : '',
-  clr_br_cyan   => use_colors ? "\e[96m" : '',
-  clr_br_white  => use_colors ? "\e[97m" : '',
-};
-use constant {
-  clr_dbg => clr_cyan,
-};
+use MyConsoleColors qw(:ALL_COLORS clr_dbg color_str);
 
 our $script_start_time = time;
 
@@ -137,7 +103,7 @@ defined $num_procs && $num_procs <= 0 and die "the number of workers should be a
 
 ## load module with constants enabled ##
 my $r = do 'pts-main.pm';
-die $@ if $@;
+die color_str("$@", clr_br_red) if $@;
 die "could not do 'pts-main.pm': $!" if !defined $r;
 m_dprint_t(time - $begin_time, 'measured overall time') if $debug >=2;
 $r;
