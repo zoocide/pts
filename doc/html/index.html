@@ -60,7 +60,7 @@
 
 <h2 id="Implementation">Implementation</h2>
 
-<p>The task in the system is defined as a pair of a configuration file and a plugin that do the work. A configuration file (.conf) is a text file that look like ini-file. It has extended syntax to make it more convenient (see <a href="external/ConfigFile.html">ConfigFile</a> for syntax rules). A configuration file must specify the <i>::plugin</i> variable, to set the plugin to process the task. A string <code>plugin=PluginName</code> defines to use the <code>Plugins::PluginName</code> package written in Perl to process the task. The user may develop own plugin or use one of an existing. So, the task is defined by the configuration file, which in turn defines the plugin.</p>
+<p>The task in the system is defined as a pair of a configuration file and a plugin that do the work. A configuration file (.conf) is a text file that look like ini-file. It has extended syntax to make it more convenient (see <a href="modules/external/ConfigFile.html">ConfigFile</a> for syntax rules). A configuration file must specify the <i>::plugin</i> variable, to set the plugin to process the task. A string <code>plugin=PluginName</code> defines to use the <code>Plugins::PluginName</code> package written in Perl to process the task. The user may develop own plugin or use one of an existing. So, the task is defined by the configuration file, which in turn defines the plugin.</p>
 
 <p><i>PTS</i> accepts three different ways to select tasks to process:</p>
 
@@ -83,7 +83,7 @@
 
 <h1 id="Plugin-development">Plugin development</h1>
 
-<p>The plugin must inherit from the <a href="Plugins/Base.html">Plugins::Base</a> package.</p>
+<p>The plugin must inherit from the <a href="modules/Plugins/Base.html">Plugins::Base</a> package.</p>
 
 <h2 id="Virtual-methods">Virtual methods</h2>
 
@@ -102,10 +102,10 @@
 <li><p><i>$class</i> - the class name for which this method is called.</p>
 
 </li>
-<li><p><i>$task</i> - the object of a <a href="./.\Task.html">Task</a> type.</p>
+<li><p><i>$task</i> - the object of a <a href="modules/Task.html">Task</a> type.</p>
 
 </li>
-<li><p><i>$db</i> - the task database. See <a href="./.\TaskDB.html">TaskDB</a>.</p>
+<li><p><i>$db</i> - the task database. See <a href="modules/TaskDB.html">TaskDB</a>.</p>
 
 </li>
 </ul>
@@ -121,7 +121,7 @@
 <li><p><i>$class</i> - the class name for which this method is called (<code>$class-&gt;on_prepare(...)</code>).</p>
 
 </li>
-<li><p><i>$task</i> - the object of a <a href="./.\Task.html">Task</a> type.</p>
+<li><p><i>$task</i> - the object of a <a href="modules/Task.html">Task</a> type.</p>
 
 <p>It represents the current task to prepare and has a <i>$class</i> plugin specified.</p>
 
@@ -143,7 +143,7 @@
 <p>Actually, it is not exactly a flat list. It can contain nested lists which tasks should be processed in parallel. But that is not important if you do not want to change the parallel execution organization.</p>
 
 </li>
-<li><p><i>$db</i> - the task database. See <a href="./.\TaskDB.html">TaskDB</a>.</p>
+<li><p><i>$db</i> - the task database. See <a href="modules/TaskDB.html">TaskDB</a>.</p>
 
 </li>
 </ul>
@@ -156,19 +156,19 @@
 
 <p>The processing stage begins after the preparation stage. It implies the execution of <i>process</i> method for every prepared task.</p>
 
-<p>Use <i>print_out</i> function (see <a href="Plugins/Base.html">Plugins::Base</a>) to gain the consistent output of the tasks executed in parallel.</p>
+<p>Use <i>print_out</i> function (see <a href="modules/Plugins/Base.html">Plugins::Base</a>) to gain the consistent output of the tasks executed in parallel.</p>
 
 <ul>
 
 <li><p><i>$class</i> - the class name for which this method is called (<code>$class-&gt;on_process(...)</code>).</p>
 
 </li>
-<li><p><i>$task</i> - the object of a <a href="./.\Task.html">Task</a> type.</p>
+<li><p><i>$task</i> - the object of a <a href="modules/Task.html">Task</a> type.</p>
 
 <p>It represents the current task to process and has a <i>$class</i> plugin specified.</p>
 
 </li>
-<li><p><i>$db</i> - the task database. See <a href="./.\TaskDB.html">TaskDB</a>.</p>
+<li><p><i>$db</i> - the task database. See <a href="modules/TaskDB.html">TaskDB</a>.</p>
 
 </li>
 </ul>
@@ -201,7 +201,7 @@
 <li><p><i>$class</i> - the class name for which this method is called (<code>$class-&gt;help_message(...)</code>).</p>
 
 </li>
-<li><p><i>$task</i> - the <a href="./.\Task.html">Task</a> object which message is requested.</p>
+<li><p><i>$task</i> - the <a href="modules/Task.html">Task</a> object which message is requested.</p>
 
 </li>
 </ul>
@@ -213,27 +213,27 @@
 
 <dl>
 
-<dt id="CmdArgs"><a href="external/CmdArgs.html">CmdArgs</a></dt>
+<dt id="CmdArgs"><a href="modules/external/CmdArgs.html">CmdArgs</a></dt>
 <dd>
 
 </dd>
-<dt id="ConfigFile"><a href="external/ConfigFile.html">ConfigFile</a></dt>
+<dt id="ConfigFile"><a href="modules/external/ConfigFile.html">ConfigFile</a></dt>
 <dd>
 
 </dd>
-<dt id="ConfigFileScheme"><a href="external/ConfigFileScheme.html">ConfigFileScheme</a></dt>
+<dt id="ConfigFileScheme"><a href="modules/external/ConfigFileScheme.html">ConfigFileScheme</a></dt>
 <dd>
 
 </dd>
-<dt id="Task"><a href="./.\Task.html">Task</a></dt>
+<dt id="Task"><a href="modules/Task.html">Task</a></dt>
 <dd>
 
 </dd>
-<dt id="Task::ID"><a href="Task/ID.html">Task::ID</a></dt>
+<dt id="Task::ID"><a href="modules/Task/ID.html">Task::ID</a></dt>
 <dd>
 
 </dd>
-<dt id="TaskDB"><a href="./.\TaskDB.html">TaskDB</a></dt>
+<dt id="TaskDB"><a href="modules/TaskDB.html">TaskDB</a></dt>
 <dd>
 
 </dd>
