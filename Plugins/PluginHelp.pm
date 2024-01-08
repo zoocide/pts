@@ -5,6 +5,9 @@ use Plugins::Base v0.7.2;
 use base qw(Plugins::Base);
 use PtsConfig;
 use File::Spec::Functions qw(catfile);
+use MyConsoleColors qw(:ALL_COLORS);
+
+my ($ci, $cc, $ce) = (clr_br_blue, clr_br_yellow, clr_end);
 
 sub help_message
 {
@@ -12,10 +15,10 @@ sub help_message
   my $task = shift;
   return $task->get_var('', 'help_message') if $task->has_var('', 'help_message');
   my $name = $task->id->short_id;
-  return "The task '$name' shows information about the first following task and interrupts execution."
-    ."\nUse command 'pts help a_task' to see the description of 'a_task' task."
-    ."\nUse command 'pts --help' to see the help message about 'pts' itself."
-    ."\nUse command 'pts help:doc' to see the HTML documentation.";
+  return "The task $ci$name$ce shows information about the first following task and interrupts execution."
+    ."\nUse command ${cc}pts help a_task$ce to see the description of ${ci}a_task$ce task."
+    ."\nUse command ${cc}pts --help$ce to see the help message about ${ci}pts$ce itself."
+    ."\nUse command ${cc}pts help:doc$ce to see the HTML documentation.";
 }
 
 # Plugins::PluginHelp->on_prepare($task, $cur_ind, \@all_tasks, \@task_list, $db);
@@ -38,8 +41,8 @@ sub on_prepare
       $browser = qq("$browser" ) if $browser;
       if (my $r = system_timeout_simple("$browser$html_fname", $timeout)) {
         ## error ##
-        print_out("You can set the browser to use with the command `pts \"config:help::browser='a path/to a browser'\"`.\n");
-        print_out("Also, if you use a console browser (like 'lynx') it is necessary to disable timeout with the command `pts config:help::timeout=0`.\n");
+        print_out("You can set the browser to use with the command ${cc}pts \"config:help::browser='a path/to a browser'\"$ce.\n");
+        print_out("Also, if you use a console browser (like ${ci}lynx$ce) it is necessary to disable timeout with the command ${cc}pts config:help::timeout=0$ce.\n");
         print_out("Otherwise, it will be killed after a short time.\n");
       }
     } else {
