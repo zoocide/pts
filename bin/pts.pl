@@ -76,13 +76,30 @@ our $args = CmdArgs->declare(
     'force_mce|no_mce',
   ],
 );
-$args->parse_begin;
-$args->parse_part(\@ARGV);
-m_dprint_t($script_start_time - $begin_time, 'measured compilation time') if $debug >=2;
-m_dprint('args = ', join ', ', map "'$_'", @ARGV) if $debug >=2;
-m_dprint_t(time - $script_start_time, 'command line arguments parsed') if $debug >=2;
-load_config($config_fname, $args) if !$args->is_opt('global');
-$args->parse_end;
+try {
+  $args->parse_begin;
+  $args->parse_part(\@ARGV);
+  m_dprint_t($script_start_time - $begin_time, 'measured compilation time') if $debug >=2;
+  m_dprint('args = ', join ', ', map "'$_'", @ARGV) if $debug >=2;
+  m_dprint_t(time - $script_start_time, 'command line arguments parsed') if $debug >=2;
+  load_config($config_fname, $args) if !$args->is_opt('global');
+  $args->parse_end;
+}
+make_exlist
+catch {
+  for (@{$@}) {
+    if (!ref($_)) {
+      ${\$_} = color_str($_, clr_br_red);
+    }
+    elsif (ref($_) eq 'Exceptions::Exception') {
+      $_->init(color_str($_->msg, clr_br_red));
+    }
+    elsif (ref($_) eq 'Exceptions::CmdArgsInfo' && @{$@} > 1) {
+      $_->init(color_str($_->msg, clr_comment));
+    }
+  }
+  throw;
+} 'List';
 
 ## list tasks ##
 if ($args->use_case eq 'list'){
