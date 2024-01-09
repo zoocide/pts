@@ -56,7 +56,12 @@ sub on_prepare
     $force_update = 1;
     for (@vars) {
       /^(\w+)::(\w+)$/ or die "wrong value specified: $name:unset='$_'\n";
+      dbg1 and dprint("unset $_ variable");
       $conf->unset($1, $2);
+      if (!$conf->var_names($1)) {
+        dbg1 and dprint("unset the empty group $1");
+        $conf->unset($1);
+      }
     }
   }
   update_config($task, $force_update);
