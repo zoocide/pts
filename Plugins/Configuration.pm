@@ -23,9 +23,10 @@ sub help_message
   return <<EOT;
 The ${ci}$name$ce task writes its argument variables into the configuration file.
 Variables from the default ${ci}''$ce group are not saved.
-To save a variable use command ${cc}pts config:group::var=value$ce.
-To see the stored variables use command ${cc}pts config:list$ce.
-To remove a variable from the file use command ${cc}pts config:unset=group::var$ce.
+Use command ${cc}pts config:group::var=value$ce to save a variable.
+Use command ${cc}pts config:list$ce to see the stored variables.
+Use command ${cc}pts config:unset=group::var$ce to remove a variable from the file.
+Use command ${cc}pts config:path$ce to print the configuration file path.
 A plugin can use this task to obtain stored values this way:
 
   ${cc}my \$conf = \$db->get_task('$name')->data;$ce
@@ -47,6 +48,11 @@ sub on_prepare
 
   if ($task->get_var('', 'list', '')) {
     print_config($task);
+    return;
+  }
+
+  if ($task->get_var('', 'path', '')) {
+    print_out($task->data->filename, "\n");
     return;
   }
 
