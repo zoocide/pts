@@ -8,6 +8,12 @@ our $db;
 our $args;
 our $failed_fname;
 our $script_start_time;
+our $terminated;
+
+$SIG{INT} = sub {
+  $terminated = 1;
+  die "terminated\n";
+};
 
 my $delete_failed_file = defined $failed_fname;
 my $failed_fname_abs = defined $failed_fname ? m_realpath(rel2abs($failed_fname)) : '';
@@ -307,6 +313,11 @@ sub process_tasks_seq
   my $stats = {};
   my $o = ForkedOutput::MainThreadOutput->new;
   for my $t (@$prepared) {
+    if ($terminated) {
+      push @{$stats->{all}}, $t;
+      push @{$stats->{skipped}}, $t;
+      next
+    }
     process_task($t, $o, $stats);
   }
   $stats
