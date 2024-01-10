@@ -1,0 +1,7 @@
+./t:name = chld_1
+./t:name = chld_2
+seq
+./t:name = chld_3
+./t:name = chld_4
+end_seq
+./t:name = chld_5
