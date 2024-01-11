@@ -270,25 +270,29 @@ sub m_sleep
 
 # $stats = {all => [], failed => [], skipped => [],};
 # # $out should have 'push' method;
-# process_task($task, $out, $stats);
+# If $res is defined, the plugin->process method is not executed
+# and the specified value is used as a result.
+# process_task($task, $out, $stats, $res);
 sub process_task
 {
-  my ($task, $o, $stats) = @_;
+  my ($task, $o, $stats, $res) = @_;
   dbg1 and $o->push('----- ', $task->fullname, " -----\n");
   dbg1 and $task->set_debug(1);
   dbg1 and Plugins::Base::dtimer_reset('main_task_timer');
   dbg1 and local $Plugins::Base::out = $o;
   dbg2 and Plugins::Base::dprint('plugin = '.$task->plugin);
 
-  my ($res, @msg);
-  try {
-    $res = ('Plugins::'.$task->plugin)->process_wrp($o, $task, $db);
+  my @msg;
+  if (!defined $res) {
+    try {
+      $res = ('Plugins::'.$task->plugin)->process_wrp($o, $task, $db);
+    }
+    catch {
+      push @msg, format_msg($@);
+      $res = 0;
+    };
+    dbg1 and Plugins::Base::dprint_t('main_task_timer', 'task \''.$task->fullname.'\' finished');
   }
-  catch {
-    push @msg, format_msg($@);
-    $res = 0;
-  };
-  dbg1 and Plugins::Base::dprint_t('main_task_timer', 'task \''.$task->fullname.'\' finished');
 
   push @{$stats->{all}}, $task;
   my $status;
