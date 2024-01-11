@@ -60,10 +60,23 @@ sub join
   @$ret
 }
 
+# my $bool = $child->is_running;
+sub is_running
+{
+  waitpid($_[0]{pid}, WNOHANG) == 0
+}
+
 # my $bool = $child->is_joinable;
 sub is_joinable
 {
   waitpid($_[0]{pid}, WNOHANG) == 0 ? 0 : 1
+}
+
+sub kill
+{
+  my $self = shift;
+  my $sig = shift;
+  kill $sig, $self->{pid};
 }
 
 1
