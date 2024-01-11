@@ -79,13 +79,8 @@ sub m_process_tasks
     }
 
     ## process task ##
-    if ($terminated) {
-      push @{$stats->{all}}, $task;
-      push @{$stats->{skipped}}, $task;
-      next
-    }
     my $o = $output->open($task->index);
-    main::process_task($task, $o, $stats);
+    main::process_task($task, $o, $stats, $terminated ? 'skipped' : ());
     $output->close($task->index);
   }
   $stats
