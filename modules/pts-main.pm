@@ -317,12 +317,7 @@ sub process_tasks_seq
   my $stats = {};
   my $o = ForkedOutput::MainThreadOutput->new;
   for my $t (@$prepared) {
-    if ($terminated) {
-      push @{$stats->{all}}, $t;
-      push @{$stats->{skipped}}, $t;
-      next
-    }
-    process_task($t, $o, $stats);
+    process_task($t, $o, $stats, $terminated ? 'skipped' : ());
   }
   $stats
 }
