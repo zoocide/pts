@@ -10,6 +10,7 @@ BEGIN {
   *dbg2 = *main::dbg2;
   *m_sleep = *main::m_sleep;
 }
+use constant windows => $^O eq 'MSWin32';
 
 my $old_sigint;
 our $terminated;
@@ -23,10 +24,11 @@ sub process_tasks
   my $output = ForkedOutput->new;
   $old_sigint = sub {
     $terminated = 1;
-    die "terminated\n";
+    $SIG{INT} = sub {}; #< disable the handler to finish safely.
+    die "terminated by the user\n";
   };
   my $ret = m_process_tasks($prepared, $output);
-  unlink $_ for $output->filenames;
+  defined and unlink $_ for $output->filenames;
   $ret
 }
 
@@ -51,8 +53,15 @@ sub m_process_tasks
       dbg1 and dprint("## start parallel section ##");
       my @thrs;
       local $SIG{INT} = sub {
-        for (@thrs) {
-          $_->kill('SIGINT') if $_->is_running;
+        # An unix terminal sends SIGINT to the foreground process group of that
+        # terminal. The forked children are in the group and will recieve the signal.
+        # Windows fork emulation uses threads instead of processes, so the forked
+        # children do not recieve the SIGINT from the terminal.
+        # It should be sended maually.
+        if (windows) {
+          for (@thrs) {
+            $_->kill('SIGINT') if $_->is_running;
+          }
         }
         $terminated = 1
       };
