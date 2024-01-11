@@ -54,9 +54,9 @@ sub m_process_tasks
       my @thrs;
       local $SIG{INT} = sub {
         # An unix terminal sends SIGINT to the foreground process group of that
-        # terminal. The forked children are in the group and will recieve the signal.
+        # terminal. The forked children are in the group and will receive the signal.
         # Windows fork emulation uses threads instead of processes, so the forked
-        # children do not recieve the SIGINT from the terminal.
+        # children do not receive the SIGINT from the terminal.
         # It should be sended maually.
         if (windows) {
           for (@thrs) {
