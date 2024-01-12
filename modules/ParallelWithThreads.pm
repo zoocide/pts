@@ -22,7 +22,7 @@ sub process_tasks
   my $output : shared = TasksOutput->new;
   $old_sigint = sub {
     $terminated = 1;
-    die "terminated\n";
+    die "terminated by the user\n";
   };
   my $ret = m_process_tasks($prepared, $output);
   $ret
@@ -68,13 +68,8 @@ sub m_process_tasks
     }
 
     ## process task ##
-    if ($terminated) {
-      push @{$stats->{all}}, $task;
-      push @{$stats->{skipped}}, $task;
-      next
-    }
     my $o = $output->open($task->index);
-    main::process_task($task, $o, $stats);
+    main::process_task($task, $o, $stats, $terminated ? 'skipped' : ());
     $output->close($task->index);
   }
   $stats
