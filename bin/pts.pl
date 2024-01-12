@@ -156,12 +156,7 @@ sub do_pts_main_with_worker
     interrupt_workers($worker);
 
     ## kill all children processes ##
-    for (ProcessViewer->new->update->children($$)) {
-      my $child = $_->pid;
-      next if waitpid $child, WNOHANG();
-      &dbg1 and m_dprint(sprintf "killing %d %s\n", $child, $_->name);
-      kill 'KILL', $child;
-    }
+    kill_all_children_procs();
     STDERR->flush;
 
     ## restore the default handler ##
@@ -173,6 +168,16 @@ sub do_pts_main_with_worker
   ## non-blocking wait ##
   m_sleep(0.0001) while waitpid($worker, WNOHANG()) == 0;
   $?
+}
+
+sub kill_all_children_procs
+{
+  for (ProcessViewer->new->update->children($$)) {
+    my $child = $_->pid;
+    next if waitpid $child, WNOHANG();
+    &dbg1 and m_dprint(sprintf "killing %d %s\n", $child, $_->name);
+    kill 'KILL', $child;
+  }
 }
 
 sub interrupt_workers
