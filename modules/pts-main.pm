@@ -263,11 +263,6 @@ sub format_msg
   join '', map clr_red."# $_".clr_end."\n", split /\n/, join '', @_
 }
 
-sub m_sleep
-{
-  select undef, undef, undef, $_[0]
-}
-
 # $stats = {all => [], failed => [], skipped => [],};
 # # $out should have 'push' method;
 # If $res is defined, the plugin->process method is not executed

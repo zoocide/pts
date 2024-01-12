@@ -1,6 +1,7 @@
 #!/bin/env perl
 use strict;
 #BEGIN { use Carp; $SIG{__WARN__} = sub {confess}; }
+use constant windows => $^O eq 'MSWin32';
 my $begin_time;
 BEGIN{ eval{ require Time::HiRes; Time::HiRes->import('time') } }
 BEGIN{ $begin_time = time; }
@@ -119,13 +120,68 @@ defined $num_procs && $num_procs <= 0 and die "the number of workers should be a
 {my $v = $args->is_opt('force_mce'); *{force_mce} = sub () { $v } }
 {my $v = $args->is_opt('no_mce'); *{no_mce} = sub () { $v } }
 
-## load module with constants enabled ##
-my $r = do 'pts-main.pm';
-die color_str("$@", clr_br_red) if $@;
-die "could not do 'pts-main.pm': $!" if !defined $r;
+my $r = windows ? do_pts_main_with_worker() : do_pts_main();
 m_dprint_t(time - $begin_time, 'measured overall time') if $debug >=2;
-$r;
+exit $r;
 
+
+sub do_pts_main
+{
+  ## load module with constants enabled ##
+  my $r = do 'pts-main.pm';
+  die color_str("$@", clr_br_red) if $@;
+  die "could not do 'pts-main.pm': $!" if !defined $r;
+  $r
+}
+
+sub do_pts_main_with_worker
+{
+  # In windows backticks commands hangs the SIGINT processing.
+  # It will processed just after the command finishes.
+  # The work around is to have a thread just for the reaction on signals.
+  my $worker;
+  if (!($worker = fork)) {
+    exit do_pts_main();
+  }
+
+  require ProcessViewer;
+  require POSIX;
+  POSIX->import(qw(WNOHANG));
+
+  ## set signal handlers ##
+  our $terminated;
+  my $old_sigint = $SIG{INT};
+  $SIG{INT} = sub {
+    &dbg1 and m_dprint("terminating on signal SIGINT");
+    interrupt_workers($worker);
+
+    ## kill all children processes ##
+    for (ProcessViewer->new->update->children($$)) {
+      my $child = $_->pid;
+      next if waitpid $child, WNOHANG();
+      &dbg1 and m_dprint(sprintf "killing %d %s\n", $child, $_->name);
+      kill 'KILL', $child;
+    }
+    STDERR->flush;
+
+    ## restore the default handler ##
+    $SIG{INT} = $old_sigint;
+    $terminated = 1;
+  };
+
+
+  ## non-blocking wait ##
+  m_sleep(0.0001) while waitpid($worker, WNOHANG()) == 0;
+  $?
+}
+
+sub interrupt_workers
+{
+  my ($worker) = @_;
+  return if !defined $worker || waitpid $worker, WNOHANG();
+  &dbg1 and m_dprint("terminate $worker worker");
+  kill 'INT', $worker;
+}
 
 sub m_dprint
 {
@@ -176,4 +232,9 @@ sub find_config_path
     pop @dirs;
   }
   undef
+}
+
+sub m_sleep
+{
+  select undef, undef, undef, $_[0]
 }
