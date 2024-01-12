@@ -195,6 +195,10 @@ The incorporated I<help> task calls this method and show the result to the user.
 
 =item L<ConfigFileScheme>
 
+=item L<Plugins::Base>
+
+=item L<Plugins::Base::Util>
+
 =item L<Task>
 
 =item L<Task::ID>
