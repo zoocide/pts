@@ -8,6 +8,7 @@ BEGIN {
   *dprint = *main::dprint;
   *dbg1 = *main::dbg1;
   *dbg2 = *main::dbg2;
+  *is_win32 = *main::windows;
 }
 
 my $q_chunks = MCE::Queue->new;
@@ -24,6 +25,10 @@ sub process_tasks
 {
   my $tasks = shift;
 
+  # Ignore SIGINT by the main process.
+  # Only the workers should react.
+  local $SIG{INT} = sub {};
+
   tasks2chunks(@$tasks);
   dbg1 and dprint_chunks();
 
@@ -35,7 +40,7 @@ sub process_tasks
   dbg1 and dprint("number_of_workers = $nworkers");
   our %stats = ();
   return \%stats if !%chunks;
-  MCE->new(
+  my $mce = MCE->new(
     user_tasks => [
       {
         max_workers => $nworkers,
@@ -51,14 +56,55 @@ sub process_tasks
         user_func => \&output_manager,
       },
     ],
-  )->run;
+  );
+  is_win32 ? run_wrapped($mce) : run_raw($mce);
+
   ## sort stats by task index. ##
   @{$stats{$_}} = sort {$a->index <=> $b->index} @{$stats{$_}} for keys %stats;
   \%stats
 }
 
+sub run_raw
+{
+  my $mce = shift;
+  $mce->run;
+}
+
+sub run_wrapped
+{
+  my $mce = shift;
+
+  our %stats;
+  my ($thr) = threads->create(sub {
+    $SIG{INT} = sub {
+      use v5.10;
+      say "MCE main thread SIGINT";
+    };
+  $mce->run;
+  \%stats
+  });
+  local $SIG{INT} = sub {
+    $thr != $_ and $_->kill('INT') for threads->list();
+    $SIG{INT} = sub {};
+  };
+  # It works only when sleep time is less than 1 ms.
+  # Possibly it does not sleep at all.
+  main::m_sleep(0.0001) while $thr->is_running;
+  %stats = %{$thr->join()};
+}
+
 sub worker
 {
+  our $terminated;
+  local $SIG{INT} = sub {
+    # defer signal if signaled during IPC
+    return MCE::Signal::defer($_[0]) if $MCE::Signal::IPC;
+
+    $SIG{INT} = sub {};
+    $terminated = 1;
+    die "terminated by the user\n";
+  };
+
   my $wid = MCE->wid;
   #MCE->say("worker $wid started");
   while (my $chunk_id = $q_chunks->dequeue) {
@@ -67,7 +113,7 @@ sub worker
     for my $t (@ctasks) {
       #MCE->say("worker $wid: processing ", $t->id);
       my $o = ParallelWithMCE::TaskOutput->new($t->index);
-      main::process_task($t, $o, \%sts);
+      main::process_task($t, $o, \%sts, $terminated ? 'skipped' : ());
       $o->close;
     }
     $q_done->enqueue([$chunk_id, \%sts]);
@@ -77,6 +123,9 @@ sub worker
 
 sub chunk_manager
 {
+  # Ignore INT signal.
+  $SIG{INT} = sub {};
+
   our %stats;
   my %wait_for = %chunks;
   #MCE->say("# chunk_manager started #");
@@ -91,6 +140,9 @@ sub chunk_manager
 
 sub output_manager
 {
+  # Ignore INT signal.
+  $SIG{INT} = sub {};
+
   #MCE->say("# output_manager started #");
   while (my $data = $q_out->dequeue) {
     receive_output(@$data);
