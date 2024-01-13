@@ -28,6 +28,21 @@ sub process_tasks
   $ret
 }
 
+# my $str = m_prepared_tasks_to_str
+sub m_prepared_tasks_to_str
+{
+  my ($p, $lvl) = @_;
+  if (ref $p eq 'ARRAY') {
+    $lvl //= 0;
+    return '['.join(', ', map m_prepared_tasks_to_str($_, $lvl), @$p).']' if @$p < 2;
+    my $end_tab = ' 'x($lvl*2);
+    my $tab = ' 'x(++$lvl*2);
+    return join("\n", "[", (map $tab.m_prepared_tasks_to_str($_, $lvl).',', @$p), "$end_tab]");
+  }
+  ref $p eq 'Task' and return $p->id;
+  defined $p ? $p : 'undef'
+}
+
 sub m_process_tasks
 {
   my $tasks = shift;
