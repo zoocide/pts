@@ -64,6 +64,13 @@ my $skipped = $stats->{skipped}|| [];
 dbg1 and dprint(sprintf "tasks time = %.3f", time - $start_time);
 printf "total time = %.3f\n", time - $script_start_time if $args->is_opt('ttime');
 
+if (dbg2) {
+  my %h = map {$_ => 1} @$failed, @$skipped;
+  dprint("ok: [", $_->index, "] ", $_->id) for grep !$h{$_}, @$all;
+  dprint("skipped: [", $_->index, "] ", $_->id) for @$skipped;
+  dprint("failed: [", $_->index, "] ", $_->id) for @$failed;
+}
+
 my $num_total  = @$all;
 my $num_failed = @$failed;
 my $num_skipped = @$skipped;
