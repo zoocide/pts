@@ -275,6 +275,7 @@ sub process_task
   dbg1 and $task->set_debug(1);
   dbg1 and Plugins::Base::dtimer_reset('main_task_timer');
   dbg1 and local $Plugins::Base::out = $o;
+  dbg2 and Plugins::Base::dprint('[', $task->index, '] ', $task->id);
   dbg2 and Plugins::Base::dprint('plugin = '.$task->plugin);
 
   my @msg;
