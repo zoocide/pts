@@ -77,8 +77,7 @@ sub run_wrapped
   our %stats;
   my ($thr) = threads->create(sub {
     $SIG{INT} = sub {
-      use v5.10;
-      say "MCE main thread SIGINT";
+      warn "MCE main thread SIGINT\n";
     };
   $mce->run;
   \%stats
@@ -96,7 +95,8 @@ sub run_wrapped
 sub worker
 {
   our $terminated;
-  local $SIG{INT} = sub {
+  my $idle_handler = sub { $terminated = 1; };
+  my $active_handler = sub {
     # defer signal if signaled during IPC
     return MCE::Signal::defer($_[0]) if $MCE::Signal::IPC;
 
@@ -104,6 +104,7 @@ sub worker
     $terminated = 1;
     die "terminated by the user\n";
   };
+  local $SIG{INT} = $idle_handler;
 
   my $wid = MCE->wid;
   #MCE->say("worker $wid started");
@@ -113,7 +114,9 @@ sub worker
     for my $t (@ctasks) {
       #MCE->say("worker $wid: processing ", $t->id);
       my $o = ParallelWithMCE::TaskOutput->new($t->index);
+      $SIG{INT} = $active_handler;
       main::process_task($t, $o, \%sts, $terminated ? 'skipped' : ());
+      $SIG{INT} = $idle_handler;
       $o->close;
     }
     $q_done->enqueue([$chunk_id, \%sts]);
