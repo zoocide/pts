@@ -42,7 +42,10 @@ sub m_process_tasks
       ## process parallel tasks group ##
       # $task = [[@tasks], ...]
       if ($terminated) {
-        m_process_tasks($_, $output) for @$tasks;
+        for my $t (@$task) {
+          my $rs = m_process_tasks($t, $output);
+          push @{$stats->{$_}}, @{$rs->{$_}} for keys %$rs;
+        }
         next
       }
 
