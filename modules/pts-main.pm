@@ -156,7 +156,7 @@ sub load_task_set
   dbg1 and dprint("load task set from file '$fname'");
   my @ret;
   $delete_failed_file &&= $failed_fname_abs ne m_realpath(rel2abs($fname));
-  open(my $f, '<', $fname) || throw OpenFileError => $fname;
+  open(my $f, '<:crlf', $fname) || throw OpenFileError => $fname;
   ### rules ###
   #1)  # comment
   #2)  \#name  => '#name'
