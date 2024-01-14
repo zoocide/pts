@@ -6,7 +6,7 @@ use Exceptions::OpenFileError;
 use ConfigFileScheme;
 
 use vars qw($VERSION);
-$VERSION = '0.8.0';
+$VERSION = '0.8.1';
 
 # TODO: allow change comment symbol to ;
 
@@ -115,7 +115,7 @@ sub m_load_old
   my $var_nested_spec = qr~((?:\$\{(?-1)\}|\$?[\w:]++)++)~;
   my $substitute_flat_var = sub {
     my $spec = shift;
-    $spec =~ /^$var_flat_spec$/ ? $self->get_var($1 // $section, $2) : undef
+    $spec =~ /^$var_flat_spec$/ ? $self->get_var($1 // $section, $2, '') : undef
   };
   my $interpolate_str;
   $interpolate_str = sub {
@@ -219,21 +219,23 @@ sub m_load_old
 
       ## take next word ##
       if ($s =~ s/^((?:[^\\'"# \t]|\\(?:.|$))++)//) {
+        my $wrd = $1;
+        my $is_word_end = $s =~ /^(?:\s|#|$)/;
         # word taken
         if ($do_concat) {
-          $parr->[-1] .= &$interpolate_str($1);
+          $parr->[-1] .= &$interpolate_str($wrd);
         }
-        elsif ($1 =~ /^\$(\{(?:(\w*)::)?)?(\w++)(?(1)\})(?=\s|#|$)/) {
+        elsif ($is_word_end && $wrd =~ /^\$(\{(?:(\w*)::)?)?(\w++)(?(1)\})$/) {
           # array interpolation
           push @$parr, $self->get_arr(defined $2 ? $2||'' : $section, $3);
         }
-        elsif ($1 =~ /^\$\{$var_nested_spec\}(?=\s|#|$)/) {
+        elsif ($is_word_end && $wrd =~ /^\$\{$var_nested_spec\}$/) {
           # array interpolation for nested variable
           my $spec = $interpolate_str->($1);
           push @$parr, $spec =~ /^$var_flat_spec$/ ? $self->get_arr($1 // $section, $2) : "\${$spec}";
         }
         else {
-          push @$parr, &$interpolate_str($1);
+          push @$parr, &$interpolate_str($wrd);
         }
       }
       elsif ($s =~ s/^(['"])//) {
