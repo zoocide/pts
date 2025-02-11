@@ -59,6 +59,7 @@ sub new
 sub id     { $_[0]{id} }
 sub name   { $_[0]{name} }
 sub name_prefix { $_[0]{name_prefix} }
+sub filename { $_[0]{filename} }
 sub fullname { $_[0]{name_prefix}.$_[0]{name} }
 sub index  { $_[0]{index} }
 sub plugin { $_[0]{plugin} }
