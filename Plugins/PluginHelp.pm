@@ -7,7 +7,7 @@ use PtsConfig;
 use File::Spec::Functions qw(catfile);
 use PtsColorScheme;
 
-my ($ci, $cc, $ce) = (clr_italic, clr_code, clr_end);
+my ($ci, $cc, $ce, $ccom) = (clr_italic, clr_code, clr_end, clr_comment);
 
 sub help_message
 {
@@ -81,9 +81,21 @@ sub print_help_message
     catch { $msg = $@ };
   }
   else {
-    $msg = "The task '".($task->id)."' does not have a description.";
+    $msg = "The task '$cc".($task->id)."$ce' does not have a description.";
+    $msg .= "\n${ccom}config = ".$task->filename.$ce;
+    $msg .= "\n${ccom}plugin = $ci".$task->plugin."$ce$ccom [".package_filename($task->plugin_class)."]$ce";
   }
   print $msg, "\n";
+}
+
+sub package_filename
+{
+  my $package = shift;
+  my $fname = $package;
+  $fname =~ s#::#/#g;
+  $fname .= '.pm';
+  exists $INC{$fname} or return undef;
+  return $INC{$fname}
 }
 
 sub system_timeout
