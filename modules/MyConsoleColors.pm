@@ -95,3 +95,92 @@ sub color_str
 }
 
 1
+
+__END__
+
+=head1 SYNOPSIS
+
+  use MyConsoleColors qw(:ALL_COLORS color_str);
+
+  my ($cgr, $ce) = (clr_green, clr_end);
+  print color_str("A ${cgr}multi$ce line\n colored text.\n", clr_yellow);
+
+=head1 CONSTANTS
+
+=head2 Special constants.
+
+=over
+
+=item clr_end
+
+It resets the color to the default.
+
+=back
+
+=head2 Common colors.
+
+=over
+
+=item clr_black
+
+=item clr_red
+
+=item clr_green
+
+=item clr_yellow
+
+=item clr_blue
+
+=item clr_magenta
+
+=item clr_cyan
+
+=item clr_white
+
+=back
+
+=head2 Background colors.
+
+=over
+
+=item clr_bg_black
+
+=item clr_bg_red
+
+=item clr_bg_green
+
+=item clr_bg_yellow
+
+=item clr_bg_blue
+
+=item clr_bg_magenta
+
+=item clr_bg_cyan
+
+=item clr_bg_white
+
+=back
+
+=head2 Bright colors.
+
+=over
+
+=item clr_gray
+
+=item clr_br_red
+
+=item clr_br_green
+
+=item clr_br_yellow
+
+=item clr_br_blue
+
+=item clr_br_magenta
+
+=item clr_br_cyan
+
+=item clr_br_white
+
+=back
+
+=cut

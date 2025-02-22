@@ -21,3 +21,48 @@ use constant {
 };
 
 1
+
+__END__
+
+=head1 SYNOPSIS
+
+  use PtsColorScheme;
+  my ($ci, $cc, $ce) = (clr_italic, clr_code, clr_end);
+
+  print "To print ${ci}colored$ce text write this code: ${cc}use PtsColorScheme;$ce\n";
+
+=head1 CONSTANTS
+
+=over
+
+=item clr_dbg
+
+The color used for debug messages.
+
+=item clr_code
+
+The color used for code blocks.
+
+=item clr_comment
+
+The color used for comments.
+
+=item clr_italic
+
+The color used to mention something.
+
+=item clr_bold
+
+The color used to highlight something.
+
+=back
+
+=head1 SEE ALSO
+
+=over
+
+=item L<MyConsoleColors>
+
+=back
+
+=cut
