@@ -1,6 +1,18 @@
 package PtsColorScheme;
-use MyConsoleColors qw(:ALL_COLORS);
+use MyConsoleColors qw(:ALL_COLORS %current_color);
 use Exporter qw(import);
+
+our %COLOR_SCHEME;
+
+BEGIN {
+  %COLOR_SCHEME = (
+    dbg     => cyan,
+    code    => br_yellow,
+    comment => yellow,
+    italic  => br_blue,
+    bold    => br_magenta,
+  );
+}
 
 our @EXPORT_OK = qw(
   clr_end
@@ -9,16 +21,36 @@ our @EXPORT_OK = qw(
   clr_comment
   clr_italic
   clr_bold
+  color_ref
 );
 our @EXPORT = @EXPORT_OK;
 
-use constant {
-  clr_dbg => clr_cyan,
-  clr_code => clr_br_yellow,
-  clr_comment => clr_yellow,
-  clr_italic => clr_br_blue,
-  clr_bold => clr_br_magenta,
-};
+sub update_constants
+{
+  for (keys %COLOR_SCHEME) {
+    *{"clr_$_"} = *{"MyConsoleColors::clr_$COLOR_SCHEME{$_}"};
+  }
+  *clr_end = *MyConsoleColors::clr_end;
+}
+
+BEGIN {
+  update_constants;
+}
+
+# *color = color_ref('color_name');
+sub color_ref
+{
+  my $clr = shift;
+  return \$current_color{$COLOR_SCHEME{$clr}} if exists $COLOR_SCHEME{$clr};
+  return \$current_color{$clr} if exists $current_color{$clr};
+  undef
+}
+
+sub import
+{
+  update_constants if clr_end ne &MyConsoleColors::clr_end;
+  goto &Exporter::import;
+}
 
 1
 
@@ -30,6 +62,30 @@ __END__
   my ($ci, $cc, $ce) = (clr_italic, clr_code, clr_end);
 
   print "To print ${ci}colored$ce text write this code: ${cc}use PtsColorScheme;$ce\n";
+
+  ###########################################
+
+  use PtsColorScheme;
+  our ($ci, $cc, $ce);
+  *ci = color_ref('italic');
+  *cc = color_ref('code');
+  *ce = color_ref('end');
+
+  enable_colors;
+  say $ci, "a colored string", $ce;
+  enable_colors(0);
+  say $ci, "an uncolored string", $ce;
+
+=head1 FUNCTIONS
+
+=over
+
+=item *color = color_ref('color_name')
+
+It returns the reference to the scalar containing the color string when colors enabled.
+When colors disabled it returns the empty string.
+
+=back
 
 =head1 CONSTANTS
 
