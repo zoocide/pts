@@ -140,7 +140,7 @@ sub is_task_set
   my $spec = shift;
   my ($disk, $dir) = splitpath($spec);
   return 0 if $disk eq '' && $dir eq '';
-  $spec !~ /.\.conf$/ && -f $spec
+  $spec !~ /.\.conf$/ && -f $spec && !-x $spec
 }
 
 sub load_task_set
