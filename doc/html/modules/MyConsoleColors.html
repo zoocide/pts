@@ -14,6 +14,8 @@
 
 <ul id="index">
   <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#VARIABLES">VARIABLES</a></li>
+  <li><a href="#FUNCTIONS">FUNCTIONS</a></li>
   <li><a href="#CONSTANTS">CONSTANTS</a>
     <ul>
       <li><a href="#Special-constants">Special constants.</a></li>
@@ -26,10 +28,69 @@
 
 <h1 id="SYNOPSIS">SYNOPSIS</h1>
 
-<pre><code>use MyConsoleColors qw(:ALL_COLORS color_str);
+<pre><code>use MyConsoleColors qw(:ALL_COLORS);
+
+say clr_green.&quot;hello, world!&quot;.clr_end;
+
+######################################
+
+use MyConsoleColors qw(:ALL_COLORS color_str);
 
 my ($cgr, $ce) = (clr_green, clr_end);
-print color_str(&quot;A ${cgr}multi$ce line\n colored text.\n&quot;, clr_yellow);</code></pre>
+print color_str(&quot;A ${cgr}multi$ce line\n colored text.\n&quot;, clr_yellow);
+
+######################################
+
+use MyConsoleColors qw(enable_colors color_ref);
+our ($cb, $ce);
+*cb = color_ref(&#39;green&#39;);
+*ce = color_ref(&#39;end&#39;);
+
+say $cb, &quot;# A colored comment&quot;, $ce;
+enable_colors(0);
+say $cb, &quot;# An uncolored comment&quot;, $ce;</code></pre>
+
+<h1 id="VARIABLES">VARIABLES</h1>
+
+<dl>
+
+<dt id="current_color">%current_color</dt>
+<dd>
+
+<p>The hash contains the color string for each color name.</p>
+
+</dd>
+</dl>
+
+<h1 id="FUNCTIONS">FUNCTIONS</h1>
+
+<dl>
+
+<dt id="color-color_ref-color">*color = color_ref(&#39;color&#39;)</dt>
+<dd>
+
+<p>It returns the reference to the scalar containing the color string when colors enabled. When colors disabled it returns the empty string.</p>
+
+</dd>
+<dt id="out_str-color_str-in_str-color">$out_str = color_str($in_str, $color)</dt>
+<dd>
+
+<p>It returns the <i>$in_str</i> painted with the <i>$color</i>. The colored parts of <i>$in_str</i> do not change the color.</p>
+
+</dd>
+<dt id="bool-enable_colors-bool">$bool = enable_colors($bool)</dt>
+<dd>
+
+<p>It resets the colors constants to enable or disables colors. Beware, constans inside your compiled script still unchanged due to the stage of constants substitution.</p>
+
+</dd>
+<dt id="bool-colors_enabled">$bool = colors_enabled()</dt>
+<dd>
+
+<p>It returns the current state of colors in runtime.</p>
+
+</dd>
+</dl>
 
 <h1 id="CONSTANTS">CONSTANTS</h1>
 

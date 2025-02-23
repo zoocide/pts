@@ -14,6 +14,7 @@
 
 <ul id="index">
   <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#FUNCTIONS">FUNCTIONS</a></li>
   <li><a href="#CONSTANTS">CONSTANTS</a></li>
   <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
@@ -23,7 +24,32 @@
 <pre><code>use PtsColorScheme;
 my ($ci, $cc, $ce) = (clr_italic, clr_code, clr_end);
 
-print &quot;To print ${ci}colored$ce text write this code: ${cc}use PtsColorScheme;$ce\n&quot;;</code></pre>
+print &quot;To print ${ci}colored$ce text write this code: ${cc}use PtsColorScheme;$ce\n&quot;;
+
+###########################################
+
+use PtsColorScheme;
+our ($ci, $cc, $ce);
+*ci = color_ref(&#39;italic&#39;);
+*cc = color_ref(&#39;code&#39;);
+*ce = color_ref(&#39;end&#39;);
+
+enable_colors;
+say $ci, &quot;a colored string&quot;, $ce;
+enable_colors(0);
+say $ci, &quot;an uncolored string&quot;, $ce;</code></pre>
+
+<h1 id="FUNCTIONS">FUNCTIONS</h1>
+
+<dl>
+
+<dt id="color-color_ref-color_name">*color = color_ref(&#39;color_name&#39;)</dt>
+<dd>
+
+<p>It returns the reference to the scalar containing the color string when colors enabled. When colors disabled it returns the empty string.</p>
+
+</dd>
+</dl>
 
 <h1 id="CONSTANTS">CONSTANTS</h1>
 
