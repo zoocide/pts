@@ -21,8 +21,8 @@ use Exceptions::TextFileError;
 use TaskDB;
 use File::Basename qw(dirname);
 use File::Spec::Functions qw(splitpath catpath splitdir catdir catfile);
-use MyConsoleColors qw(:ALL_COLORS color_str);
-use PtsColorScheme;
+use MyConsoleColors qw(color_str enable_colors);
+use PtsColorScheme qw(color_ref);
 
 our $script_start_time = time;
 
@@ -36,6 +36,12 @@ our $num_procs;
 our $debug = 0;
 my $quiet;
 my $config_fname = '.ptsconfig';
+
+our ($clr_dbg, $clr_end, $clr_br_red, $clr_comment);
+*clr_dbg = color_ref('dbg');
+*clr_end = color_ref('end');
+*clr_br_red = color_ref('br_red');
+*clr_comment = color_ref('comment');
 
 our $args = CmdArgs->declare(
   sprintf('%vd',$VERSION),
@@ -56,6 +62,8 @@ our $args = CmdArgs->declare(
     force_mce => ['--mce', 'Force to use MCE parallel engine. It should be installed from CPAN.'],
     no_mce => ['--no-mce', "Don't use MCE parallel engine."],
     num_procs => ['--np:Int', 'Set the number of parallel workers. It makes sense only for the MCE engine.', \$num_procs],
+    colors => ['--color', 'Force to use colored output messages.', sub { enable_colors }],
+    no_colors => ['--no-color', 'Do not use colored output messages.', sub { enable_colors(0) }],
   },
   groups => {
     OPTIONS => [qw(
@@ -65,6 +73,7 @@ our $args = CmdArgs->declare(
       ttime
       force_mce no_mce
       num_procs
+      colors no_colors
     )],
   },
   use_cases => {
@@ -85,18 +94,20 @@ try {
   m_dprint_t(time - $script_start_time, 'command line arguments parsed') if $debug >=2;
   load_config($config_fname, $args) if !$args->is_opt('global');
   $args->parse_end;
+  MyConsoleColors->import(qw(clr_end clr_red clr_gray clr_green clr_bg_red));
+  PtsColorScheme->import;
 }
 make_exlist
 catch {
   for (@{$@}) {
     if (!ref($_)) {
-      ${\$_} = color_str($_, clr_br_red);
+      ${\$_} = color_str($_, $clr_br_red);
     }
     elsif (ref($_) eq 'Exceptions::Exception') {
-      $_->init(color_str($_->msg, clr_br_red));
+      $_->init(color_str($_->msg, $clr_br_red));
     }
     elsif (ref($_) eq 'Exceptions::CmdArgsInfo' && @{$@} > 1) {
-      $_->init(color_str($_->msg, clr_comment));
+      $_->init(color_str($_->msg, $clr_comment));
     }
   }
   throw;
@@ -129,7 +140,7 @@ sub do_pts_main
 {
   ## load module with constants enabled ##
   my $r = do 'pts-main.pm';
-  die color_str("$@", clr_br_red) if $@;
+  die color_str("$@", $clr_br_red) if $@;
   die "could not do 'pts-main.pm': $!" if !defined $r;
   $r
 }
@@ -190,13 +201,13 @@ sub interrupt_workers
 
 sub m_dprint
 {
-  print clr_dbg."DEBUG: $_".clr_end."\n" for split /\n/, join '', @_;
+  print $clr_dbg."DEBUG: $_".$clr_end."\n" for split /\n/, join '', @_;
 }
 
 sub m_dprint_t
 {
   my $t = sprintf '%.6f', shift;
-  print clr_dbg, "DEBUG [${t}s]: ", @_, clr_end, "\n";
+  print $clr_dbg, "DEBUG [${t}s]: ", @_, $clr_end, "\n";
 }
 
 sub load_config
