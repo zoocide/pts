@@ -21,3 +21,4 @@ call pod2html %opts% %mod_dir%Plugins/Base/Util.pm --outfile=%html_dir%Plugins/B
 call pod2html %opts% %mod_dir%external/ConfigFile.pm --outfile=%html_dir%external/ConfigFile.html --css=../%css_mod_url%
 call pod2html %opts% %mod_dir%external/ConfigFileScheme.pm --outfile=%html_dir%external/ConfigFileScheme.html --css=../%css_mod_url%
 call pod2html %opts% %mod_dir%external/CmdArgs.pm --outfile=%html_dir%external/CmdArgs.html --css=../%css_mod_url%
+del pod2htmd.tmp
