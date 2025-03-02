@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title></title>
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" type="text/css" />
+<link rel="stylesheet" href="../../../styles/style.css" type="text/css" />
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:" />
 </head>
@@ -20,29 +20,29 @@
 
 <h1 id="SYNOPSIS">SYNOPSIS</h1>
 
-<pre><code>  my $scheme = ConfigFileScheme-&gt;new(
-    strict     =&gt; 1,                      ##&lt; prevent undeclared variables
+<pre><code>my $scheme = ConfigFileScheme-&gt;new(
+  strict     =&gt; 1,                      ##&lt; prevent undeclared variables
 
-    multiline  =&gt; {&#39;group&#39; =&gt; [@vars],},  ##&lt; specify multi-line variables
-    join_lines =&gt; {&#39;group&#39; =&gt; [@vars],},  ##&lt; specify joined multi-line variables
-    required   =&gt; {&#39;group&#39; =&gt; [@vars],},  ##&lt; specify required variables
-    #^^^ for these keys use 1 to specify all variables
-    #    {&#39;group&#39; =&gt; [@vars]}   -- points to @vars from &#39;group&#39;
-    #    {&#39;group&#39; =&gt; 1}         -- points to all variables in &#39;group&#39;
-    #    1                      -- points to all variables
+  multiline  =&gt; {&#39;group&#39; =&gt; [@vars],},  ##&lt; specify multi-line variables
+  join_lines =&gt; {&#39;group&#39; =&gt; [@vars],},  ##&lt; specify joined multi-line variables
+  required   =&gt; {&#39;group&#39; =&gt; [@vars],},  ##&lt; specify required variables
+  #^^^ for these keys use 1 to specify all variables
+  #    {&#39;group&#39; =&gt; [@vars]}   -- points to @vars from &#39;group&#39;
+  #    {&#39;group&#39; =&gt; 1}         -- points to all variables in &#39;group&#39;
+  #    1                      -- points to all variables
 
-    struct     =&gt; {&#39;group&#39; =&gt; [@vars],},  ##&lt; specify config_file structure
-  );
+  struct     =&gt; {&#39;group&#39; =&gt; [@vars],},  ##&lt; specify config_file structure
+);
 
-  my $bool = $scheme-&gt;is_multiline (&#39;group&#39;, &#39;var&#39;);
-  my $bool = $scheme-&gt;is_join_lines(&#39;group&#39;, &#39;var&#39;);
-  my $bool = $scheme-&gt;is_valid     (&#39;group&#39;, &#39;var&#39;);
-  try{
-    $scheme-&gt;check_required({&#39;group&#39; =&gt; [@vars],...});
-  }
-  catch{
-    ...
-  } &#39;List&#39;;</code></pre>
+my $bool = $scheme-&gt;is_multiline (&#39;group&#39;, &#39;var&#39;);
+my $bool = $scheme-&gt;is_join_lines(&#39;group&#39;, &#39;var&#39;);
+my $bool = $scheme-&gt;is_valid     (&#39;group&#39;, &#39;var&#39;);
+try{
+  $scheme-&gt;check_required({&#39;group&#39; =&gt; [@vars],...});
+}
+catch{
+  ...
+} &#39;List&#39;;</code></pre>
 
 <h1 id="METHODS">METHODS</h1>
 
@@ -51,7 +51,7 @@
 <dt id="new-attrs">new(@attrs)</dt>
 <dd>
 
-<pre><code>  my $scheme = ConfigFileScheme-&gt;new(@attrs);</code></pre>
+<pre><code>my $scheme = ConfigFileScheme-&gt;new(@attrs);</code></pre>
 
 <p><b>ATTRIBUTES</b></p>
 
@@ -62,7 +62,7 @@
 
 <p>Prevents undeclared variables. Variables are declared with <b>struct</b> attribute.</p>
 
-<pre><code>  strict =&gt; 1</code></pre>
+<pre><code>strict =&gt; 1</code></pre>
 
 </dd>
 <dt id="multiline">multiline</dt>
@@ -70,7 +70,7 @@
 
 <p>Specify multiline variables.</p>
 
-<pre><code>  multiline =&gt; $mask</code></pre>
+<pre><code>multiline =&gt; $mask</code></pre>
 
 </dd>
 <dt id="join_lines">join_lines</dt>
@@ -78,7 +78,7 @@
 
 <p>Same as multiline, but lines are joined to one string.</p>
 
-<pre><code>  join_lines =&gt; $mask</code></pre>
+<pre><code>join_lines =&gt; $mask</code></pre>
 
 </dd>
 <dt id="required">required</dt>
@@ -86,7 +86,7 @@
 
 <p>Specify mandatory variables.</p>
 
-<pre><code>  required =&gt; $mask</code></pre>
+<pre><code>required =&gt; $mask</code></pre>
 
 </dd>
 <dt id="struct">struct</dt>
@@ -94,17 +94,17 @@
 
 <p>You can specify the whole file structure, by specifying groups and contained variables.</p>
 
-<pre><code>  struct =&gt; {group =&gt; [@variables],}</code></pre>
+<pre><code>struct =&gt; {group =&gt; [@variables],}</code></pre>
 
 </dd>
 </dl>
 
 <p><b>MASK</b></p>
 
-<pre><code>  $mask: 1                  - it corresponds to everything
-     or  {$group, ...}
-  $group: group_name =&gt; 1   - it corresponds to every variable in the group
-      or  group_name =&gt; [&#39;variable_name&#39;, ...]</code></pre>
+<pre><code>$mask: 1                  - it corresponds to everything
+   or  {$group, ...}
+$group: group_name =&gt; 1   - it corresponds to every variable in the group
+    or  group_name =&gt; [&#39;variable_name&#39;, ...]</code></pre>
 
 </dd>
 <dt id="is_multiline-group-var">is_multiline(&#39;group&#39;, &#39;var&#39;)</dt>
@@ -135,21 +135,21 @@
 
 <h1 id="FILE-EXAMPLE">FILE EXAMPLE</h1>
 
-<pre><code>  Config file structure:
-  -------------------------------
-  |
-  |# comment is the line starting from &#39;#&#39;
-  |    # another comment
-  |# Variables before any group declaration are placed in &#39;&#39; group (general group).
-  |var_from_general_group = value
-  |[group_1]
-  |var_form_group_1 = value
-  |multiline_variable = elem1 elem2
-  |   elem3 elem4
-  | # comment
-  | elem5 #this_is_not
-  |[group_2]
-  |var_from_group_2 = value</code></pre>
+<pre><code>Config file structure:
+-------------------------------
+|
+|# comment is the line starting from &#39;#&#39;
+|    # another comment
+|# Variables before any group declaration are placed in &#39;&#39; group (general group).
+|var_from_general_group = value
+|[group_1]
+|var_form_group_1 = value
+|multiline_variable = elem1 elem2
+|   elem3 elem4
+| # comment
+| elem5 #this_is_not
+|[group_2]
+|var_from_group_2 = value</code></pre>
 
 
 </body>

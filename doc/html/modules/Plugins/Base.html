@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title></title>
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" type="text/css" />
+<link rel="stylesheet" href="../../../styles/style.css" type="text/css" />
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:" />
 </head>
@@ -19,24 +19,24 @@
 
 <h1 id="SYNOPSIS">SYNOPSIS</h1>
 
-<pre><code>  my $result = Plugins::PluginName-&gt;process($task, $task_database);
-  print &#39;task &#39;, ($result ? &#39;complete&#39; : &#39;failed&#39;), &quot;\n&quot;;
+<pre><code>my $result = Plugins::PluginName-&gt;process($task, $task_database);
+print &#39;task &#39;, ($result ? &#39;complete&#39; : &#39;failed&#39;), &quot;\n&quot;;
 
-  #########################
+#########################
 
-  use Plugins::Base v0.4;
-  sub process {
-    dbg1 and dprint(&quot;debug message&quot;);
-    print_out(&quot;normal output\n&quot;);
-  }
+use Plugins::Base v0.4;
+sub process {
+  dbg1 and dprint(&quot;debug message&quot;);
+  print_out(&quot;normal output\n&quot;);
+}
 
-  #########################
+#########################
 
-  use Plugins::Base v0.4.1;
+use Plugins::Base v0.4.1;
 
-  dbg1 and dtimer_reset(&#39;timer1&#39;);
-  #... do something ...
-  dgb1 and dpirnt_t(&#39;timer1&#39;, &quot;something is done&quot;);</code></pre>
+dbg1 and dtimer_reset(&#39;timer1&#39;);
+#... do something ...
+dgb1 and dpirnt_t(&#39;timer1&#39;, &quot;something is done&quot;);</code></pre>
 
 <h1 id="DESCRIPTION">DESCRIPTION</h1>
 

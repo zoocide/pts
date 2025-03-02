@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title></title>
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" type="text/css" />
+<link rel="stylesheet" href="../../styles/style.css" type="text/css" />
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:" />
 </head>
@@ -19,14 +19,14 @@
 
 <h1 id="SYNOPSIS">SYNOPSIS</h1>
 
-<pre><code>  my $db = TaskDB-&gt;new(&#39;tasks_directory&#39;, ...);
-  $db-&gt;add_tasks_dir(&#39;another_directory&#39;);
+<pre><code>my $db = TaskDB-&gt;new(&#39;tasks_directory&#39;, ...);
+$db-&gt;add_tasks_dir(&#39;another_directory&#39;);
 
-  # $tid is a task specification string.
-  # It may be a Task::ID object or something else.
-  my $task = $db-&gt;new_task($tid);
-  my @tasks = $db-&gt;get_tasks($tid);
-  my $task = $db-&gt;get_task($tid);</code></pre>
+# $tid is a task specification string.
+# It may be a Task::ID object or something else.
+my $task = $db-&gt;new_task($tid);
+my @tasks = $db-&gt;get_tasks($tid);
+my $task = $db-&gt;get_task($tid);</code></pre>
 
 <h1 id="METHODS">METHODS</h1>
 

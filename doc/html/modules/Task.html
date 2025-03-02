@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title></title>
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" type="text/css" />
+<link rel="stylesheet" href="../../styles/style.css" type="text/css" />
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:" />
 </head>
@@ -24,28 +24,28 @@
 
 <h1 id="SYNOPSIS">SYNOPSIS</h1>
 
-<pre><code>  my $task = Task-&gt;new($Task_ID_obj, &#39;task.conf&#39;, &#39;task/data/dir&#39;);
+<pre><code>my $task = Task-&gt;new($Task_ID_obj, &#39;task.conf&#39;, &#39;task/data/dir&#39;);
 
-  # reload config file of the task using your scheme.
-  $task-&gt;reload_config(multiline =&gt; 1, ...);
+# reload config file of the task using your scheme.
+$task-&gt;reload_config(multiline =&gt; 1, ...);
 
-  $task-&gt;make_data_dir;
-  # or
-  $task-&gt;make_data_dir($new_task_dir);
+$task-&gt;make_data_dir;
+# or
+$task-&gt;make_data_dir($new_task_dir);
 
-  chdir $task-&gt;data_dir;
+chdir $task-&gt;data_dir;
 
-  my $var = &#39;default_value&#39;;
-  $var = $task-&gt;get_var(&#39;&#39;, &#39;var&#39;) if $task-&gt;has_var(&#39;&#39;, &#39;var&#39;);
+my $var = &#39;default_value&#39;;
+$var = $task-&gt;get_var(&#39;&#39;, &#39;var&#39;) if $task-&gt;has_var(&#39;&#39;, &#39;var&#39;);
 
-  $var = $task-&gt;get_var(&#39;&#39;, &#39;var&#39;, &#39;default_value&#39;);
-  @arr = $task-&gt;get_arr(&#39;&#39;, &#39;var&#39;, @default_value);
+$var = $task-&gt;get_var(&#39;&#39;, &#39;var&#39;, &#39;default_value&#39;);
+@arr = $task-&gt;get_arr(&#39;&#39;, &#39;var&#39;, @default_value);
 
-  ======== DEBUG ========
-  $task-&gt;DEBUG(@messages_to_print);      ##&lt; print debug messages
-  $task-&gt;DEBUG_RESET(1, 2, 3);           ##&lt; reset timers 1, 2, 3
-  $task-&gt;DEBUG_T(2, @messages);          ##&lt; print messages and time of timer 2
-  $task-&gt;DEBUG_TR(2, @messages);         ##&lt; print messages and time of timer 2; reset timer 2</code></pre>
+======== DEBUG ========
+$task-&gt;DEBUG(@messages_to_print);      ##&lt; print debug messages
+$task-&gt;DEBUG_RESET(1, 2, 3);           ##&lt; reset timers 1, 2, 3
+$task-&gt;DEBUG_T(2, @messages);          ##&lt; print messages and time of timer 2
+$task-&gt;DEBUG_TR(2, @messages);         ##&lt; print messages and time of timer 2; reset timer 2</code></pre>
 
 <h1 id="METHODS">METHODS</h1>
 
@@ -250,8 +250,8 @@
 
 <p>Same as</p>
 
-<pre><code>  $task-&gt;DEBUG_T($timer_name, @list);
-  $task-&gt;DEBUG_RESET($timer_name);</code></pre>
+<pre><code>$task-&gt;DEBUG_T($timer_name, @list);
+$task-&gt;DEBUG_RESET($timer_name);</code></pre>
 
 </dd>
 <dt id="get_vars-group_name-var_names">get_vars($group_name, @var_names)</dt>

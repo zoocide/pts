@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title></title>
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" type="text/css" />
+<link rel="stylesheet" href="../styles/style.css" type="text/css" />
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:" />
 </head>
@@ -62,14 +62,14 @@
 
 <p>The task in the system is defined as a pair of a configuration file and a plugin that do the work. A configuration file (.conf) is a text file that look like ini-file. It has extended syntax to make it more convenient (see <a href="modules/external/ConfigFile.html">ConfigFile</a> for syntax rules). A configuration file must specify the <i>::plugin</i> variable, to set the plugin to process the task. A string <code>plugin=PluginName</code> defines to use the <code>Plugins::PluginName</code> package written in Perl to process the task. The user may develop own plugin or use one of an existing. So, the task is defined by the configuration file, which in turn defines the plugin.</p>
 
-<p><i>PTS</i> accepts three different ways to select tasks to process:</p>
+<p>PTS accepts three different ways to select tasks to process:</p>
 
 <ul>
 
 <li><p>The path to the task definition config file. It may be relative or absolute. When the file is inside the current directory, the <i>./</i> prefix is required for the relative path. The filename must ends with <i>.conf</i>.</p>
 
 </li>
-<li><p>The name of the task. A name of the task is the basename of its definition config file. In this case, <i>PTS</i> searches the specified name inside known task directories. The first found will be processed.</p>
+<li><p>The name of the task. A name of the task is the basename of its definition config file. In this case, PTS searches the specified name inside known task directories. The first found will be processed.</p>
 
 </li>
 <li><p>The task-set filename. An absolute or relative path of the file should be specified. When the file is inside the current directory, the <i>./</i> prefix is required for the relative path. The filename must <b>not</b> ends with <i>.conf</i>.</p>
@@ -94,8 +94,8 @@
 
 <p>It is called just after a new task created. The method is used to adjust the task data for later use. For example, the <i>Configuration</i> plugin sets this method to load the volatile configuration file and store it in <code>$task-&gt;data</code> as a ConfigFile object. It allows to use the <i>config</i> task from another plugin this way:</p>
 
-<pre><code>  my $conf = $db-&gt;get_task(&#39;config&#39;)-&gt;data;
-  $conf-&gt;get_var(&#39;help&#39;, &#39;browser&#39;);</code></pre>
+<pre><code>my $conf = $db-&gt;get_task(&#39;config&#39;)-&gt;data;
+$conf-&gt;get_var(&#39;help&#39;, &#39;browser&#39;);</code></pre>
 
 <ul>
 
@@ -114,7 +114,7 @@
 <dt id="on_prepare-class-task-index-all_tasks-prepared_tasks-db">on_prepare($class, $task, $index, $all_tasks, $prepared_tasks, $db)</dt>
 <dd>
 
-<p><i>PTS</i> calls this method for every task from the input task sequence before the start of the processing stage. The method should add the <i>$task</i> to the <i>$prepared_tasks</i> list if it should be processed on the next stage. The default implementation does it for you.</p>
+<p>PTS calls this method for every task from the input task sequence before the start of the processing stage. The method should add the <i>$task</i> to the <i>$prepared_tasks</i> list if it should be processed on the next stage. The default implementation does it for you.</p>
 
 <ul>
 

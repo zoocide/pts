@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>ConfigFile - read and write configuration files aka '.ini'.</title>
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" type="text/css" />
+<link rel="stylesheet" href="../../../styles/style.css" type="text/css" />
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:" />
 </head>
@@ -38,53 +38,53 @@
 
 <h1 id="SYNOPSIS">SYNOPSIS</h1>
 
-<pre><code>  ## load configuration file ##
-  my $decl = ConfigFileScheme-&gt;new( multiline =&gt; 1,... );
-  my $cf   = ConfigFile-&gt;new($filename, $decl);
-  # &lt;=&gt;
-  my $cf = ConfigFile-&gt;new($filename, { multiline =&gt; 1,... });
-  # &lt;=&gt;
-  my $cf = ConfigFile-&gt;new($filename,   multiline =&gt; 1,...  );
-  # or
-  my $cf = ConfigFile-&gt;new($filename);
+<pre><code>## load configuration file ##
+my $decl = ConfigFileScheme-&gt;new( multiline =&gt; 1,... );
+my $cf   = ConfigFile-&gt;new($filename, $decl);
+# &lt;=&gt;
+my $cf = ConfigFile-&gt;new($filename, { multiline =&gt; 1,... });
+# &lt;=&gt;
+my $cf = ConfigFile-&gt;new($filename,   multiline =&gt; 1,...  );
+# or
+my $cf = ConfigFile-&gt;new($filename);
 
-  # Ignoring unrecognized lines is useful when you want to read some scalar
-  # variables, but there can be multiline variables and you are not interested
-  # in these values.
-  $cf-&gt;skip_unrecognized_lines(1);
+# Ignoring unrecognized lines is useful when you want to read some scalar
+# variables, but there can be multiline variables and you are not interested
+# in these values.
+$cf-&gt;skip_unrecognized_lines(1);
 
-  try{
-    $cf-&gt;load; #&lt; all checks are included
-  }
-  catch{
-    print map &quot;warning: $_\n&quot;, @{$@};
-  } &#39;List&#39;;
-  # &lt;=&gt;
-  print &quot;warning: $_\n&quot; for $cf-&gt;load; #&lt; It raises exception if can not open file.
+try{
+  $cf-&gt;load; #&lt; all checks are included
+}
+catch{
+  print map &quot;warning: $_\n&quot;, @{$@};
+} &#39;List&#39;;
+# &lt;=&gt;
+print &quot;warning: $_\n&quot; for $cf-&gt;load; #&lt; It raises exception if can not open file.
 
-  ## access variables ##
-  my $str = $cf-&gt;get_var(&#39;group&#39;, &#39;var&#39;, &#39;default value&#39;);
-  my @array = $cf-&gt;get_arr(&#39;group&#39;, &#39;var&#39;, @default_value);
+## access variables ##
+my $str = $cf-&gt;get_var(&#39;group&#39;, &#39;var&#39;, &#39;default value&#39;);
+my @array = $cf-&gt;get_arr(&#39;group&#39;, &#39;var&#39;, @default_value);
 
-  my $value;
-  $value = $cf-&gt;get_var(&#39;group&#39;, &#39;var&#39;, &#39;default value&#39;);
-  # &lt;=&gt;
-  $value = $cf-&gt;is_set(&#39;group&#39;, &#39;var&#39;) ? $cf-&gt;get_var(&#39;group&#39;, &#39;var&#39;)
-                                       : &#39;default value&#39;;
+my $value;
+$value = $cf-&gt;get_var(&#39;group&#39;, &#39;var&#39;, &#39;default value&#39;);
+# &lt;=&gt;
+$value = $cf-&gt;is_set(&#39;group&#39;, &#39;var&#39;) ? $cf-&gt;get_var(&#39;group&#39;, &#39;var&#39;)
+                                     : &#39;default value&#39;;
 
-  ## save configuration file ##
-  my $cf = ConfigFile-&gt;new($file_name);
-  $cf-&gt;set_group(&#39;group&#39;);
-  $cf-&gt;set_var(&#39;var_name&#39;, @values);      #&lt; set the $group::var_name variable.
-  $cf-&gt;set(&#39;group&#39;, &#39;var_name&#39;, @values); #&lt; the same but not changing current group.
-  $cf-&gt;set_var(&#39;var2&#39;, @values);          #&lt; set the $group::var2 variable.
-  $cf-&gt;unset(&#39;group&#39;, &#39;var_name&#39;);        #&lt; remove the $group::var_name variable.
-  $cf-&gt;save;
+## save configuration file ##
+my $cf = ConfigFile-&gt;new($file_name);
+$cf-&gt;set_group(&#39;group&#39;);
+$cf-&gt;set_var(&#39;var_name&#39;, @values);      #&lt; set the $group::var_name variable.
+$cf-&gt;set(&#39;group&#39;, &#39;var_name&#39;, @values); #&lt; the same but not changing current group.
+$cf-&gt;set_var(&#39;var2&#39;, @values);          #&lt; set the $group::var2 variable.
+$cf-&gt;unset(&#39;group&#39;, &#39;var_name&#39;);        #&lt; remove the $group::var_name variable.
+$cf-&gt;save;
 
-  --------
-  $cf-&gt;check_required;         ##&lt; according to declaration
-  $cf-&gt;check_required($hash);  ##&lt; according to $hash, defining required variables
-  $cf-&gt;check_required(&#39;gr&#39; =&gt; [@vars],...); ##&lt; hash constructor</code></pre>
+--------
+$cf-&gt;check_required;         ##&lt; according to declaration
+$cf-&gt;check_required($hash);  ##&lt; according to $hash, defining required variables
+$cf-&gt;check_required(&#39;gr&#39; =&gt; [@vars],...); ##&lt; hash constructor</code></pre>
 
 <h1 id="CONFIGURATION-FILE">CONFIGURATION FILE</h1>
 
@@ -92,31 +92,31 @@
 
 <h2 id="Group">Group</h2>
 
-<pre><code> [group_name]</code></pre>
+<pre><code>[group_name]</code></pre>
 
 <p><i>group_name</i> is one word matching <b>\w*</b> pattern. Group definition splits the file into sections. Each group has its own variables set. Different groups can have variables with the same name, but it still different variables.</p>
 
 <h2 id="Variable">Variable</h2>
 
-<pre><code> var_name = value
- # or
- var_name @= elem1 elem2
- elem3
- ...
- # or
- group::var = value</code></pre>
+<pre><code>var_name = value
+# or
+var_name @= elem1 elem2
+elem3
+...
+# or
+group::var = value</code></pre>
 
 <p><i>var_name</i> is one word matching <b>\w+</b> pattern. The value part of the string begins just after the assignment symbol and ends with the line. Value is a space-separated list of words. There are special words such as string literal and variable substitution. A sequence of words without any space between them is one word. Variable declaration parsed into a list of words, which can be accessed by the <a href="#get_arr">&quot;get_arr&quot;</a> and <a href="#get_var">&quot;get_var&quot;</a> methods. By default, variable declaration ends with the line (except string literal, which can have line feeding inside), but there is a special case when the parser treats all next lines as the value part continuation until the next declaration occurred. This behavior is enabled by telling the parser that the variable is <b>multiline</b> or by using the variable declaration second form (<code>var_name @= ...</code>). If specified the group, the variable is considered from that group.</p>
 
 <h3 id="Variables-substitution">Variables substitution</h3>
 
-<pre><code> $var or ${var} or ${group::var}</code></pre>
+<pre><code>$var or ${var} or ${group::var}</code></pre>
 
 <p>Variables substitution is performed after the value part parsed into the list. Once encountered such a construct it is replaced with the string value of the corresponding variable existing at that moment. In the first and second forms, the group was treated as the current group. If the whole word is the one variable substitution, this word will be replaced by the list value of the variable.</p>
 
 <h3 id="Nested-variables-substitution">Nested variables substitution</h3>
 
-<pre><code> ${var${suffix}}</code></pre>
+<pre><code>${var${suffix}}</code></pre>
 
 <p>When construct is encountered in a value part, parser attempts to recursivle substitute inner variables to gain the variable name. If the name corresponds the <i>group::var</i> form, the expression is replaced by its value.</p>
 
@@ -131,14 +131,14 @@
 <dt id="new-filename-declaration">new($filename, declaration)</dt>
 <dd>
 
-<pre><code>  my $decl = ConfigFileScheme-&gt;new( multiline =&gt; 1,... );
-  my $cf   = ConfigFile-&gt;new($filename, $decl);
-  # the same as #
-  my $cf = ConfigFile-&gt;new($filename, { multiline =&gt; 1,... });
-  # the same as #
-  my $cf = ConfigFile-&gt;new($filename,   multiline =&gt; 1,...  );
-  # or #
-  my $cf = ConfigFile-&gt;new($filename);</code></pre>
+<pre><code>my $decl = ConfigFileScheme-&gt;new( multiline =&gt; 1,... );
+my $cf   = ConfigFile-&gt;new($filename, $decl);
+# the same as #
+my $cf = ConfigFile-&gt;new($filename, { multiline =&gt; 1,... });
+# the same as #
+my $cf = ConfigFile-&gt;new($filename,   multiline =&gt; 1,...  );
+# or #
+my $cf = ConfigFile-&gt;new($filename);</code></pre>
 
 </dd>
 <dt id="load">load</dt>
