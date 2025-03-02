@@ -35,7 +35,7 @@ A string C<plugin=PluginName> defines to use the C<Plugins::PluginName> package 
 The user may develop own plugin or use one of an existing.
 So, the task is defined by the configuration file, which in turn defines the plugin.
 
-I<PTS> accepts three different ways to select tasks to process:
+PTS accepts three different ways to select tasks to process:
 
 =over
 
@@ -46,7 +46,7 @@ The filename must ends with I<.conf>.
 
 =item * The name of the task.
 A name of the task is the basename of its definition config file.
-In this case, I<PTS> searches the specified name inside known task directories.
+In this case, PTS searches the specified name inside known task directories.
 The first found will be processed.
 
 =item * The task-set filename.
@@ -95,7 +95,7 @@ It allows to use the I<config> task from another plugin this way:
 
 =item on_prepare($class, $task, $index, $all_tasks, $prepared_tasks, $db)
 
-I<PTS> calls this method for every task from the input task sequence before the start of the processing stage.
+PTS calls this method for every task from the input task sequence before the start of the processing stage.
 The method should add the I<$task> to the I<$prepared_tasks> list if it should be processed on the next stage.
 The default implementation does it for you.
 
