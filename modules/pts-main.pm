@@ -93,13 +93,14 @@ if (@$failed){
     close $fh;
     dbg1 and dprint("Failed tasks were written to file '$failed_fname'.\n");
   }
-  return 1
+  return 1  # FAILURE
 }
 else {
   ## remove failed file on success ##
   if ($failed_fname && $delete_failed_file && -e $failed_fname){
     unlink $failed_fname;
   }
+  return 0  # SUCCESS
 }
 
 ##### END #####
